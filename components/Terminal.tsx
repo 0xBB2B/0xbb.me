@@ -177,7 +177,6 @@ export const Terminal: React.FC = () => {
             placeholder={isProcessing ? "PROCESSING..." : "Enter command..."}
             disabled={isProcessing}
             autoComplete="off"
-            autoFocus
           />
         </div>
       </div>
