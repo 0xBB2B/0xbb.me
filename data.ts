@@ -28,15 +28,15 @@ export const APP_DATA = {
     { name: "AI", level: 50, category: "Tools" }
   ],
   projects: [
-    // {
-    //   id: "1",
-    //   title: "NeonGrid",
-    //   description: "A WebGL-based procedural city generator using Three.js. Generates infinite cyberpunk cityscapes with adjustable density and lighting parameters.",
-    //   tech: ["React", "Three.js", "WebGL", "GLSL"],
-    //   status: "ONLINE",
-    //   repo: "#",
-    //   link: "#"
-    // },
+    {
+      id: "1",
+      title: "0xbb.me",
+      description: "A portfolio website built with React and Tailwind CSS. Features a modern, responsive design and a cyberpunk aesthetic.",
+      tech: ["React", "Tailwind CSS", "TypeScript", "Vite"],
+      status: "ONLINE",
+      repo: "https://github.com/0xBB2B/0xbb.me",
+      link: "https://0xbb.me"
+    },
     // {
     //   id: "2",
     //   title: "GhostShell",
