@@ -80,12 +80,14 @@ function App() {
 
             {/* Terminal Section */}
             <section>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-neon-cyan"></div>
                   <h2 className="text-2xl font-cyber font-bold text-white tracking-wide">{TERMINAL_CONFIG.header}</h2>
                 </div>
-                <div className="text-xs text-neon-pink animate-pulse">{TERMINAL_CONFIG.subHeader}</div>
+                <div className="text-xs text-neon-pink animate-pulse break-all sm:text-right">
+                  {TERMINAL_CONFIG.subHeader}
+                </div>
               </div>
               <div className="relative group">
                 {/* Decorative border for terminal */}
@@ -159,9 +161,11 @@ function App() {
         {/* Projects Grid Section */}
         {PROJECTS && PROJECTS.length > 0 && (
         <section className="mt-24 mb-12">
-           <div className="flex items-center gap-2 mb-8 border-b border-gray-800 pb-4">
+           <div className="flex flex-wrap items-center gap-2 mb-8 border-b border-gray-800 pb-4">
               <div className="w-2 h-2 bg-white"></div>
-              <h2 className="text-3xl font-cyber font-bold text-white tracking-wide">DEPLOYED_PROJECTS</h2>
+              <h2 className="flex-1 min-w-0 text-2xl sm:text-3xl font-cyber font-bold text-white tracking-wide break-all leading-tight">
+                DEPLOYED_PROJECTS
+              </h2>
            </div>
            
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
