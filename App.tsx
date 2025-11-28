@@ -150,6 +150,7 @@ function App() {
         </div>
 
         {/* Projects Grid Section */}
+        {PROJECTS && PROJECTS.length > 0 && (
         <section className="mt-24 mb-12">
            <div className="flex items-center gap-2 mb-8 border-b border-gray-800 pb-4">
               <div className="w-2 h-2 bg-white"></div>
@@ -162,9 +163,10 @@ function App() {
              ))}
            </div>
         </section>
+        )}
 
         {/* Footer */}
-        <footer className="border-t border-gray-800 py-8 text-center text-xs text-gray-600 flex flex-col items-center gap-4">
+        <footer className="mt-10 border-t border-gray-800 py-8 text-center text-xs text-gray-600 flex flex-col items-center gap-4">
            <p>{PROFILE.footer}</p>
            <p>{PROFILE.copyright.replace('2024', new Date().getFullYear().toString())}</p>
         </footer>

@@ -89,9 +89,9 @@ export const APP_DATA = {
         { cmd: "AI [msg]", desc: "- Query Neural Net (Gemini)" },
         { cmd: "CLEAR", desc: "- Purge buffer" }
       ],
-      about: "Fubuki BB. Full Stack Engineer & AI Explorer. Building digital constructs since 2018.",
+      about: "Fubuki BB. Full Stack Engineer & AI Explorer. Building digital constructs since 2017.",
       contact: "Signal established: bb@yorha.xyz | GH: @0xBB2b",
-      projects: "Modules loaded: NeonGrid. Scroll down for visual interface.",
+      projects: "Modules loaded: 0xbb.me. Scroll down for visual interface.",
     },
     messages: {
       aiLoading: "ACCESSING NEURAL NETWORK...",
