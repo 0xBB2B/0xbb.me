@@ -1,4 +1,36 @@
 {
   "name": "CyberDeck Portfolio",
-  "description": "A high-contrast, cyberpunk-themed programmer portfolio featuring a terminal interface powered by Gemini AI, glitch effects, and neon aesthetics."
+  "description": "A high-contrast, cyberpunk-themed programmer portfolio featuring a terminal interface powered by Gemini AI, glitch effects, and neon aesthetics.",
+  "keywords": [
+    "Full Stack Engineer",
+    "Backend Developer",
+    "Go",
+    "Golang",
+    "Docker",
+    "Kubernetes",
+    "TypeScript",
+    "React",
+    "Vue",
+    "AI",
+    "Gemini AI",
+    "Cyberpunk Portfolio",
+    "Web Developer",
+    "Tokyo",
+    "0xBBf",
+    "FUBUKI_BB"
+  ],
+  "author": {
+    "name": "FUBUKI_BB",
+    "email": "bb@yorha.xyz",
+    "github": "https://github.com/0xBB2b",
+    "role": "Full Stack Engineer & AI Explorer"
+  },
+  "siteUrl": "https://0xbb.me",
+  "social": {
+    "github": "https://github.com/0xBB2b",
+    "email": "mailto:bb@yorha.xyz"
+  },
+  "image": "https://0xbb.me/og-image.png",
+  "locale": "en_US",
+  "themeColor": "#00ffff"
 }
