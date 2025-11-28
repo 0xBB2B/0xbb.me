@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background Hexagon -->
+  <path d="M32 2 L58 17 V47 L32 62 L6 47 V17 Z" fill="#050505" stroke="#333" stroke-width="2"/>
+  
+  <!-- Cyan Prompt Arrow -->
+  <path d="M22 22 L36 32 L22 42" fill="none" stroke="#00ffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#neon-glow)"/>
+  
+  <!-- Pink Cursor Block -->
+  <rect x="42" y="36" width="10" height="6" fill="#ff00ff" filter="url(#neon-glow)">
+    <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite" calcMode="discrete"/>
+  </rect>
+  
+  <!-- Decorative corner bits -->
+  <path d="M32 4 L32 8" stroke="#00ffff" stroke-width="1" opacity="0.5"/>
+  <path d="M32 60 L32 56" stroke="#ff00ff" stroke-width="1" opacity="0.5"/>
+</svg>

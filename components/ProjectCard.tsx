@@ -1,6 +1,6 @@
 import React from 'react';
 import { Project } from '../types';
-import { GlitchText } from './GlitchText';
+import { GlitchText } from './GlitchText.tsx';
 
 interface ProjectCardProps {
   project: Project;
@@ -16,7 +16,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-neon-pink opacity-50 group-hover:opacity-100 transition-opacity" />
 
       <div className="p-6 relative z-10">
-        <div className="flex justify-between items-start mb-4">
+        <div className="flex justify-between items-center mb-4">
           <GlitchText as="h3" text={project.title} className="text-xl font-bold font-cyber text-white" />
           <span className={`text-xs px-2 py-1 font-mono border ${
             project.status === 'ONLINE' ? 'border-green-500 text-green-500 shadow-[0_0_5px_rgba(34,197,94,0.3)]' :

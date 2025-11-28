@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { GlitchText } from './components/GlitchText';
-import { Terminal } from './components/Terminal';
-import { ProjectCard } from './components/ProjectCard';
+import { GlitchText } from './components/GlitchText.tsx';
+import { Terminal } from './components/Terminal.tsx';
+import { ProjectCard } from './components/ProjectCard.tsx';
+import { CyberLogo } from './components/CyberLogo.tsx';
 import { PROJECTS, SKILLS, SOCIAL_LINKS, PROFILE, TERMINAL_CONFIG } from './constants';
 
 function App() {
@@ -27,16 +28,22 @@ function App() {
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl pt-12">
         
         {/* Header Section */}
-        <header className="flex flex-col md:flex-row justify-between items-end border-b-2 border-gray-800 pb-6 mb-12 relative">
-           <div className="relative">
-             <div className="text-xs font-mono text-neon-cyan mb-2 tracking-widest">{PROFILE.status}</div>
-             <GlitchText as="h1" text={PROFILE.name} className="text-5xl md:text-7xl font-black font-cyber text-white tracking-tighter" />
-             <p className="mt-2 text-xl text-gray-400 font-light">
-               <span className="text-neon-pink">{'>'}</span> {PROFILE.role}
-             </p>
+        <header className="flex flex-col md:flex-row justify-between items-center border-b-2 border-gray-800 pb-6 mb-12 relative">
+           <div className="flex flex-col md:flex-row items-center gap-6 w-full md:w-auto text-center md:text-left">
+             <CyberLogo className="w-24 h-24 shrink-0 hidden md:block" />
+             <div className="relative">
+               <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                 <CyberLogo className="w-10 h-10 md:hidden" />
+                 <div className="text-xs font-mono text-neon-cyan tracking-widest">{PROFILE.status}</div>
+               </div>
+               <GlitchText as="h1" text={PROFILE.name} className="text-5xl md:text-7xl font-black font-cyber text-white tracking-tighter" />
+               <p className="mt-2 text-xl text-gray-400 font-light">
+                 <span className="text-neon-pink">{'>'}</span> {PROFILE.role}
+               </p>
+             </div>
            </div>
            
-           <div className="flex gap-6 mt-6 md:mt-0">
+           <div className="flex gap-6 mt-8 md:mt-0 items-center">
              {SOCIAL_LINKS.map((link: any) => (
                <a 
                  key={link.name} 

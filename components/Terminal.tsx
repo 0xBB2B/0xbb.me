@@ -153,8 +153,8 @@ export const Terminal: React.FC = () => {
       >
         {history.map(line => (
           <div key={line.id} className={`${line.type === 'error' ? 'text-red-500' : line.type === 'system' ? 'text-gray-500' : line.type === 'input' ? 'text-gray-300' : 'text-neon-cyan'}`}>
-            <div className="flex gap-2">
-               <span className="text-gray-600 shrink-0 select-none">
+            <div className="flex gap-2 items-start">
+               <span className="text-gray-600 shrink-0 select-none pt-[1px]">
                  {line.type === 'input' ? '>' : line.type === 'system' ? '#' : ''}
                </span>
                <div className="break-words leading-relaxed">
@@ -165,15 +165,15 @@ export const Terminal: React.FC = () => {
         ))}
         
         {/* Input Line */}
-        <div className="flex gap-2 text-neon-pink">
-          <span className="shrink-0 select-none">{'>'}</span>
+        <div className="flex gap-2 text-neon-pink items-center">
+          <span className="shrink-0 select-none pb-[2px]">{'>'}</span>
           <input
             ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="w-full bg-transparent outline-none border-none text-neon-pink placeholder-gray-700 caret-neon-cyan"
+            className="w-full bg-transparent outline-none border-none text-neon-pink placeholder-gray-700 caret-neon-cyan py-0"
             placeholder={isProcessing ? "PROCESSING..." : "Enter command..."}
             disabled={isProcessing}
             autoComplete="off"

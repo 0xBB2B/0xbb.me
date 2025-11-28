@@ -1,3 +1,5 @@
+import React from 'react';
+
 export enum TerminalCommandType {
   HELP = 'HELP',
   ABOUT = 'ABOUT',
