@@ -14,7 +14,7 @@ export const APP_DATA = {
   },
   socialLinks: [
     { name: "GitHub", url: "https://github.com/0xBB2b", icon: "GH" },
-    // { name: "LinkedIn", url: "#", icon: "IN" },
+    { name: "LinkedIn", url: "https://www.linkedin.com/in/0xbb2b", icon: "IN" },
     // { name: "Twitter", url: "#", icon: "TW" },
     { name: "Email", url: "mailto:bb@yorha.xyz", icon: "@" }
   ],
@@ -25,7 +25,7 @@ export const APP_DATA = {
     { name: "Vue / Nuxt", level: 70, category: "Frontend" },
     { name: "React / Next.js", level: 70, category: "Frontend" },
     { name: "Node.js", level: 70, category: "Backend" },
-    { name: "AI", level: 50, category: "Tools" }
+    { name: "AI", level: 999, category: "Tools" }
   ],
   projects: [
     {
