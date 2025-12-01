@@ -46,7 +46,7 @@ export const APP_DATA = {
       tech: ["React 19", "TypeScript", "Vite", "Tailwind CSS", "Recharts"],
       status: "ONLINE",
       repo: "https://github.com/0xBB2B/lying-flat",
-      link: "http://yorha.xyz/lying-flat/"
+      link: "http://yorha.xyz/lying-flat"
     },
     // {
     //   id: "3",
