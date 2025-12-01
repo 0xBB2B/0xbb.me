@@ -9,6 +9,8 @@ export const APP_DATA = {
       uptime: "99.9%"
     },
     bio: "I am a full-stack engineer skilled in building backend server architectures and SDK frameworks for game publishing. I am currently exploring how AI can empower developers, streamline workflows, and accelerate the growth of the gaming industry.",
+    avatar: "/profile.png",
+    fullImage: "/profile-full.png",
     footer: "SYSTEM_ID: 0xBBf // CONSTRUCTED_WITH_REACT_&_TAILWIND",
     copyright: "FUBUKI_BB. ALL RIGHTS RESERVED."
   },

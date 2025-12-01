@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { GlitchText } from './components/GlitchText.tsx';
 import { Terminal } from './components/Terminal.tsx';
 import { ProjectCard } from './components/ProjectCard.tsx';
-import { CyberLogo } from './components/CyberLogo.tsx';
 import { PROJECTS, SKILLS, SOCIAL_LINKS, PROFILE, TERMINAL_CONFIG } from './constants';
 
 function App() {
@@ -30,10 +29,10 @@ function App() {
         {/* Header Section */}
         <header className="flex flex-col md:flex-row justify-between items-center border-b-2 border-gray-800 pb-6 mb-12 relative">
            <div className="flex flex-col md:flex-row items-center gap-6 w-full md:w-auto text-center md:text-left">
-             <CyberLogo className="w-24 h-24 shrink-0 hidden md:block" />
+             <img src={PROFILE.avatar} alt={PROFILE.name} className="w-24 h-24 rounded-full border-2 border-neon-cyan shadow-[0_0_15px_rgba(0,255,255,0.5)] shrink-0 hidden md:block" />
              <div className="relative">
                <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-                 <CyberLogo className="w-10 h-10 md:hidden" />
+                 <img src={PROFILE.avatar} alt={PROFILE.name} className="w-10 h-10 rounded-full border border-neon-cyan md:hidden" />
                  <div className="text-xs font-mono text-neon-cyan tracking-widest">{PROFILE.status}</div>
                </div>
                <GlitchText as="h1" text={PROFILE.name} className="text-5xl md:text-7xl font-black font-cyber text-white tracking-tighter" />
@@ -73,9 +72,12 @@ function App() {
                  <div className="w-2 h-2 bg-neon-pink animate-pulse"></div>
                  <h2 className="text-2xl font-cyber font-bold text-white tracking-wide">USER_PROFILE</h2>
               </div>
-              <p className="leading-relaxed text-gray-400 text-lg border-l-4 border-gray-800 pl-4">
-                {PROFILE.bio}
-              </p>
+              <div className="flex flex-col md:flex-row gap-6 items-start">
+                <img src={PROFILE.fullImage} alt="Profile Full" className="w-full md:w-1/3 rounded-lg border border-gray-800 opacity-80 hover:opacity-100 transition-opacity" />
+                <p className="leading-relaxed text-gray-400 text-lg border-l-4 border-gray-800 pl-4">
+                  {PROFILE.bio}
+                </p>
+              </div>
             </section>
 
             {/* Terminal Section */}
