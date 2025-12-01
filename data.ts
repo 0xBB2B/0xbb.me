@@ -39,14 +39,15 @@ export const APP_DATA = {
       repo: "https://github.com/0xBB2B/0xbb.me",
       link: "https://0xbb.me"
     },
-    // {
-    //   id: "2",
-    //   title: "GhostShell",
-    //   description: "A custom, privacy-focused terminal emulator built with Electron and Rust. Features end-to-end encrypted session logs and TOR integration.",
-    //   tech: ["Rust", "Electron", "React", "Node.js"],
-    //   status: "DEVELOPMENT",
-    //   repo: "#"
-    // },
+    {
+      id: "2",
+      title: "Lying Flat",
+      description: "Japan Leave Management System. Features employee management, leave tracking, automated calculation based on Japanese Labor Standards, and a cyberpunk dark mode.",
+      tech: ["React 19", "TypeScript", "Vite", "Tailwind CSS", "Recharts"],
+      status: "ONLINE",
+      repo: "https://github.com/0xBB2B/lying-flat",
+      link: "http://yorha.xyz/lying-flat/"
+    },
     // {
     //   id: "3",
     //   title: "NeuralBeat",
