@@ -73,7 +73,7 @@ function App() {
                  <h2 className="text-2xl font-cyber font-bold text-white tracking-wide">USER_PROFILE</h2>
               </div>
               <div className="flex flex-col md:flex-row gap-6 items-start">
-                <img src={PROFILE.fullImage} alt="Profile Full" className="w-full md:w-1/3 rounded-lg border border-gray-800 opacity-80 hover:opacity-100 transition-opacity" />
+                <img src={PROFILE.fullImage} alt="Profile Full" className="w-full md:w-1/4 rounded-lg border border-gray-800 opacity-80 hover:opacity-100 transition-opacity" />
                 <p className="leading-relaxed text-gray-400 text-lg border-l-4 border-gray-800 pl-4">
                   {PROFILE.bio}
                 </p>
