@@ -135,7 +135,7 @@ export const Terminal: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-[400px] bg-black/80 border border-gray-800 rounded-sm backdrop-blur-sm flex flex-col relative overflow-hidden shadow-[0_0_20px_rgba(0,255,255,0.1)]" onClick={focusInput}>
+    <div className="w-full h-full min-h-[500px] bg-black/80 border border-gray-800 rounded-sm backdrop-blur-sm flex flex-col relative overflow-hidden shadow-[0_0_20px_rgba(0,255,255,0.1)]" onClick={focusInput}>
       {/* Terminal Header */}
       <div className="h-8 bg-gray-900 border-b border-gray-700 flex items-center px-4 justify-between select-none">
         <div className="text-xs text-gray-500 font-mono">{TERMINAL_CONFIG.user}</div>
