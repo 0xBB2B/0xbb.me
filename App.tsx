@@ -83,7 +83,7 @@ function App() {
             </section>
 
             {/* Terminal Section */}
-            <section className="flex-grow flex flex-col">
+            <section>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-neon-cyan"></div>
@@ -93,10 +93,10 @@ function App() {
                   {TERMINAL_CONFIG.subHeader}
                 </div>
               </div>
-              <div className="relative group flex-grow flex flex-col">
+              <div className="relative group">
                 {/* Decorative border for terminal */}
                 <div className="absolute -inset-1 bg-gradient-to-r from-neon-cyan via-purple-500 to-neon-pink opacity-30 group-hover:opacity-60 blur transition duration-500"></div>
-                <div className="relative flex-grow flex flex-col">
+                <div className="relative">
                   <Terminal />
                 </div>
               </div>
