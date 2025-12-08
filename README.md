@@ -47,7 +47,7 @@
 1. **克隆项目**
 
    ```bash
-   git clone https://github.com/0xBB2B/0xbb.me.git
+   git clone https://github.com/0xBB2B/0xbb.me.git cyberdeck-portfolio
    cd cyberdeck-portfolio
    ```
 
