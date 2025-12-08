@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { GlitchText } from './components/GlitchText.tsx';
 import { Terminal } from './components/Terminal.tsx';
 import { ProjectCard } from './components/ProjectCard.tsx';
