@@ -9,7 +9,7 @@
  ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝
 ```
 
-### 🌐 赛博朋克风格个人作品集 // CYBER_DECK_OS v9.2
+### 🌐 赛博朋克风格个人作品集 // CYBER_DECK_OS v1.0
 
 [![React](https://img.shields.io/badge/React-19.2-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -47,7 +47,7 @@
 1. **克隆项目**
 
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/0xBB2B/0xbb.me.git
    cd cyberdeck-portfolio
    ```
 
@@ -79,7 +79,7 @@
 
 5. **访问应用**
 
-   打开浏览器访问: `http://localhost:5173`
+   打开浏览器访问: `http://localhost:3000`
 
 ---
 
