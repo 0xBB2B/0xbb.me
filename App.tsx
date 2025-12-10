@@ -105,33 +105,11 @@ function App() {
               </p>
             </section>
 
-            {/* Quick Stats / Data (Moved to Left Column) */}
-            <section className="grid grid-cols-2 gap-4 mt-8">
-              <div className="border border-gray-800 p-4 bg-black/50 hover:border-neon-yellow transition-colors group">
-                 <div className="text-xs text-gray-500 mb-1">CONTRIBUTIONS</div>
-                 <div className="text-3xl font-cyber text-neon-yellow group-hover:animate-pulse">{PROFILE.stats.contributions}</div>
-              </div>
-              <div className="border border-gray-800 p-4 bg-black/50 hover:border-neon-pink transition-colors group">
-                 <div className="text-xs text-gray-500 mb-1">UPTIME</div>
-                 <div className="text-3xl font-cyber text-neon-pink group-hover:animate-pulse">{PROFILE.stats.uptime}</div>
-              </div>
-              <div className="border border-gray-800 p-4 bg-black/50 hover:border-neon-cyan transition-colors group col-span-2">
-                 <div className="text-xs text-gray-500 mb-1">CURRENT LOCATION</div>
-                 <div className="text-xl font-mono text-neon-cyan flex items-center justify-between">
-                   <span>{PROFILE.location}</span>
-                   <span className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_5px_#22c55e] animate-ping"></span>
-                 </div>
-              </div>
-            </section>
-
           </div>
 
           {/* Right Column: Skills & Stats (5/12) */}
           <div className="w-full lg:w-5/12 flex flex-col space-y-12">
 
-            {/* Character Visual (Desktop only) */}
-            <CharacterVisual className="hidden lg:block" />
-            
             {/* Skills Matrix */}
             <section className="bg-gray-900/30 p-6 border border-gray-800 relative overflow-hidden">
                <div className="flex items-center gap-2 mb-6 relative z-10">
@@ -162,7 +140,24 @@ function App() {
               <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px]"></div>
             </section>
 
-
+            {/* Quick Stats / Data (Moved to Left Column) */}
+            <section className="grid grid-cols-2 gap-4 mt-8">
+              <div className="border border-gray-800 p-4 bg-black/50 hover:border-neon-yellow transition-colors group">
+                 <div className="text-xs text-gray-500 mb-1">CONTRIBUTIONS</div>
+                 <div className="text-3xl font-cyber text-neon-yellow group-hover:animate-pulse">{PROFILE.stats.contributions}</div>
+              </div>
+              <div className="border border-gray-800 p-4 bg-black/50 hover:border-neon-pink transition-colors group">
+                 <div className="text-xs text-gray-500 mb-1">UPTIME</div>
+                 <div className="text-3xl font-cyber text-neon-pink group-hover:animate-pulse">{PROFILE.stats.uptime}</div>
+              </div>
+              <div className="border border-gray-800 p-4 bg-black/50 hover:border-neon-cyan transition-colors group col-span-2">
+                 <div className="text-xs text-gray-500 mb-1">CURRENT LOCATION</div>
+                 <div className="text-xl font-mono text-neon-cyan flex items-center justify-between">
+                   <span>{PROFILE.location}</span>
+                   <span className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_5px_#22c55e] animate-ping"></span>
+                 </div>
+              </div>
+            </section>
 
           </div>
         </div>

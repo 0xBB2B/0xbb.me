@@ -3,7 +3,7 @@ export const APP_DATA = {
     name: "FUBUKI_BB",
     role: "Full Stack Engineer & AI Explorer",
     status: "SYSTEM STATUS: ONLINE",
-    location: "TOKYO_BASE",
+    location: "TOKYO,SHANGHAI",
     stats: {
       contributions: "♾️",
       uptime: "99.9%"
