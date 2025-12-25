@@ -34,7 +34,7 @@ export const APP_DATA = {
       id: "1",
       title: "0xbb.me",
       description: "A portfolio website built with React and Tailwind CSS. Features a modern, responsive design and a cyberpunk aesthetic.",
-      tech: ["React", "Tailwind CSS", "TypeScript", "Vite"],
+      tech: ["React", "TypeScript", "Vite", "Tailwind CSS"],
       status: "ONLINE",
       repo: "https://github.com/0xBB2B/0xbb.me",
       link: "https://0xbb.me"
@@ -43,7 +43,7 @@ export const APP_DATA = {
       id: "2",
       title: "Lying Flat",
       description: "Japan Leave Management System. Features employee management, leave tracking, automated calculation based on Japanese Labor Standards, and a cyberpunk dark mode.",
-      tech: ["React 19", "TypeScript", "Vite", "Tailwind CSS"],
+      tech: ["React", "TypeScript", "Vite", "Tailwind CSS"],
       status: "ONLINE",
       repo: "https://github.com/0xBB2B/lying-flat",
       link: "http://yorha.xyz/lying-flat"
@@ -52,7 +52,7 @@ export const APP_DATA = {
       id: "3",
       title: "RACI Task Master",
       description: "RACI Matrix Task Master represents a modern approach to task management, specifically designed to clarify roles and responsibilities within teams.",
-      tech: ["React 19", "TypeScript", "Vite", "Tailwind CSS"],
+      tech: ["React", "TypeScript", "Vite", "Tailwind CSS"],
       status: "ONLINE",
       repo: "https://github.com/0xBB2B/raci-matrix-task-master",
       link: "http://yorha.xyz/raci-matrix-task-master"
