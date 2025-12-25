@@ -43,27 +43,20 @@ export const APP_DATA = {
       id: "2",
       title: "Lying Flat",
       description: "Japan Leave Management System. Features employee management, leave tracking, automated calculation based on Japanese Labor Standards, and a cyberpunk dark mode.",
-      tech: ["React 19", "TypeScript", "Vite", "Tailwind CSS", "Recharts"],
+      tech: ["React 19", "TypeScript", "Vite", "Tailwind CSS"],
       status: "ONLINE",
       repo: "https://github.com/0xBB2B/lying-flat",
       link: "http://yorha.xyz/lying-flat"
     },
-    // {
-    //   id: "3",
-    //   title: "NeuralBeat",
-    //   description: "An AI-powered lofi hip hop generator. Uses a custom trained GAN model to produce endless streams of background music for coding.",
-    //   tech: ["Python", "TensorFlow", "React", "AudioContext"],
-    //   status: "OFFLINE",
-    //   repo: "#"
-    // },
-    // {
-    //   id: "4",
-    //   title: "CyberAuth",
-    //   description: "Decentralized identity verification protocol using Zero-Knowledge Proofs.",
-    //   tech: ["Solidity", "Web3.js", "Next.js"],
-    //   status: "ONLINE",
-    //   repo: "#"
-    // }
+    {
+      id: "3",
+      title: "RACI Task Master",
+      description: "RACI Matrix Task Master represents a modern approach to task management, specifically designed to clarify roles and responsibilities within teams.",
+      tech: ["React 19", "TypeScript", "Vite", "Tailwind CSS"],
+      status: "ONLINE",
+      repo: "https://github.com/0xBB2B/raci-matrix-task-master",
+      link: "http://yorha.xyz/raci-matrix-task-master"
+    }
   ],
   terminal: {
     bootLines: [
