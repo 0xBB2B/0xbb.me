@@ -1,49 +1,68 @@
 import type { BeatChart, CutDirection, Hand, Lane, Note } from './types';
 import { createSoundtrack, stepDurationMs, trackDurationMs } from './chiptune';
 
-// 显式枚举 8 个 (hand, cut) 组合，确保谱面里全部 8 个键位
-// （左手 W/A/S/D 与右手 I/J/K/L）都会被用上。
-//
-// 早期版本是"hand 周期 4 + cut 周期 4"两套独立循环，但它们的最小公
-// 倍数也是 4，结果只会出现 4 种组合（L+D, L+L, R+U, R+R），导致
-// 玩家发现 W/D/J/K 永远没有方块来。这里用一张 8 步循环表彻底打破锁。
-const NOTE_PATTERN: ReadonlyArray<{ hand: Hand; cut: CutDirection; lane: Lane }> = [
-  { hand: 'L', cut: 'D', lane: 0 },
-  { hand: 'R', cut: 'U', lane: 3 },
-  { hand: 'L', cut: 'L', lane: 1 },
-  { hand: 'R', cut: 'R', lane: 2 },
-  { hand: 'L', cut: 'U', lane: 0 },
-  { hand: 'R', cut: 'D', lane: 3 },
-  { hand: 'L', cut: 'R', lane: 1 },
-  { hand: 'R', cut: 'L', lane: 2 },
+// 全部 8 种 (hand, cut) 组合——对应键盘 8 个方向键。
+const ALL_COMBOS: ReadonlyArray<{ hand: Hand; cut: CutDirection }> = [
+  { hand: 'L', cut: 'U' },
+  { hand: 'L', cut: 'D' },
+  { hand: 'L', cut: 'L' },
+  { hand: 'L', cut: 'R' },
+  { hand: 'R', cut: 'U' },
+  { hand: 'R', cut: 'D' },
+  { hand: 'R', cut: 'L' },
+  { hand: 'R', cut: 'R' },
 ];
 
 /**
- * createDemoChart 根据 ChiptuneEngine 的内置 BGM 生成对应的方块谱面。
- *
- * 设计原则：
- *   - 每 4 步（即每个 4 分音符）生成 1 个方块，节奏与拍点对齐；
- *   - 用 8 步循环的 NOTE_PATTERN 保证全部 8 个键位都会出现；
- *   - 谱面起点偏移 2 拍，给玩家"空拍准备"的入场感。
+ * shuffle 用 Fisher-Yates 算法对副本进行就地洗牌，rng 注入便于测试。
  */
-export function createDemoChart(): BeatChart {
+function shuffle<T>(arr: ReadonlyArray<T>, rng: () => number): T[] {
+  const out = arr.slice();
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/**
+ * createDemoChart 根据 ChiptuneEngine 的内置 BGM 生成方块谱面。
+ *
+ * 谱面随机化策略：
+ *   - 每个拍点的 (hand, cut) 从一个"包含全部 8 种组合的洗牌袋"中抽取，
+ *     抽空再重洗——这样既保证序列随机不重复成预测式，又保证每 8 个
+ *     方块至少覆盖完所有 8 种组合，玩家不会出现"某个键永远等不到方块"。
+ *   - lane 仅根据 hand 二选一（左手 0 或 1、右手 2 或 3），让左右手的
+ *     方块自然分布在屏幕两侧，符合 Beat Saber 的双轨道直觉。
+ *
+ * @param rng 随机源，默认使用 Math.random；测试时可传确定性 RNG。
+ */
+export function createDemoChart(rng: () => number = Math.random): BeatChart {
   const track = createSoundtrack();
   const stepMs = stepDurationMs(track);
   const totalSteps = track.tracks.lead.length * track.loops;
-  // 每 4 步（4 分音符）放一块。
   const noteStepInterval = 4;
-  // 入场预备的空拍数。
   const introBeats = 2;
   const approachMs = 1600;
 
+  let bag: { hand: Hand; cut: CutDirection }[] = [];
+  const drawCombo = () => {
+    if (bag.length === 0) {
+      bag = shuffle(ALL_COMBOS, rng);
+    }
+    return bag.pop()!;
+  };
+
   const notes: Note[] = [];
   for (let step = introBeats * 4; step < totalSteps; step += noteStepInterval) {
-    const beatIndex = step / noteStepInterval;
-    const slot = NOTE_PATTERN[beatIndex % NOTE_PATTERN.length];
+    const slot = drawCombo();
+    const lane: Lane = slot.hand === 'L'
+      ? (rng() < 0.5 ? 0 : 1)
+      : (rng() < 0.5 ? 2 : 3);
 
     notes.push({
       time: step * stepMs,
-      lane: slot.lane,
+      lane,
       hand: slot.hand,
       cut: slot.cut,
     });

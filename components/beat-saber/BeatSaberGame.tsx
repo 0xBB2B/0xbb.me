@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChiptuneEngine, createSoundtrack } from '../../game/chiptune';
 import { createDemoChart } from '../../game/chart';
 import { findHitTarget } from '../../game/judge';
@@ -127,20 +127,21 @@ export const BeatSaberGame: React.FC = () => {
   const hasStartedRef = useRef<boolean>(false);
   const statusRef = useRef<UISnapshot['status']>('idle');
   const lastFrameMsRef = useRef<number>(0);
-  const chart = useMemo<BeatChart>(() => createDemoChart(), []);
-
-  const [snapshot, setSnapshot] = useState<UISnapshot>(() =>
-    buildInitialSnapshot(chart.durationMs),
-  );
-
-  // 用最新的 chart 初始化 notesRef（仅在 chart 变化时）。
-  useEffect(() => {
-    notesRef.current = chart.notes.map((note) => ({
+  // 谱面放在 ref 里，每次 START 会调 createDemoChart() 重抽方向，
+  // 让玩家每局看到的方向序列都不一样。曲目时长 / 标题保持稳定。
+  const chartRef = useRef<BeatChart>(createDemoChart());
+  // 把初始谱面同步到 notesRef，避免组件第一帧没有任何方块状态。
+  if (notesRef.current.length === 0) {
+    notesRef.current = chartRef.current.notes.map((note) => ({
       note,
       mesh: null,
       status: 'pending',
     }));
-  }, [chart]);
+  }
+
+  const [snapshot, setSnapshot] = useState<UISnapshot>(() =>
+    buildInitialSnapshot(chartRef.current.durationMs),
+  );
 
   // three.js 场景挂载与卸载。
   useEffect(() => {
@@ -359,7 +360,7 @@ export const BeatSaberGame: React.FC = () => {
       renderer.render(scene, camera);
 
       if (statusRef.current === 'playing') {
-        const lastNoteTime = chart.notes[chart.notes.length - 1]?.time ?? 0;
+        const lastNoteTime = chartRef.current.notes[chartRef.current.notes.length - 1]?.time ?? 0;
         const isFinished = hasStartedRef.current && elapsedMs > lastNoteTime + MISS_THRESHOLD_MS + 800;
         if (isFinished) {
           statusRef.current = 'finished';
@@ -379,7 +380,7 @@ export const BeatSaberGame: React.FC = () => {
           ...stats,
           status: statusRef.current,
           elapsedMs,
-          durationMs: chart.durationMs,
+          durationMs: chartRef.current.durationMs,
           lastJudgement: last.kind,
           lastJudgementAt: last.at,
         });
@@ -390,7 +391,7 @@ export const BeatSaberGame: React.FC = () => {
           ...prev,
           ...stats,
           status: 'finished',
-          elapsedMs: chart.durationMs,
+          elapsedMs: chartRef.current.durationMs,
           lastJudgement: last.kind,
           lastJudgementAt: last.at,
         }));
@@ -413,7 +414,7 @@ export const BeatSaberGame: React.FC = () => {
       let missedThisFrame = 0;
 
       notesRef.current.forEach((entry) => {
-        const visibleStart = entry.note.time - chart.approachMs;
+        const visibleStart = entry.note.time - chartRef.current.approachMs;
         if (entry.status === 'pending' && elapsedMs >= visibleStart) {
           const mesh = createNoteMesh(entry.note.hand, entry.note.cut);
           mesh.position.set(LANE_X[entry.note.lane], NOTE_Y, 0);
@@ -423,7 +424,7 @@ export const BeatSaberGame: React.FC = () => {
         }
 
         if (entry.status === 'active' && entry.mesh) {
-          const z = computeNoteZ(entry.note.time, elapsedMs, chart.approachMs);
+          const z = computeNoteZ(entry.note.time, elapsedMs, chartRef.current.approachMs);
           entry.mesh.position.z = z;
           entry.mesh.rotation.x = -0.05;
 
@@ -440,7 +441,7 @@ export const BeatSaberGame: React.FC = () => {
 
         if (entry.status === 'missed' && entry.mesh) {
           // MISS 退场：继续沿 Z 飞、同时下坠 + 渐隐。
-          const z = computeNoteZ(entry.note.time, elapsedMs, chart.approachMs);
+          const z = computeNoteZ(entry.note.time, elapsedMs, chartRef.current.approachMs);
           entry.mesh.position.z = z;
           const overshoot = Math.max(elapsedMs - entry.note.time - MISS_THRESHOLD_MS, 0);
           const dropSeconds = overshoot / 1000;
@@ -586,7 +587,9 @@ export const BeatSaberGame: React.FC = () => {
         particlesRef.current = [];
       }
     };
-  }, [chart]);
+    // 谱面与场景生命周期解耦：组件挂载一次即建立循环 / 输入监听，
+    // 谱面后续在 chartRef 中替换，不再触发 effect 重建。
+  }, []);
 
   /**
    * handleStart 由用户按下 GAME START / RETRY 按钮触发：
@@ -614,7 +617,9 @@ export const BeatSaberGame: React.FC = () => {
       particlesRef.current = [];
     }
 
-    notesRef.current = chart.notes.map((note) => ({
+    // 每局重新随机一份谱面，让方向序列每次都不一样。
+    chartRef.current = createDemoChart();
+    notesRef.current = chartRef.current.notes.map((note) => ({
       note,
       mesh: null,
       status: 'pending',
@@ -623,7 +628,7 @@ export const BeatSaberGame: React.FC = () => {
     lastJudgementRef.current = { kind: null, at: 0 };
     hasStartedRef.current = false;
     statusRef.current = 'playing';
-    setSnapshot({ ...buildInitialSnapshot(chart.durationMs), status: 'playing' });
+    setSnapshot({ ...buildInitialSnapshot(chartRef.current.durationMs), status: 'playing' });
 
     await engine.resume();
     engine.startTrack(createSoundtrack());
@@ -635,15 +640,15 @@ export const BeatSaberGame: React.FC = () => {
     <div className="relative w-full overflow-hidden border border-neon-purple/55 bg-[#06031a] shadow-[0_0_36px_rgba(155,123,255,0.22)]">
       <div ref={containerRef} className="relative aspect-[16/10] w-full bg-[#06031a]">
         <div className="pointer-events-none absolute inset-0 z-10">
-          <HudLayer snapshot={snapshot} chartTitle={chart.title} />
+          <HudLayer snapshot={snapshot} chartTitle={chartRef.current.title} />
         </div>
 
         {snapshot.status === 'idle' && (
-          <PreStartOverlay onStart={handleStart} chartTitle={chart.title} />
+          <PreStartOverlay onStart={handleStart} chartTitle={chartRef.current.title} />
         )}
 
         {snapshot.status === 'finished' && (
-          <ResultOverlay snapshot={snapshot} chartTitle={chart.title} onRetry={handleStart} />
+          <ResultOverlay snapshot={snapshot} chartTitle={chartRef.current.title} onRetry={handleStart} />
         )}
       </div>
     </div>
@@ -707,9 +712,9 @@ const HudLayer: React.FC<HudLayerProps> = ({ snapshot, chartTitle }) => {
 };
 
 const Stat: React.FC<{ label: string; value: string; accent: string }> = ({ label, value, accent }) => (
-  <div className="border border-white/10 bg-black/40 px-4 py-3">
-    <div className="text-[10px] tracking-[0.28em] text-gray-400">{label}</div>
-    <div className={`mt-1 font-cyber text-xl ${accent}`}>{value}</div>
+  <div className="border border-white/10 bg-black/40 px-2 py-1.5">
+    <div className="text-[9px] tracking-[0.24em] text-gray-400 leading-none">{label}</div>
+    <div className={`mt-0.5 font-cyber text-base leading-tight ${accent}`}>{value}</div>
   </div>
 );
 
@@ -754,8 +759,11 @@ interface ResultOverlayProps {
 }
 
 /**
- * ResultOverlay 是曲目结束后的「STAGE RESULT」结算画面：等级、分数、
- * 各档判定数与最大连击集中展示，并提供重新开始按钮。
+ * ResultOverlay 是曲目结束后的「STAGE RESULT」结算画面。
+ *
+ * 布局严格压缩到能塞进 16:10 游戏画布内（高度约 60vw × 0.625）；
+ * 容器还设了 max-h-full + overflow-y-auto 作为兜底，极端比例下也不会
+ * 被上下截断。
  */
 const ResultOverlay: React.FC<ResultOverlayProps> = ({ snapshot, chartTitle, onRetry }) => {
   const acc = accuracy(snapshot);
@@ -763,53 +771,52 @@ const ResultOverlay: React.FC<ResultOverlayProps> = ({ snapshot, chartTitle, onR
   const isFullCombo = snapshot.miss === 0 && snapshot.total > 0;
 
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#06031a]/90 backdrop-blur-sm px-4">
-      <div className="pixel-frame relative w-full max-w-xl bg-[#0a0524] border-2 border-neon-purple/70 shadow-[0_0_60px_rgba(155,123,255,0.45)]">
+    <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#06031a]/90 backdrop-blur-sm p-2 sm:p-3">
+      <div className="pixel-frame relative w-full max-w-md max-h-full overflow-y-auto bg-[#0a0524] border-2 border-neon-purple/70 shadow-[0_0_50px_rgba(155,123,255,0.4)]">
         <div className="absolute -top-px left-6 right-6 h-[2px] bg-gradient-to-r from-transparent via-neon-cyan to-transparent" />
         <div className="absolute -bottom-px left-10 right-10 h-[2px] bg-gradient-to-r from-transparent via-neon-pink to-transparent" />
 
-        <div className="px-6 py-5 sm:px-8 sm:py-6">
-          <div className="flex items-center justify-between text-[10px] tracking-[0.32em] text-neon-pink">
+        <div className="px-4 py-3 sm:px-5 sm:py-4">
+          <div className="flex items-center justify-between text-[9px] tracking-[0.28em] text-neon-pink">
             <span>/// STAGE RESULT</span>
             <span className="text-neon-cyan animate-aha-flicker">AHA!</span>
           </div>
 
-          <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <div className="font-cyber text-3xl sm:text-4xl text-white tracking-[0.18em]">STAGE CLEARED</div>
-              <div className="mt-1 font-mono text-[11px] text-gray-400 break-all">{chartTitle}</div>
+          <div className="mt-1 flex items-end justify-between gap-2">
+            <div className="min-w-0">
+              <div className="font-cyber text-xl sm:text-2xl text-white tracking-[0.14em] leading-tight">
+                STAGE CLEARED
+              </div>
+              <div className="font-mono text-[10px] text-gray-500 truncate">{chartTitle}</div>
             </div>
             {isFullCombo && (
-              <div className="self-start sm:self-end border border-neon-yellow/70 bg-neon-yellow/10 px-3 py-1 text-[10px] tracking-[0.3em] text-neon-yellow shadow-[0_0_18px_rgba(248,255,114,0.35)]">
+              <div className="shrink-0 border border-neon-yellow/70 bg-neon-yellow/10 px-2 py-0.5 text-[9px] tracking-[0.24em] text-neon-yellow shadow-[0_0_14px_rgba(248,255,114,0.3)]">
                 FULL COMBO
               </div>
             )}
           </div>
 
-          <div className="mt-5 flex items-center gap-5">
+          <div className="mt-3 flex items-center gap-3">
             <RankBadge rank={rank} />
-            <div className="flex-1 grid grid-cols-2 gap-3">
+            <div className="flex-1 grid grid-cols-2 gap-2">
               <Stat label="SCORE" value={snapshot.score.toLocaleString()} accent="text-neon-yellow" />
-              <Stat label="ACCURACY" value={`${(acc * 100).toFixed(1)}%`} accent="text-neon-cyan" />
+              <Stat label="ACC" value={`${(acc * 100).toFixed(1)}%`} accent="text-neon-cyan" />
+              <Stat label="COMBO" value={snapshot.maxCombo.toString()} accent="text-neon-pink" />
+              <Stat label="TOTAL" value={snapshot.total.toString()} accent="text-white" />
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-3 gap-3">
+          <div className="mt-2 grid grid-cols-3 gap-2">
             <Stat label="PERFECT" value={snapshot.perfect.toString()} accent="text-neon-yellow" />
             <Stat label="GOOD" value={snapshot.good.toString()} accent="text-neon-cyan" />
             <Stat label="MISS" value={snapshot.miss.toString()} accent="text-red-400" />
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <Stat label="MAX COMBO" value={snapshot.maxCombo.toString()} accent="text-neon-pink" />
-            <Stat label="TOTAL" value={snapshot.total.toString()} accent="text-white" />
-          </div>
-
-          <div className="mt-6 flex justify-center">
+          <div className="mt-3 flex justify-center">
             <button
               type="button"
               onClick={onRetry}
-              className="border-2 border-neon-pink bg-neon-panel px-10 py-3 text-sm font-bold uppercase tracking-[0.32em] text-neon-pink shadow-[0_0_30px_rgba(255,79,216,0.45)] transition-colors hover:bg-neon-pink hover:text-[#06031a]"
+              className="border-2 border-neon-pink bg-neon-panel px-6 py-2 text-xs font-bold uppercase tracking-[0.28em] text-neon-pink shadow-[0_0_24px_rgba(255,79,216,0.4)] transition-colors hover:bg-neon-pink hover:text-[#06031a]"
             >
               重新开始 / RETRY
             </button>
@@ -831,9 +838,11 @@ const RANK_STYLE: Record<Rank, { color: string; glow: string; border: string }> 
 const RankBadge: React.FC<{ rank: Rank }> = ({ rank }) => {
   const style = RANK_STYLE[rank];
   return (
-    <div className={`flex h-24 w-24 flex-col items-center justify-center border-2 bg-black/50 ${style.border} ${style.glow}`}>
-      <div className="text-[9px] tracking-[0.3em] text-gray-400">RANK</div>
-      <div className={`font-cyber text-5xl leading-none ${style.color}`}>{rank}</div>
+    <div
+      className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center border-2 bg-black/50 ${style.border} ${style.glow}`}
+    >
+      <div className="text-[8px] tracking-[0.28em] text-gray-400">RANK</div>
+      <div className={`font-cyber text-3xl leading-none ${style.color}`}>{rank}</div>
     </div>
   );
 };

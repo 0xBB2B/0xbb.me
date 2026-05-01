@@ -109,7 +109,8 @@ export function createSoundtrack(): SoundTrack {
     bpm: 132,
     stepsPerBar: 16,
     tracks: { lead, bass, hat },
-    loops: 4,
+    // 循环 2 次约 30 秒，单局长度更易上手；想加长直接调大这个数。
+    loops: 2,
   };
 }
 

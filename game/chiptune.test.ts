@@ -58,9 +58,9 @@ describe('trackDurationMs', () => {
     expect(trackDurationMs(track)).toBeCloseTo(expected, 5);
   });
 
-  test('demo 曲目总时长应在合理范围内（30s ~ 120s）', () => {
+  test('demo 曲目总时长应在合理范围内（20s ~ 90s）', () => {
     const ms = trackDurationMs(createSoundtrack());
-    expect(ms).toBeGreaterThan(30_000);
-    expect(ms).toBeLessThan(120_000);
+    expect(ms).toBeGreaterThan(20_000);
+    expect(ms).toBeLessThan(90_000);
   });
 });
