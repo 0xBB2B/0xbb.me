@@ -130,6 +130,31 @@
       .animate-aha-flicker {
         animation: aha-flicker 4.2s steps(8, end) infinite;
       }
+      /* LV.999 全连特效：从极小快速爆出，轻微回弹后落定。 */
+      @keyframes lv999-pop {
+        0%   { transform: scale(0.35) rotate(-6deg); opacity: 0; filter: blur(8px); }
+        25%  { transform: scale(1.25) rotate(3deg);  opacity: 1; filter: blur(0);   }
+        45%  { transform: scale(0.92) rotate(-1deg); opacity: 1; filter: blur(0);   }
+        65%  { transform: scale(1.08) rotate(0.5deg); opacity: 1; filter: blur(0);  }
+        100% { transform: scale(1) rotate(0deg);     opacity: 1; filter: blur(0);   }
+      }
+      .animate-lv999-pop { animation: lv999-pop 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+      /* LV.999 同步抖动的故障描边——每帧 step 跳变制造像素位移。 */
+      @keyframes lv999-glitch {
+        0%, 100% { transform: translate(0, 0); }
+        20%      { transform: translate(2px, -1px); }
+        40%      { transform: translate(-3px, 2px); }
+        60%      { transform: translate(2px, 1px); }
+        80%      { transform: translate(-2px, -2px); }
+      }
+      .animate-lv999-glitch { animation: lv999-glitch 0.18s steps(4, end) infinite; }
+      /* 横向扫描线快速划过 LV.999 文本，模拟 CRT 扫描频闪。 */
+      @keyframes lv999-sweep {
+        0%   { transform: translateY(-120%); opacity: 0; }
+        20%  { opacity: 1; }
+        100% { transform: translateY(120%); opacity: 0; }
+      }
+      .animate-lv999-sweep { animation: lv999-sweep 1.6s linear infinite; }
     </style>
     <script type="importmap">
       {

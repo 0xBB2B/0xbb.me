@@ -65,13 +65,20 @@ interface SaberFlash {
   swingY: number;
 }
 
+// 状态机：'lv999' 是仅在全连（FULL COMBO）时插入的特效阶段，
+// 持续 LV999_DURATION_MS 后会自动转入 'finished' 显示结算。
+type GameStatus = 'idle' | 'playing' | 'lv999' | 'finished';
+
 interface UISnapshot extends GameStats {
-  status: 'idle' | 'playing' | 'finished';
+  status: GameStatus;
   elapsedMs: number;
   durationMs: number;
   lastJudgement: Judgement | null;
   lastJudgementAt: number;
 }
+
+// LV.999 全连特效持续时长（毫秒）。
+const LV999_DURATION_MS = 2600;
 
 const DIRECTION_VECTORS: Record<CutDirection, [number, number]> = {
   U: [0, 1],
@@ -127,6 +134,8 @@ export const BeatSaberGame: React.FC = () => {
   const hasStartedRef = useRef<boolean>(false);
   const statusRef = useRef<UISnapshot['status']>('idle');
   const lastFrameMsRef = useRef<number>(0);
+  // LV.999 全连特效起始时刻（rAF 时间），用来判断是否到达切换结算的窗口。
+  const lv999StartedAtRef = useRef<number>(0);
   // 谱面放在 ref 里，每次 START 会调 createDemoChart() 重抽方向，
   // 让玩家每局看到的方向序列都不一样。曲目时长 / 标题保持稳定。
   const chartRef = useRef<BeatChart>(createDemoChart());
@@ -363,7 +372,6 @@ export const BeatSaberGame: React.FC = () => {
         const lastNoteTime = chartRef.current.notes[chartRef.current.notes.length - 1]?.time ?? 0;
         const isFinished = hasStartedRef.current && elapsedMs > lastNoteTime + MISS_THRESHOLD_MS + 800;
         if (isFinished) {
-          statusRef.current = 'finished';
           engine.stop();
           // 把仍在场景里的方块全部清掉，避免飞过判定线后还停在屏幕上。
           notesRef.current.forEach((entry) => {
@@ -373,6 +381,21 @@ export const BeatSaberGame: React.FC = () => {
               entry.mesh = null;
             }
           });
+
+          // 全连判定：miss=0 且至少切过一块。命中则先进入 LV.999 特效阶段，
+          // 否则直接进入结算。
+          const finalStats = statsRef.current;
+          const fullCombo = finalStats.miss === 0 && finalStats.total > 0;
+          if (fullCombo) {
+            statusRef.current = 'lv999';
+            lv999StartedAtRef.current = frameTime;
+            // 三连切击 SFX 当作"达成"提示，让特效不至于完全静音。
+            engine.playCutSfx();
+            window.setTimeout(() => engine.playCutSfx(), 120);
+            window.setTimeout(() => engine.playCutSfx(), 280);
+          } else {
+            statusRef.current = 'finished';
+          }
         }
         const last = lastJudgementRef.current;
         const stats = statsRef.current;
@@ -384,6 +407,20 @@ export const BeatSaberGame: React.FC = () => {
           lastJudgement: last.kind,
           lastJudgementAt: last.at,
         });
+      } else if (statusRef.current === 'lv999') {
+        if (frameTime - lv999StartedAtRef.current > LV999_DURATION_MS) {
+          statusRef.current = 'finished';
+        }
+        const last = lastJudgementRef.current;
+        const stats = statsRef.current;
+        setSnapshot((prev) => ({
+          ...prev,
+          ...stats,
+          status: statusRef.current,
+          elapsedMs: chartRef.current.durationMs,
+          lastJudgement: last.kind,
+          lastJudgementAt: last.at,
+        }));
       } else if (statusRef.current === 'finished') {
         const last = lastJudgementRef.current;
         const stats = statsRef.current;
@@ -647,6 +684,8 @@ export const BeatSaberGame: React.FC = () => {
           <PreStartOverlay onStart={handleStart} chartTitle={chartRef.current.title} />
         )}
 
+        {snapshot.status === 'lv999' && <Lv999Overlay snapshot={snapshot} />}
+
         {snapshot.status === 'finished' && (
           <ResultOverlay snapshot={snapshot} chartTitle={chartRef.current.title} onRetry={handleStart} />
         )}
@@ -826,6 +865,69 @@ const ResultOverlay: React.FC<ResultOverlayProps> = ({ snapshot, chartTitle, onR
     </div>
   );
 };
+
+/**
+ * Lv999Overlay 是全连达成后、结算画面之前的 2.6 秒高光动画。
+ *
+ * 视觉构成：
+ *   - 半透明黑背景 + 轻微背景模糊，把 3D 场景压暗作为底色；
+ *   - 三圈同心向外扩张的发光边环（紫罗兰 / 像素青 / 品红粉），用
+ *     animate-ping + 错峰延迟模拟"能量震波"；
+ *   - 一道纵向横线 0.18s 频率横扫整个区域，像 CRT 扫描；
+ *   - 大字 LV.999：白色实体 + 像素青/品红粉两层错位描边持续抖动，
+ *     整体配 lv999-pop 关键帧从 0.35 倍快速爆出后回弹落定；
+ *   - 副标题 "AHA! HACK COMPLETE" 与 "FULL COMBO ATTAINED"，
+ *     底部一行展示当前总分作为奖励数据。
+ */
+const Lv999Overlay: React.FC<{ snapshot: UISnapshot }> = ({ snapshot }) => (
+  <div className="absolute inset-0 z-30 flex items-center justify-center overflow-hidden bg-[#06031a]/85 backdrop-blur-[2px]">
+    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+      <span className="absolute h-24 w-24 rounded-full border-2 border-neon-pink/70 animate-ping" />
+      <span
+        className="absolute h-48 w-48 rounded-full border-2 border-neon-cyan/55 animate-ping"
+        style={{ animationDelay: '180ms' }}
+      />
+      <span
+        className="absolute h-72 w-72 rounded-full border border-neon-purple/45 animate-ping"
+        style={{ animationDelay: '360ms' }}
+      />
+      <span
+        className="absolute h-[26rem] w-[26rem] max-h-full max-w-full rounded-full border border-neon-yellow/30 animate-ping"
+        style={{ animationDelay: '540ms' }}
+      />
+    </div>
+
+    <div className="pointer-events-none absolute inset-x-0 h-12 animate-lv999-sweep bg-[linear-gradient(180deg,transparent_0%,rgba(102,224,255,0.18)_45%,rgba(255,79,216,0.22)_55%,transparent_100%)]" />
+
+    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(155,123,255,0.06)_2px,transparent_2px)] bg-[size:100%_4px] opacity-70" />
+
+    <div className="relative animate-lv999-pop text-center">
+      <div className="text-[10px] sm:text-xs tracking-[0.5em] text-neon-cyan animate-aha-flicker">
+        AHA! HACK COMPLETE
+      </div>
+      <div className="relative mt-2 inline-block">
+        <span className="absolute inset-0 font-cyber text-6xl sm:text-8xl tracking-[0.12em] text-neon-cyan opacity-80 animate-lv999-glitch">
+          LV.999
+        </span>
+        <span
+          className="absolute inset-0 font-cyber text-6xl sm:text-8xl tracking-[0.12em] text-neon-pink opacity-80 animate-lv999-glitch"
+          style={{ animationDelay: '0.06s' }}
+        >
+          LV.999
+        </span>
+        <span className="relative font-cyber text-6xl sm:text-8xl tracking-[0.12em] text-white text-level">
+          LV.999
+        </span>
+      </div>
+      <div className="mt-3 text-[10px] sm:text-xs tracking-[0.45em] text-neon-pink animate-pulse">
+        /// FULL_COMBO_ATTAINED
+      </div>
+      <div className="mt-1 font-cyber text-sm sm:text-base tracking-[0.3em] text-neon-yellow">
+        {snapshot.score.toLocaleString()} PT · MAX COMBO {snapshot.maxCombo}
+      </div>
+    </div>
+  </div>
+);
 
 const RANK_STYLE: Record<Rank, { color: string; glow: string; border: string }> = {
   S: { color: 'text-neon-yellow', glow: 'shadow-[0_0_28px_rgba(248,255,114,0.5)]', border: 'border-neon-yellow' },
