@@ -28,6 +28,7 @@ type GameSnapshot = {
   score: number;
   lives: number;
   best: number;
+  isStarted: boolean;
   isGameOver: boolean;
 };
 
@@ -41,11 +42,12 @@ type GameState = {
   best: number;
   lastShotAt: number;
   enemyTimer: number;
+  isStarted: boolean;
   isGameOver: boolean;
 };
 
-const GAME_WIDTH = 720;
-const GAME_HEIGHT = 420;
+const GAME_WIDTH = 520;
+const GAME_HEIGHT = 520;
 const PLAYER_WIDTH = 46;
 const PLAYER_HEIGHT = 34;
 const SHOT_COOLDOWN = 150;
@@ -62,6 +64,7 @@ export const ArcadeShooter: React.FC = () => {
     score: 0,
     lives: 3,
     best: 0,
+    isStarted: false,
     isGameOver: false,
   });
 
@@ -74,16 +77,17 @@ export const ArcadeShooter: React.FC = () => {
       score: state.score,
       lives: state.lives,
       best: state.best,
+      isStarted: state.isStarted,
       isGameOver: state.isGameOver,
     });
   };
 
   /**
-   * resetGame 重置游戏进度，并保留本局最高分。
+   * startGame 开始一局新游戏，并保留历史最高分。
    */
-  const resetGame = () => {
+  const startGame = () => {
     const previousBest = stateRef.current.best;
-    stateRef.current = createInitialState(previousBest);
+    stateRef.current = createInitialState(previousBest, true);
     syncSnapshot();
     canvasRef.current?.focus();
   };
@@ -98,12 +102,9 @@ export const ArcadeShooter: React.FC = () => {
       }
 
       const state = stateRef.current;
-      if (event.code === 'Space' && state.isGameOver) {
-        resetGame();
-        return;
+      if (state.isStarted && !state.isGameOver) {
+        state.keys.add(event.code);
       }
-
-      state.keys.add(event.code);
     };
 
     /**
@@ -151,8 +152,8 @@ export const ArcadeShooter: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative bg-neon-bg/95 border border-neon-cyan/35 pixel-corners overflow-hidden shadow-[0_0_32px_rgba(66,248,255,0.16)]">
-      <div className="flex flex-wrap items-center gap-3 border-b border-neon-purple/45 bg-neon-panel px-4 py-3">
+    <div className="relative aspect-square bg-neon-bg/95 border border-neon-cyan/35 pixel-corners overflow-hidden shadow-[0_0_32px_rgba(66,248,255,0.16)]">
+      <div className="absolute left-0 right-0 top-0 z-10 flex flex-wrap items-center gap-3 border-b border-neon-purple/45 bg-neon-panel/90 px-4 py-3 backdrop-blur-sm">
         <div className="text-xs text-neon-cyan tracking-[0.24em]">STAR RAID</div>
         <div className="ml-auto flex gap-3 text-[10px] text-gray-400">
           <span>SCORE <b className="text-neon-yellow">{snapshot.score}</b></span>
@@ -161,25 +162,25 @@ export const ArcadeShooter: React.FC = () => {
         </div>
       </div>
 
-      <div className="relative">
+      <div className="absolute inset-0">
         <canvas
           ref={canvasRef}
           width={GAME_WIDTH}
           height={GAME_HEIGHT}
           tabIndex={0}
           onClick={() => canvasRef.current?.focus()}
-          className="block w-full aspect-[12/7] bg-neon-bg outline-none"
+          className="block h-full w-full bg-neon-bg outline-none"
           aria-label="左右方向键移动，空格发射子弹的打飞机游戏"
         />
 
-        {snapshot.isGameOver && (
+        {(!snapshot.isStarted || snapshot.isGameOver) && (
           <div className="absolute inset-0 flex items-center justify-center bg-neon-bg/70 backdrop-blur-sm">
             <button
               type="button"
-              onClick={resetGame}
+              onClick={startGame}
               className="border border-neon-pink bg-neon-panel px-6 py-3 text-sm font-bold uppercase tracking-[0.24em] text-neon-pink shadow-[0_0_22px_rgba(255,79,216,0.35)] hover:bg-neon-pink hover:text-neon-bg transition-colors"
             >
-              Reboot Mission
+              GAME START
             </button>
           </div>
         )}
@@ -191,7 +192,7 @@ export const ArcadeShooter: React.FC = () => {
 /**
  * createInitialState 创建游戏初始状态。
  */
-function createInitialState(best = 0): GameState {
+function createInitialState(best = 0, isStarted = false): GameState {
   return {
     player: {
       x: GAME_WIDTH / 2 - PLAYER_WIDTH / 2,
@@ -208,6 +209,7 @@ function createInitialState(best = 0): GameState {
     best,
     lastShotAt: 0,
     enemyTimer: 0,
+    isStarted,
     isGameOver: false,
   };
 }
@@ -216,7 +218,7 @@ function createInitialState(best = 0): GameState {
  * updateGame 更新玩家、子弹、敌机与碰撞状态。
  */
 function updateGame(state: GameState, delta: number) {
-  if (state.isGameOver) {
+  if (!state.isStarted || state.isGameOver) {
     return;
   }
 
@@ -288,7 +290,7 @@ function updateGame(state: GameState, delta: number) {
  * createEnemy 根据分数生成逐步提速的敌机。
  */
 function createEnemy(score: number): Enemy {
-  const size = 28 + Math.random() * 18;
+  const size = 32 + Math.random() * 14;
 
   return {
     x: 24 + Math.random() * (GAME_WIDTH - size - 48),
@@ -375,24 +377,13 @@ function drawBullet(context: CanvasRenderingContext2D, bullet: Bullet) {
  * drawEnemy 绘制敌方目标。
  */
 function drawEnemy(context: CanvasRenderingContext2D, enemy: Enemy) {
-  context.strokeStyle = '#ff4fd8';
-  context.fillStyle = 'rgba(255, 79, 216, 0.2)';
+  context.font = `${enemy.size}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
   context.shadowColor = '#ff4fd8';
-  context.shadowBlur = 16;
-  context.lineWidth = 2;
-  context.beginPath();
-  context.rect(enemy.x, enemy.y, enemy.size, enemy.size);
-  context.fill();
-  context.stroke();
+  context.shadowBlur = 18;
+  context.fillText('👾', enemy.x + enemy.size / 2, enemy.y + enemy.size / 2);
   context.shadowBlur = 0;
-
-  context.strokeStyle = '#42f8ff';
-  context.beginPath();
-  context.moveTo(enemy.x + 6, enemy.y + enemy.size / 2);
-  context.lineTo(enemy.x + enemy.size - 6, enemy.y + enemy.size / 2);
-  context.moveTo(enemy.x + enemy.size / 2, enemy.y + 6);
-  context.lineTo(enemy.x + enemy.size / 2, enemy.y + enemy.size - 6);
-  context.stroke();
 }
 
 /**

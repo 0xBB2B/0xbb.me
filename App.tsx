@@ -105,7 +105,7 @@ function App() {
                 </div>
               </div>
               <p className="mt-2 text-xs text-gray-600 text-right font-mono">
-                Move with <span className="text-neon-cyan">← →</span>, fire with <span className="text-neon-cyan">SPACE</span>
+                Press <span className="text-neon-cyan">GAME START</span>, move with <span className="text-neon-cyan">← →</span>, fire with <span className="text-neon-cyan">SPACE</span>
               </p>
             </section>
 
