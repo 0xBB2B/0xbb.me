@@ -3,7 +3,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChiptuneEngine, createSoundtrack } from '../../game/chiptune';
 import { createDemoChart } from '../../game/chart';
 import { findHitTarget } from '../../game/judge';
-import { accuracy, applyJudgement, createInitialStats, type GameStats } from '../../game/scoring';
+import {
+  accuracy,
+  applyJudgement,
+  createInitialStats,
+  rankFor,
+  type GameStats,
+  type Rank,
+} from '../../game/scoring';
 import type { BeatChart, CutDirection, Hand, Judgement, Note } from '../../game/types';
 import {
   HAND_COLOR,
@@ -115,6 +122,9 @@ export const BeatSaberGame: React.FC = () => {
   const frameRef = useRef<number | null>(null);
   const engineRef = useRef<ChiptuneEngine | null>(null);
   const startedAtRef = useRef<number>(0);
+  // BGM 已经真正开始播放——用来区分"刚点 START 还在 await resume"
+  // 与"BGM 自然结束、引擎转入 inactive"两种 isPlaying=false 场景。
+  const hasStartedRef = useRef<boolean>(false);
   const statusRef = useRef<UISnapshot['status']>('idle');
   const lastFrameMsRef = useRef<number>(0);
   const chart = useMemo<BeatChart>(() => createDemoChart(), []);
@@ -333,11 +343,14 @@ export const BeatSaberGame: React.FC = () => {
       const dt = Math.min(frameTime - lastFrameMsRef.current, 64);
       lastFrameMsRef.current = frameTime;
 
-      const elapsedMs = engine.isPlaying() ? engine.elapsedMs() : 0;
+      // engine.elapsedMs() 用 AudioContext.currentTime - startedAt，BGM 自然
+      // 结束后 ctx.currentTime 仍在前进，依然能给出有意义的时间。所以只用
+      // hasStartedRef 区分"是否已点过 START"即可，不要再用 isPlaying 卡。
+      const elapsedMs = hasStartedRef.current ? engine.elapsedMs() : 0;
 
       // BGM 实际开播前不要让方块"先出生"，否则 GAME START 一按下方块会
       // 直接出现在飞行半路上，伴随时间轴对齐错乱。
-      if (statusRef.current === 'playing' && engine.isPlaying()) {
+      if (statusRef.current === 'playing' && hasStartedRef.current) {
         updateNotes(elapsedMs);
       }
       updateSabers(dt);
@@ -347,10 +360,18 @@ export const BeatSaberGame: React.FC = () => {
 
       if (statusRef.current === 'playing') {
         const lastNoteTime = chart.notes[chart.notes.length - 1]?.time ?? 0;
-        const isFinished = elapsedMs > lastNoteTime + MISS_THRESHOLD_MS + 500;
+        const isFinished = hasStartedRef.current && elapsedMs > lastNoteTime + MISS_THRESHOLD_MS + 800;
         if (isFinished) {
           statusRef.current = 'finished';
           engine.stop();
+          // 把仍在场景里的方块全部清掉，避免飞过判定线后还停在屏幕上。
+          notesRef.current.forEach((entry) => {
+            if (entry.mesh && sceneRef.current) {
+              sceneRef.current.remove(entry.mesh);
+              disposeMesh(entry.mesh);
+              entry.mesh = null;
+            }
+          });
         }
         const last = lastJudgementRef.current;
         const stats = statsRef.current;
@@ -568,14 +589,31 @@ export const BeatSaberGame: React.FC = () => {
   }, [chart]);
 
   /**
-   * handleStart 由用户按下 GAME START 按钮触发：解锁音频上下文并启动曲目。
+   * handleStart 由用户按下 GAME START / RETRY 按钮触发：
+   * 解锁音频上下文、彻底重置场景与状态、启动曲目。
    */
   const handleStart = async () => {
     const engine = engineRef.current;
     if (!engine) {
       return;
     }
-    // 重置状态。
+    // 清掉上一轮可能还挂在场景里的方块，避免重玩时残留。
+    const scene = sceneRef.current;
+    if (scene) {
+      notesRef.current.forEach((entry) => {
+        if (entry.mesh) {
+          scene.remove(entry.mesh);
+          disposeMesh(entry.mesh);
+          entry.mesh = null;
+        }
+      });
+      particlesRef.current.forEach((p) => {
+        scene.remove(p.mesh);
+        disposeMesh(p.mesh);
+      });
+      particlesRef.current = [];
+    }
+
     notesRef.current = chart.notes.map((note) => ({
       note,
       mesh: null,
@@ -583,13 +621,14 @@ export const BeatSaberGame: React.FC = () => {
     }));
     statsRef.current = createInitialStats();
     lastJudgementRef.current = { kind: null, at: 0 };
+    hasStartedRef.current = false;
     statusRef.current = 'playing';
-    setSnapshot(buildInitialSnapshot(chart.durationMs));
-    setSnapshot((prev) => ({ ...prev, status: 'playing' }));
+    setSnapshot({ ...buildInitialSnapshot(chart.durationMs), status: 'playing' });
 
     await engine.resume();
     engine.startTrack(createSoundtrack());
     startedAtRef.current = performance.now();
+    hasStartedRef.current = true;
   };
 
   return (
@@ -599,45 +638,12 @@ export const BeatSaberGame: React.FC = () => {
           <HudLayer snapshot={snapshot} chartTitle={chart.title} />
         </div>
 
-        {snapshot.status !== 'playing' && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-[#06031a]/80 backdrop-blur-sm">
-            <div className="text-center">
-              <div className="text-xs tracking-[0.4em] text-neon-pink animate-pulse">
-                {snapshot.status === 'finished' ? '/// AHA TIME COMPLETE' : '/// AHA TIME // SILVER WOLF MIX'}
-              </div>
-              <div className="mt-2 font-cyber text-3xl text-white tracking-[0.16em]">
-                {snapshot.status === 'finished' ? 'STAGE CLEARED' : 'RHYTHM_BLADE'}
-              </div>
-            </div>
-            {snapshot.status === 'finished' && (
-              <div className="grid grid-cols-3 gap-4 text-center text-xs text-gray-300 font-mono">
-                <Stat label="SCORE" value={snapshot.score.toString()} accent="text-neon-yellow" />
-                <Stat
-                  label="ACCURACY"
-                  value={`${(accuracy(snapshot) * 100).toFixed(1)}%`}
-                  accent="text-neon-cyan"
-                />
-                <Stat label="MAX COMBO" value={snapshot.maxCombo.toString()} accent="text-neon-pink" />
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={handleStart}
-              className="border-2 border-neon-pink bg-neon-panel px-8 py-3 text-sm font-bold uppercase tracking-[0.32em] text-neon-pink shadow-[0_0_30px_rgba(255,79,216,0.45)] transition-colors hover:bg-neon-pink hover:text-[#06031a]"
-            >
-              {snapshot.status === 'finished' ? 'RETRY' : 'AHA START'}
-            </button>
-            <div className="max-w-md text-center text-[11px] text-gray-400 font-mono leading-relaxed">
-              <div>
-                LEFT HAND <span className="text-neon-purple">[ W A S D ]</span>
-                {' / '}
-                RIGHT HAND <span className="text-neon-cyan">[ I J K L ]</span>
-              </div>
-              <div className="mt-1 opacity-80">
-                方向必须匹配方块上的箭头；红块只能左手，青块只能右手。
-              </div>
-            </div>
-          </div>
+        {snapshot.status === 'idle' && (
+          <PreStartOverlay onStart={handleStart} chartTitle={chart.title} />
+        )}
+
+        {snapshot.status === 'finished' && (
+          <ResultOverlay snapshot={snapshot} chartTitle={chart.title} onRetry={handleStart} />
         )}
       </div>
     </div>
@@ -706,6 +712,131 @@ const Stat: React.FC<{ label: string; value: string; accent: string }> = ({ labe
     <div className={`mt-1 font-cyber text-xl ${accent}`}>{value}</div>
   </div>
 );
+
+interface PreStartOverlayProps {
+  onStart: () => void;
+  chartTitle: string;
+}
+
+/**
+ * PreStartOverlay 是首次进入游戏 / 尚未开始时的标题与说明遮罩。
+ */
+const PreStartOverlay: React.FC<PreStartOverlayProps> = ({ onStart, chartTitle }) => (
+  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-[#06031a]/85 backdrop-blur-sm">
+    <div className="text-center">
+      <div className="text-xs tracking-[0.4em] text-neon-pink animate-pulse">/// {chartTitle}</div>
+      <div className="mt-2 font-cyber text-4xl text-white tracking-[0.16em]">RHYTHM_BLADE</div>
+    </div>
+    <button
+      type="button"
+      onClick={onStart}
+      className="border-2 border-neon-pink bg-neon-panel px-8 py-3 text-sm font-bold uppercase tracking-[0.32em] text-neon-pink shadow-[0_0_30px_rgba(255,79,216,0.45)] transition-colors hover:bg-neon-pink hover:text-[#06031a]"
+    >
+      AHA START
+    </button>
+    <div className="max-w-md text-center text-[11px] text-gray-400 font-mono leading-relaxed">
+      <div>
+        LEFT HAND <span className="text-neon-purple">[ W A S D ]</span>
+        {' / '}
+        RIGHT HAND <span className="text-neon-cyan">[ I J K L ]</span>
+      </div>
+      <div className="mt-1 opacity-80">
+        方向必须匹配方块上的箭头；紫块只能左手，青块只能右手。
+      </div>
+    </div>
+  </div>
+);
+
+interface ResultOverlayProps {
+  snapshot: UISnapshot;
+  chartTitle: string;
+  onRetry: () => void;
+}
+
+/**
+ * ResultOverlay 是曲目结束后的「STAGE RESULT」结算画面：等级、分数、
+ * 各档判定数与最大连击集中展示，并提供重新开始按钮。
+ */
+const ResultOverlay: React.FC<ResultOverlayProps> = ({ snapshot, chartTitle, onRetry }) => {
+  const acc = accuracy(snapshot);
+  const rank = rankFor(snapshot);
+  const isFullCombo = snapshot.miss === 0 && snapshot.total > 0;
+
+  return (
+    <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#06031a]/90 backdrop-blur-sm px-4">
+      <div className="pixel-frame relative w-full max-w-xl bg-[#0a0524] border-2 border-neon-purple/70 shadow-[0_0_60px_rgba(155,123,255,0.45)]">
+        <div className="absolute -top-px left-6 right-6 h-[2px] bg-gradient-to-r from-transparent via-neon-cyan to-transparent" />
+        <div className="absolute -bottom-px left-10 right-10 h-[2px] bg-gradient-to-r from-transparent via-neon-pink to-transparent" />
+
+        <div className="px-6 py-5 sm:px-8 sm:py-6">
+          <div className="flex items-center justify-between text-[10px] tracking-[0.32em] text-neon-pink">
+            <span>/// STAGE RESULT</span>
+            <span className="text-neon-cyan animate-aha-flicker">AHA!</span>
+          </div>
+
+          <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="font-cyber text-3xl sm:text-4xl text-white tracking-[0.18em]">STAGE CLEARED</div>
+              <div className="mt-1 font-mono text-[11px] text-gray-400 break-all">{chartTitle}</div>
+            </div>
+            {isFullCombo && (
+              <div className="self-start sm:self-end border border-neon-yellow/70 bg-neon-yellow/10 px-3 py-1 text-[10px] tracking-[0.3em] text-neon-yellow shadow-[0_0_18px_rgba(248,255,114,0.35)]">
+                FULL COMBO
+              </div>
+            )}
+          </div>
+
+          <div className="mt-5 flex items-center gap-5">
+            <RankBadge rank={rank} />
+            <div className="flex-1 grid grid-cols-2 gap-3">
+              <Stat label="SCORE" value={snapshot.score.toLocaleString()} accent="text-neon-yellow" />
+              <Stat label="ACCURACY" value={`${(acc * 100).toFixed(1)}%`} accent="text-neon-cyan" />
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <Stat label="PERFECT" value={snapshot.perfect.toString()} accent="text-neon-yellow" />
+            <Stat label="GOOD" value={snapshot.good.toString()} accent="text-neon-cyan" />
+            <Stat label="MISS" value={snapshot.miss.toString()} accent="text-red-400" />
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <Stat label="MAX COMBO" value={snapshot.maxCombo.toString()} accent="text-neon-pink" />
+            <Stat label="TOTAL" value={snapshot.total.toString()} accent="text-white" />
+          </div>
+
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={onRetry}
+              className="border-2 border-neon-pink bg-neon-panel px-10 py-3 text-sm font-bold uppercase tracking-[0.32em] text-neon-pink shadow-[0_0_30px_rgba(255,79,216,0.45)] transition-colors hover:bg-neon-pink hover:text-[#06031a]"
+            >
+              重新开始 / RETRY
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RANK_STYLE: Record<Rank, { color: string; glow: string; border: string }> = {
+  S: { color: 'text-neon-yellow', glow: 'shadow-[0_0_28px_rgba(248,255,114,0.5)]', border: 'border-neon-yellow' },
+  A: { color: 'text-neon-cyan', glow: 'shadow-[0_0_24px_rgba(102,224,255,0.45)]', border: 'border-neon-cyan' },
+  B: { color: 'text-neon-purple', glow: 'shadow-[0_0_22px_rgba(155,123,255,0.4)]', border: 'border-neon-purple' },
+  C: { color: 'text-neon-pink', glow: 'shadow-[0_0_20px_rgba(255,79,216,0.35)]', border: 'border-neon-pink' },
+  D: { color: 'text-gray-400', glow: 'shadow-none', border: 'border-gray-500' },
+};
+
+const RankBadge: React.FC<{ rank: Rank }> = ({ rank }) => {
+  const style = RANK_STYLE[rank];
+  return (
+    <div className={`flex h-24 w-24 flex-col items-center justify-center border-2 bg-black/50 ${style.border} ${style.glow}`}>
+      <div className="text-[9px] tracking-[0.3em] text-gray-400">RANK</div>
+      <div className={`font-cyber text-5xl leading-none ${style.color}`}>{rank}</div>
+    </div>
+  );
+};
 
 function judgementColor(j: Judgement): string {
   switch (j) {

@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'bun:test';
-import { accuracy, applyJudgement, createInitialStats } from './scoring';
+import { accuracy, applyJudgement, createInitialStats, rankFor } from './scoring';
+import type { GameStats } from './scoring';
 
 describe('createInitialStats', () => {
   test('所有计数器从 0 开始', () => {
@@ -79,5 +80,43 @@ describe('accuracy', () => {
     stats = applyJudgement(stats, 'MISS');
     // (1 + 0.5 + 0) / 3
     expect(accuracy(stats)).toBeCloseTo(0.5);
+  });
+});
+
+describe('rankFor', () => {
+  function statsWith(perfect: number, good: number, miss: number): GameStats {
+    return {
+      score: perfect * 100 + good * 50,
+      combo: perfect + good,
+      maxCombo: perfect + good,
+      perfect,
+      good,
+      miss,
+      total: perfect + good + miss,
+    };
+  }
+
+  test('100% PERFECT 给 S', () => {
+    expect(rankFor(statsWith(100, 0, 0))).toBe('S');
+  });
+
+  test('92% 命中率给 A', () => {
+    // 80 perfect + 20 good + 0 miss → 90% 正好压线
+    expect(rankFor(statsWith(80, 20, 0))).toBe('A');
+  });
+
+  test('80% 命中率给 B', () => {
+    // 70 perfect + 20 good + 10 miss → (70 + 10) / 100 = 80%
+    expect(rankFor(statsWith(70, 20, 10))).toBe('B');
+  });
+
+  test('65% 命中率给 C', () => {
+    // 50 perfect + 30 good + 20 miss → (50 + 15) / 100 = 65%
+    expect(rankFor(statsWith(50, 30, 20))).toBe('C');
+  });
+
+  test('50% 命中率给 D', () => {
+    // 30 perfect + 40 good + 30 miss → (30 + 20) / 100 = 50%
+    expect(rankFor(statsWith(30, 40, 30))).toBe('D');
   });
 });

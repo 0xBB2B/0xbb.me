@@ -63,3 +63,28 @@ export function accuracy(stats: GameStats): number {
   const weighted = stats.perfect * 1 + stats.good * 0.5;
   return weighted / stats.total;
 }
+
+// 结算画面用的等级。
+export type Rank = 'S' | 'A' | 'B' | 'C' | 'D';
+
+/**
+ * rankFor 按命中率给出结算等级。
+ *
+ * 阈值参考音游通用做法：
+ *   - S: ≥99%（近全 PERFECT）
+ *   - A: ≥90%
+ *   - B: ≥75%
+ *   - C: ≥60%
+ *   - D: <60%
+ *
+ * 完全没切（total=0）按命中率定义返回 1，会落进 S，
+ * 但调用方应避免在未开始游戏时展示 rank。
+ */
+export function rankFor(stats: GameStats): Rank {
+  const acc = accuracy(stats);
+  if (acc >= 0.99) return 'S';
+  if (acc >= 0.9) return 'A';
+  if (acc >= 0.75) return 'B';
+  if (acc >= 0.6) return 'C';
+  return 'D';
+}
