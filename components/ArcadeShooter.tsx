@@ -48,9 +48,60 @@ type GameState = {
 
 const GAME_WIDTH = 520;
 const GAME_HEIGHT = 520;
-const PLAYER_WIDTH = 46;
-const PLAYER_HEIGHT = 34;
+const PLAYER_WIDTH = 64;
+const PLAYER_HEIGHT = 72;
 const SHOT_COOLDOWN = 150;
+const PLAYER_PIXEL_COLUMNS = 16;
+const PLAYER_PIXEL_ROWS = 18;
+const CHIBI_WING_PATTERN = [
+  '1000000000000001',
+  '1100000000000011',
+  '1110000000000111',
+  '0111000000001110',
+  '0011100000011100',
+  '0001110000111000',
+  '0000110000110000',
+  '0000010000100000',
+];
+const CHIBI_HAIR_PATTERN = [
+  '0000001111000000',
+  '0000111111110000',
+  '0001111111111000',
+  '0011111111111100',
+  '0011111111111100',
+  '0011101111011100',
+  '0011000000001100',
+  '0001000000001000',
+];
+const CHIBI_FACE_PATTERN = [
+  '0000001111000000',
+  '0000011111100000',
+  '0000011111100000',
+  '0000011111100000',
+];
+const CHIBI_BODY_PATTERN = [
+  '0000000110000000',
+  '0000011111100000',
+  '0000111111110000',
+  '0000111111110000',
+  '0000011111100000',
+  '0000001001000000',
+];
+const CHIBI_JACKET_PATTERN = [
+  '0000010000100000',
+  '0000111001110000',
+  '0001101111011000',
+  '0001101111011000',
+  '0000100110010000',
+];
+const CHIBI_HIGHLIGHT_PIXELS = [
+  [5, 1],
+  [6, 1],
+  [11, 3],
+  [12, 4],
+  [3, 11],
+  [12, 11],
+];
 const ENEMY_PIXEL_COLUMNS = 11;
 const ENEMY_PIXEL_ROWS = 8;
 const ENEMY_BODY_PATTERN = [
@@ -208,7 +259,7 @@ function createInitialState(best = 0, isStarted = false): GameState {
   return {
     player: {
       x: GAME_WIDTH / 2 - PLAYER_WIDTH / 2,
-      y: GAME_HEIGHT - 62,
+      y: GAME_HEIGHT - 90,
       width: PLAYER_WIDTH,
       height: PLAYER_HEIGHT,
       speed: 0.42,
@@ -355,23 +406,51 @@ function drawGrid(context: CanvasRenderingContext2D) {
 }
 
 /**
- * drawPlayer 绘制玩家战机。
+ * drawPlayer 绘制原创 Q 版银发黑客少女像素角色。
  */
 function drawPlayer(context: CanvasRenderingContext2D, player: Player) {
-  context.fillStyle = '#42f8ff';
+  const pixelSize = Math.min(player.width / PLAYER_PIXEL_COLUMNS, player.height / PLAYER_PIXEL_ROWS);
+  const originX = player.x;
+  const originY = player.y;
+
   context.shadowColor = '#42f8ff';
-  context.shadowBlur = 18;
-  context.beginPath();
-  context.moveTo(player.x + player.width / 2, player.y);
-  context.lineTo(player.x + player.width, player.y + player.height);
-  context.lineTo(player.x + player.width / 2, player.y + player.height - 8);
-  context.lineTo(player.x, player.y + player.height);
-  context.closePath();
-  context.fill();
-  context.shadowBlur = 0;
+  context.shadowBlur = 12;
+  context.fillStyle = '#42f8ff';
+  drawPixelPattern(context, CHIBI_WING_PATTERN, originX, originY + pixelSize * 4, pixelSize);
+
+  context.shadowColor = '#f1f5f9';
+  context.shadowBlur = 10;
+  context.fillStyle = '#dbeafe';
+  drawPixelPattern(context, CHIBI_HAIR_PATTERN, originX, originY, pixelSize);
+
+  context.shadowColor = '#ffb7d5';
+  context.shadowBlur = 6;
+  context.fillStyle = '#ffd1df';
+  drawPixelPattern(context, CHIBI_FACE_PATTERN, originX, originY + pixelSize * 5, pixelSize);
+
+  context.shadowColor = '#8b5cf6';
+  context.shadowBlur = 10;
+  context.fillStyle = '#8b5cf6';
+  drawPixelPattern(context, CHIBI_BODY_PATTERN, originX, originY + pixelSize * 9, pixelSize);
 
   context.fillStyle = '#ff4fd8';
-  context.fillRect(player.x + 18, player.y + 22, 10, 18);
+  drawPixelPattern(context, CHIBI_JACKET_PATTERN, originX, originY + pixelSize * 10, pixelSize);
+
+  context.shadowColor = '#42f8ff';
+  context.shadowBlur = 8;
+  context.fillStyle = '#42f8ff';
+  fillPixel(context, originX, originY, pixelSize, 5, 6);
+  fillPixel(context, originX, originY, pixelSize, 10, 6);
+  CHIBI_HIGHLIGHT_PIXELS.forEach(([column, row]) => {
+    fillPixel(context, originX, originY, pixelSize, column, row);
+  });
+
+  context.shadowColor = '#f8ff72';
+  context.shadowBlur = 10;
+  context.fillStyle = '#f8ff72';
+  fillPixel(context, originX, originY, pixelSize, 7, 15);
+  fillPixel(context, originX, originY, pixelSize, 8, 15);
+  context.shadowBlur = 0;
 }
 
 /**
