@@ -33,11 +33,11 @@ function App() {
            <div className="flex flex-col md:flex-row items-center gap-6 w-full md:w-auto text-center md:text-left">
              <div className="relative hidden md:block">
                <div className="absolute -inset-1 bg-gradient-to-br from-neon-cyan via-neon-purple to-neon-pink opacity-80 blur-sm"></div>
-               <img src={PROFILE.avatar} alt={PROFILE.name} className="relative w-24 h-24 pixel-corners border-2 border-neon-cyan shadow-[0_0_24px_rgba(66,248,255,0.5)] shrink-0 object-cover" />
+               <img src={PROFILE.avatar} alt={PROFILE.name} className="relative w-24 h-24 border-2 border-neon-cyan shadow-[0_0_24px_rgba(66,248,255,0.5)] shrink-0 object-cover" />
              </div>
              <div className="relative">
                <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-                 <img src={PROFILE.avatar} alt={PROFILE.name} className="w-10 h-10 pixel-corners border border-neon-cyan md:hidden" />
+                 <img src={PROFILE.avatar} alt={PROFILE.name} className="w-10 h-10 border border-neon-cyan md:hidden" />
                  <div className="text-xs font-mono text-neon-cyan tracking-widest">{PROFILE.status}</div>
                  <div className="hidden sm:block text-xs text-neon-yellow border border-neon-yellow/60 px-2 py-1 shadow-[0_0_12px_rgba(248,255,114,0.25)] animate-hud-blink">LV.999</div>
                </div>
@@ -113,7 +113,7 @@ function App() {
 
           <div className="w-full lg:w-5/12 flex flex-col space-y-12">
 
-            <section className="bg-neon-panel/55 p-6 border border-neon-purple/40 relative overflow-hidden pixel-corners shadow-[0_0_36px_rgba(139,92,246,0.12)]">
+            <section className="bg-neon-panel/55 p-6 border border-neon-purple/40 relative overflow-hidden shadow-[0_0_36px_rgba(139,92,246,0.12)]">
                <div className="flex items-center gap-2 mb-6 relative z-10">
                  <div className="w-2 h-2 bg-neon-purple shadow-[0_0_10px_#8b5cf6]"></div>
                  <h2 className="text-xl font-cyber font-bold text-white tracking-wide">SKILL_MATRIX</h2>
@@ -143,15 +143,15 @@ function App() {
             </section>
 
             <section className="grid grid-cols-2 gap-4 mt-8">
-              <div className="border border-neon-yellow/35 p-4 bg-neon-panel/60 hover:border-neon-yellow transition-colors group pixel-corners">
+              <div className="border border-neon-yellow/35 p-4 bg-neon-panel/60 hover:border-neon-yellow transition-colors group">
                  <div className="text-xs text-gray-500 mb-1">CONTRIBUTIONS</div>
                  <div className="text-3xl font-cyber text-neon-yellow group-hover:animate-pulse">{PROFILE.stats.contributions}</div>
               </div>
-              <div className="border border-neon-pink/35 p-4 bg-neon-panel/60 hover:border-neon-pink transition-colors group pixel-corners">
+              <div className="border border-neon-pink/35 p-4 bg-neon-panel/60 hover:border-neon-pink transition-colors group">
                  <div className="text-xs text-gray-500 mb-1">UPTIME</div>
                  <div className="text-3xl font-cyber text-neon-pink group-hover:animate-pulse">{PROFILE.stats.uptime}</div>
               </div>
-              <div className="border border-neon-cyan/35 p-4 bg-neon-panel/60 hover:border-neon-cyan transition-colors group col-span-2 pixel-corners">
+              <div className="border border-neon-cyan/35 p-4 bg-neon-panel/60 hover:border-neon-cyan transition-colors group col-span-2">
                  <div className="text-xs text-gray-500 mb-1">CURRENT LOCATION</div>
                  <div className="text-xl font-mono text-neon-cyan flex items-center justify-between">
                    <span>{PROFILE.location}</span>

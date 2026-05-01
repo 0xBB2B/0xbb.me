@@ -8,12 +8,7 @@ interface ProjectCardProps {
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   return (
-    <div className="group relative bg-neon-panel/85 border border-neon-purple/35 hover:border-neon-cyan/70 transition-all duration-300 overflow-hidden pixel-corners shadow-[0_0_26px_rgba(139,92,246,0.1)]">
-      <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-neon-pink opacity-50 group-hover:opacity-100 transition-opacity" />
-      <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-neon-pink opacity-50 group-hover:opacity-100 transition-opacity" />
-      <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-neon-pink opacity-50 group-hover:opacity-100 transition-opacity" />
-      <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-neon-pink opacity-50 group-hover:opacity-100 transition-opacity" />
-
+    <div className="group relative bg-neon-panel/85 border border-neon-purple/35 hover:border-neon-cyan/70 transition-all duration-300 overflow-hidden shadow-[0_0_26px_rgba(139,92,246,0.1)]">
       <div className="p-6 relative z-10">
         <div className="flex justify-between items-center mb-4">
           <GlitchText as="h3" text={project.title} className="text-xl font-bold font-cyber text-white" />

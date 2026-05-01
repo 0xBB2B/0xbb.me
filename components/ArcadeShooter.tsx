@@ -152,7 +152,7 @@ export const ArcadeShooter: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative aspect-square bg-neon-bg/95 border border-neon-cyan/35 pixel-corners overflow-hidden shadow-[0_0_32px_rgba(66,248,255,0.16)]">
+    <div className="relative aspect-square bg-neon-bg/95 border border-neon-cyan/35 overflow-hidden shadow-[0_0_32px_rgba(66,248,255,0.16)]">
       <div className="absolute left-0 right-0 top-0 z-10 flex flex-wrap items-center gap-3 border-b border-neon-purple/45 bg-neon-panel/90 px-4 py-3 backdrop-blur-sm">
         <div className="text-xs text-neon-cyan tracking-[0.24em]">STAR RAID</div>
         <div className="ml-auto flex gap-3 text-[10px] text-gray-400">

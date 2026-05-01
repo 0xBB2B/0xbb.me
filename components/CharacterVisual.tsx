@@ -11,7 +11,7 @@ export const CharacterVisual: React.FC<CharacterVisualProps> = ({ className = ''
   return (
     <section className={`relative group ${className}`}>
       <div className="absolute -inset-1 bg-gradient-to-r from-neon-pink via-neon-purple to-neon-cyan opacity-60 group-hover:opacity-90 blur transition duration-500"></div>
-      <div className="relative border border-neon-purple/50 bg-neon-panel/85 p-2 overflow-hidden pixel-corners">
+      <div className="relative border border-neon-purple/50 bg-neon-panel/85 p-2 overflow-hidden">
         <img 
           src={PROFILE.fullImage} 
           alt="Character Visual" 
