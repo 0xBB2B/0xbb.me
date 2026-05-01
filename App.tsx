@@ -59,7 +59,7 @@ function App() {
                  href={link.url}
                  className="group flex flex-col items-center gap-1 text-gray-500 hover:text-neon-cyan transition-colors"
                >
-                 <div className="w-10 h-10 border border-current bg-neon-panel/60 pixel-corners flex items-center justify-center font-bold text-lg group-hover:shadow-[0_0_14px_rgba(66,248,255,0.65)] transition-shadow">
+                 <div className="w-10 h-10 border border-current bg-neon-panel/60 flex items-center justify-center font-bold text-lg group-hover:shadow-[0_0_14px_rgba(66,248,255,0.65)] transition-shadow">
                     {link.icon}
                  </div>
                  <span className="text-[10px] tracking-wider uppercase opacity-0 group-hover:opacity-100 transition-opacity">{link.name}</span>
