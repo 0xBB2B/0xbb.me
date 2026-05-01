@@ -85,7 +85,6 @@ export const Terminal: React.FC = () => {
           responseContent = TERMINAL_CONFIG.messages.aiMissingParam;
           responseType = 'error';
         } else {
-          // Add a loading indicator
           setHistory(prev => [...prev, {
             id: 'loading-' + Date.now(),
             type: 'system',
@@ -95,7 +94,6 @@ export const Terminal: React.FC = () => {
           
           const aiResponse = await queryCyberAI(args);
           
-          // Remove loading indicator (filter out the specific loading id)
           setHistory(prev => {
              const withoutLoading = prev.filter(l => !l.id.startsWith('loading-'));
              return [...withoutLoading, {
@@ -135,18 +133,16 @@ export const Terminal: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-[400px] bg-black/80 border border-gray-800 rounded-sm backdrop-blur-sm flex flex-col relative overflow-hidden shadow-[0_0_20px_rgba(0,255,255,0.1)]" onClick={focusInput}>
-      {/* Terminal Header */}
-      <div className="h-8 bg-gray-900 border-b border-gray-700 flex items-center px-4 justify-between select-none">
-        <div className="text-xs text-gray-500 font-mono">{TERMINAL_CONFIG.user}</div>
+    <div className="w-full h-[400px] bg-neon-bg/90 border border-neon-cyan/35 backdrop-blur-sm flex flex-col relative overflow-hidden pixel-corners shadow-[0_0_28px_rgba(66,248,255,0.14)]" onClick={focusInput}>
+      <div className="h-8 bg-neon-panel border-b border-neon-purple/50 flex items-center px-4 justify-between select-none">
+        <div className="text-xs text-neon-cyan font-mono">{TERMINAL_CONFIG.user}</div>
         <div className="flex gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-900/50 border border-red-500"></div>
-          <div className="w-3 h-3 rounded-full bg-yellow-900/50 border border-yellow-500"></div>
-          <div className="w-3 h-3 rounded-full bg-green-900/50 border border-green-500"></div>
+          <div className="w-3 h-3 bg-neon-pink/50 border border-neon-pink"></div>
+          <div className="w-3 h-3 bg-neon-yellow/50 border border-neon-yellow"></div>
+          <div className="w-3 h-3 bg-neon-cyan/50 border border-neon-cyan"></div>
         </div>
       </div>
 
-      {/* Terminal Body */}
       <div 
         ref={scrollRef}
         className="flex-1 p-4 overflow-y-auto font-mono text-sm space-y-2 custom-scrollbar"
@@ -181,8 +177,8 @@ export const Terminal: React.FC = () => {
         </div>
       </div>
       
-      {/* Decorative scanline overlay specifically for terminal */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[length:100%_4px] pointer-events-none opacity-20"></div>
+      <div className="absolute left-0 right-0 top-20 h-px bg-neon-pink/60 shadow-[0_0_12px_#ff4fd8] pointer-events-none"></div>
     </div>
   );
 };
