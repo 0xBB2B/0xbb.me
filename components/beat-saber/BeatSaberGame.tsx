@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ChiptuneEngine } from '../../game/chiptune';
+import { ChiptuneEngine, createSoundtrack } from '../../game/chiptune';
 import { createDemoChart } from '../../game/chart';
 import { findHitTarget } from '../../game/judge';
 import { accuracy, applyJudgement, createInitialStats, type GameStats } from '../../game/scoring';
@@ -332,7 +332,9 @@ export const BeatSaberGame: React.FC = () => {
 
       const elapsedMs = engine.isPlaying() ? engine.elapsedMs() : 0;
 
-      if (statusRef.current === 'playing') {
+      // BGM 实际开播前不要让方块"先出生"，否则 GAME START 一按下方块会
+      // 直接出现在飞行半路上，伴随时间轴对齐错乱。
+      if (statusRef.current === 'playing' && engine.isPlaying()) {
         updateNotes(elapsedMs);
       }
       updateSabers(dt);
@@ -538,7 +540,6 @@ export const BeatSaberGame: React.FC = () => {
     setSnapshot((prev) => ({ ...prev, status: 'playing' }));
 
     await engine.resume();
-    const { createSoundtrack } = await import('../../game/chiptune');
     engine.startTrack(createSoundtrack());
     startedAtRef.current = performance.now();
   };
