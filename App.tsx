@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { GlitchText } from './components/GlitchText.tsx';
-import { ArcadeShooter } from './components/ArcadeShooter.tsx';
+import { BeatSaberGame } from './components/beat-saber/BeatSaberGame.tsx';
 import { ProjectCard } from './components/ProjectCard.tsx';
 import { CharacterVisual } from './components/CharacterVisual.tsx';
 import { PROJECTS, SKILLS, SOCIAL_LINKS, PROFILE } from './constants';
@@ -20,10 +20,10 @@ function App() {
   return (
     <div className="min-h-screen bg-neon-bg text-gray-200 font-mono relative selection:bg-neon-pink selection:text-neon-bg pb-20 crt overflow-hidden">
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(139,92,246,0.28),transparent_28%),radial-gradient(circle_at_78%_18%,rgba(66,248,255,0.16),transparent_24%),linear-gradient(135deg,#05040b_0%,#12092f_48%,#05040b_100%)]"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(66,248,255,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(255,79,216,0.06)_1px,transparent_1px)] bg-[size:48px_48px] animate-pixel-drift opacity-70"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(115deg,transparent_0%,transparent_42%,rgba(66,248,255,0.16)_43%,transparent_44%,transparent_100%)]"></div>
-        <div className="absolute left-0 right-0 top-20 h-px bg-gradient-to-r from-transparent via-neon-cyan to-transparent opacity-80"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(155,123,255,0.32),transparent_28%),radial-gradient(circle_at_82%_22%,rgba(255,79,216,0.22),transparent_26%),linear-gradient(135deg,#06031a_0%,#1b0d3d_48%,#06031a_100%)]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(155,123,255,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(255,79,216,0.05)_1px,transparent_1px)] bg-[size:48px_48px] animate-pixel-drift opacity-70"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(115deg,transparent_0%,transparent_42%,rgba(102,224,255,0.16)_43%,transparent_44%,transparent_100%)]"></div>
+        <div className="absolute left-0 right-0 top-20 h-px bg-gradient-to-r from-transparent via-neon-purple to-transparent opacity-80"></div>
         <div className="absolute left-0 right-0 bottom-28 h-px bg-gradient-to-r from-transparent via-neon-pink to-transparent opacity-60"></div>
       </div>
 
@@ -46,8 +46,9 @@ function App() {
                  <span className="text-neon-pink">{'>'}</span> {PROFILE.role}
                </p>
                <div className="mt-4 flex flex-wrap justify-center md:justify-start gap-2 text-[10px] uppercase tracking-[0.2em] text-neon-purple">
-                 <span className="border border-neon-purple/60 bg-neon-purple/10 px-2 py-1">Quantum Gamer UI</span>
-                 <span className="border border-neon-cyan/60 bg-neon-cyan/10 px-2 py-1">Aether Edit Mode</span>
+                 <span className="border border-neon-purple/60 bg-neon-purple/10 px-2 py-1">Aha! Time Hacker</span>
+                 <span className="border border-neon-pink/60 bg-neon-pink/10 px-2 py-1 text-neon-pink">Punklorde Mode</span>
+                 <span className="border border-neon-cyan/60 bg-neon-cyan/10 px-2 py-1 text-neon-cyan animate-aha-flicker">Data Stream Online</span>
                </div>
              </div>
            </div>
@@ -91,21 +92,22 @@ function App() {
             <section>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-neon-cyan"></div>
-                  <h2 className="text-2xl font-cyber font-bold text-white tracking-wide">STAR_RAID</h2>
+                  <div className="w-2 h-2 bg-neon-purple shadow-[0_0_10px_#9b7bff]"></div>
+                  <h2 className="text-2xl font-cyber font-bold text-white tracking-wide">RHYTHM_BLADE</h2>
+                  <span className="text-[10px] text-neon-pink border border-neon-pink/60 px-2 py-0.5">AHA! TIME</span>
                 </div>
-                <div className="text-xs text-neon-pink animate-pulse break-all sm:text-right">
-                  /// LEFT_RIGHT_SPACE
+                <div className="text-xs text-neon-cyan animate-pulse break-all sm:text-right">
+                  /// DUAL_SABER_PROTOCOL
                 </div>
               </div>
               <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-neon-cyan via-neon-purple to-neon-pink opacity-45 group-hover:opacity-75 blur transition duration-500"></div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-neon-purple via-neon-pink to-neon-cyan opacity-55 group-hover:opacity-90 blur transition duration-500"></div>
                 <div className="relative">
-                  <ArcadeShooter />
+                  <BeatSaberGame />
                 </div>
               </div>
-              <p className="mt-2 text-xs text-gray-600 text-right font-mono">
-                Press <span className="text-neon-cyan">GAME START</span>, move with <span className="text-neon-cyan">← →</span>, fire with <span className="text-neon-cyan">SPACE</span>
+              <p className="mt-2 text-xs text-gray-500 text-right font-mono">
+                Left blade <span className="text-neon-purple">[W A S D]</span> · Right blade <span className="text-neon-cyan">[↑ ← ↓ →]</span> · 方向需匹配方块箭头
               </p>
             </section>
 

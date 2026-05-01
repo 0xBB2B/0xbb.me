@@ -21,15 +21,16 @@
 
 ## 项目简介
 
-这是一个基于 React、TypeScript、Vite 和 Tailwind CSS 构建的个人作品集网站。主页采用霓虹紫青配色、像素切角、故障文字和电玩 HUD 风格，并内置一个可玩的迷你打飞机游戏。
+这是一个基于 React、TypeScript、Vite、Tailwind CSS 和 three.js 构建的个人作品集网站。整体风格参考《崩坏：星穹铁道》「阿哈时刻 — 银狼 LV.999」官方短片：紫罗兰 + 品红粉 + 像素青配色、像素故障文字、终端 HUD，并内置一个 3D 双手节奏光剑小游戏。
 
 ## 核心特性
 
-- 赛博电玩视觉：霓虹配色、扫描线、动态网格和像素化界面。
-- 迷你打飞机游戏：点击 `GAME START` 后开始，左右方向键移动，空格键发射子弹。
+- 银狼紫粉视觉：霓虹紫罗兰 + 品红粉 + 像素青配色、扫描线、动态像素网格、CRT 失真。
+- 3D 节奏光剑：three.js 渲染的双轨光剑游戏，左手 `W A S D` / 右手 `↑ ← ↓ →`，方向需匹配方块箭头。
+- Web Audio Chiptune：实时合成 8-bit BGM 与切击 / 失误 SFX，零外部音频资产、零版权风险。
+- 纯函数判定核心：判定窗口、连击、命中率全部由 `bun:test` 单测覆盖（PERFECT/GOOD/MISS）。
 - 响应式布局：适配桌面端和移动端页面展示。
-- 项目展示区：集中展示作品、技术栈、仓库和访问入口。
-- bun 工作流：统一使用 bun 安装依赖、运行脚本和构建项目。
+- bun 工作流：统一使用 bun 安装依赖、运行脚本、跑测试和构建项目。
 
 ## 快速开始
 
@@ -70,9 +71,11 @@ bun run preview
 | --- | --- |
 | React 19 | UI 框架 |
 | TypeScript | 类型安全 |
-| Vite | 构建工具 |
+| Vite 6 | 构建工具 |
 | Tailwind CSS | 页面样式 |
-| Canvas | 迷你游戏渲染 |
+| three.js | 节奏光剑 3D 渲染 |
+| Web Audio API | 实时合成 chiptune BGM 与 SFX |
+| bun:test | 判定 / 谱面 / 分数核心单元测试 |
 | JetBrains Mono | 等宽字体 |
 | Orbitron | 科幻标题字体 |
 
@@ -80,18 +83,36 @@ bun run preview
 
 ```text
 cyberdeck-portfolio/
-├── components/              # React 组件
-│   ├── ArcadeShooter.tsx    # 迷你打飞机游戏
-│   ├── CharacterVisual.tsx  # 角色视觉展示
-│   ├── GlitchText.tsx       # 故障文字效果
-│   └── ProjectCard.tsx      # 项目卡片
-├── public/                  # 静态资源
-├── data.ts                  # 页面数据配置
-├── types.ts                 # TypeScript 类型定义
-├── App.tsx                  # 主应用组件
-├── index.tsx                # 应用入口
-├── index.html               # HTML 模板
-└── vite.config.ts           # Vite 配置
+├── components/                         # React 组件
+│   ├── beat-saber/
+│   │   ├── BeatSaberGame.tsx           # 3D 双手节奏光剑主组件
+│   │   ├── sceneAssets.ts              # three.js 场景资产工厂（方块/光剑/环境）
+│   │   └── sceneAssets.test.ts         # 飞行公式纯函数测试
+│   ├── CharacterVisual.tsx             # 角色视觉展示
+│   ├── GlitchText.tsx                  # 故障文字效果
+│   └── ProjectCard.tsx                 # 项目卡片
+├── game/                               # 与渲染无关的纯函数游戏内核
+│   ├── types.ts                        # Note / BeatChart / Judgement 类型
+│   ├── judge.ts / judge.test.ts        # 切击判定与连击计算
+│   ├── scoring.ts / scoring.test.ts    # 分数 / 命中率 / 统计
+│   ├── chiptune.ts / chiptune.test.ts  # Web Audio 合成器与曲目数据
+│   └── chart.ts / chart.test.ts        # 基于 BGM 拍点的默认谱面
+├── public/                             # 静态资源
+├── data.ts                             # 页面数据配置
+├── types.ts                            # 站点 TypeScript 类型
+├── App.tsx                             # 主应用组件
+├── index.tsx                           # 应用入口
+├── index.html                          # HTML 模板（含 Tailwind CDN 配置）
+└── vite.config.ts                      # Vite 配置
+```
+
+## 测试
+
+判定 / 分数 / 谱面相关核心逻辑使用 bun 内置 test runner：
+
+```bash
+bun test            # 跑全部单元测试
+bun test game/      # 仅跑游戏内核
 ```
 
 ## 自定义配置

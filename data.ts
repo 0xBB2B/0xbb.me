@@ -11,7 +11,7 @@ export const APP_DATA = {
     bio: "Hi there! 👋 I'm BB, a System Architect and Full-stack Engineer. I specialize in building robust backend architectures, game publishing SDKs, and scalable B2C/C2C trading platforms. Currently, I am focused on exploring how AI can empower developers, streamline workflows, and accelerate the growth of the gaming industry.",
     avatar: "/profile.png",
     fullImage: "/profile-cyber.png",
-    footer: "SYSTEM_ID: 0xBBf // CONSTRUCTED_WITH_REACT_&_TAILWIND",
+    footer: "SYSTEM_ID: 0xBBf // BUILT_WITH_REACT_+_THREE.JS_+_WEB_AUDIO",
     copyright: "FUBUKI_BB. ALL RIGHTS RESERVED."
   },
   socialLinks: [
@@ -33,8 +33,8 @@ export const APP_DATA = {
     {
       id: "1",
       title: "0xbb.me",
-      description: "A portfolio website built with React and Tailwind CSS. Features a modern, responsive design and a cyberpunk aesthetic.",
-      tech: ["React", "TypeScript", "Vite", "Tailwind CSS"],
+      description: "Silver Wolf-themed portfolio with a built-in 3D dual-hand rhythm-blade game (three.js + Web Audio chiptune). Aha! Time-inspired neon HUD, fully keyboard-driven.",
+      tech: ["React", "TypeScript", "Vite", "Tailwind CSS", "three.js", "Web Audio"],
       status: "ONLINE",
       repo: "https://github.com/0xBB2B/0xbb.me",
       link: "https://0xbb.me"

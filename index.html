@@ -22,14 +22,15 @@
               cyber: ['"Orbitron"', "sans-serif"],
             },
             colors: {
+              // 银狼 LV.999 「阿哈时刻」配色：紫罗兰 / 品红粉 / 像素青。
               neon: {
                 pink: "#ff4fd8",
-                cyan: "#42f8ff",
-                purple: "#8b5cf6",
-                violet: "#5f36ff",
+                cyan: "#66e0ff",
+                purple: "#9b7bff",
+                violet: "#7a4dff",
                 yellow: "#f8ff72",
-                bg: "#05040b",
-                panel: "#100c1f",
+                bg: "#06031a",
+                panel: "#120a2a",
                 ink: "#15102a",
               },
             },
@@ -73,20 +74,20 @@
         background: #050505;
       }
       ::-webkit-scrollbar-thumb {
-        background: #333;
-        border: 1px solid #00ffff;
+        background: #2a1f55;
+        border: 1px solid #9b7bff;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #00ffff;
+        background: #9b7bff;
       }
       body {
-        background-color: #05040b;
+        background-color: #06031a;
         color: #e0e0e0;
         overflow-x: hidden;
       }
       body::selection {
         background: #ff4fd8;
-        color: #05040b;
+        color: #06031a;
       }
       .crt::before {
         content: " ";
@@ -111,7 +112,23 @@
         pointer-events: none;
       }
       .text-level {
-        text-shadow: 0 0 18px rgba(66, 248, 255, 0.9), 2px 0 rgba(255, 79, 216, 0.8), -2px 0 rgba(139, 92, 246, 0.7);
+        text-shadow: 0 0 18px rgba(102, 224, 255, 0.85), 2px 0 rgba(255, 79, 216, 0.85), -2px 0 rgba(155, 123, 255, 0.85);
+      }
+      /* 银狼像素游戏机外框：用 SVG 描出像素切角与扫描带感。 */
+      .pixel-frame {
+        clip-path: polygon(
+          0 12px, 12px 0, calc(100% - 12px) 0, 100% 12px,
+          100% calc(100% - 12px), calc(100% - 12px) 100%,
+          12px 100%, 0 calc(100% - 12px)
+        );
+      }
+      @keyframes aha-flicker {
+        0%, 92%, 100% { opacity: 0.9; }
+        93% { opacity: 0.4; }
+        95% { opacity: 0.85; }
+      }
+      .animate-aha-flicker {
+        animation: aha-flicker 4.2s steps(8, end) infinite;
       }
     </style>
     <script type="importmap">
