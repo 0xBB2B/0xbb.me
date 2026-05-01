@@ -90,7 +90,7 @@ function App() {
                  <div className="w-2 h-2 bg-neon-pink animate-pulse shadow-[0_0_10px_#ff4fd8]"></div>
                  <h2 className="text-2xl font-cyber font-bold text-white tracking-wide">USER_PROFILE</h2>
               </div>
-                <p className="leading-relaxed text-gray-300 text-lg border-l-4 border-neon-pink/70 bg-neon-panel/35 px-4 py-5 shadow-[inset_0_0_30px_rgba(139,92,246,0.08)]">
+                <p className="whitespace-pre-line leading-relaxed text-gray-300 text-lg border-l-4 border-neon-pink/70 bg-neon-panel/35 px-4 py-5 shadow-[inset_0_0_30px_rgba(139,92,246,0.08)]">
                   {PROFILE.bio}
                 </p>
 

@@ -8,7 +8,7 @@ export const APP_DATA = {
       contributions: "♾️",
       uptime: "99.9%"
     },
-    bio: "Hi there! 👋 I'm BB, a System Architect and Full-stack Engineer. I specialize in building robust backend architectures, game publishing SDKs, and scalable B2C/C2C trading platforms. Currently, I am focused on exploring how AI can empower developers, streamline workflows, and accelerate the growth of the gaming industry.",
+    bio: "Hi, I'm BB — a Full-stack Engineer and System Architect.\nI don't just build systems — I design intelligent workflows.\nFrom scalable backend architectures to game SDK ecosystems and trading platforms, I leverage AI, custom Skills, and Agents to solve complex problems and accelerate development at scale.",
     avatar: "/profile.png",
     fullImage: "/profile-cyber.png",
     footer: "SYSTEM_ID: 0xBBf // BUILT_WITH_REACT_+_THREE.JS_+_WEB_AUDIO",
