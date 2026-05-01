@@ -1,15 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { GlitchText } from './components/GlitchText.tsx';
-import { BeatSaberGame } from './components/beat-saber/BeatSaberGame.tsx';
+import { BeatSaberPlaceholder } from './components/beat-saber/BeatSaberPlaceholder.tsx';
 import { ProjectCard } from './components/ProjectCard.tsx';
 import { CharacterVisual } from './components/CharacterVisual.tsx';
 import { PROJECTS, SKILLS, SOCIAL_LINKS, PROFILE } from './constants';
+import { useMediaQuery } from './hooks/useMediaQuery';
+
+// 桌面端才动态 import BeatSaberGame：把 three.js（约 600KB）从移动端
+// 首屏 bundle 中拆出来，移动端永远不下载也不渲染游戏组件。
+const BeatSaberGame = lazy(() => import('./components/beat-saber/BeatSaberGame.tsx'));
 
 /**
  * App 渲染个人主页主界面。
  */
 function App() {
   const [mounted, setMounted] = useState(false);
+  // lg 以上视为桌面端，匹配下面 lg:flex-row 的整体布局断点。
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   useEffect(() => {
     setMounted(true);
@@ -39,7 +46,7 @@ function App() {
                <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
                  <img src={PROFILE.avatar} alt={PROFILE.name} className="w-10 h-10 border border-neon-cyan md:hidden" />
                  <div className="text-xs font-mono text-neon-cyan tracking-widest">{PROFILE.status}</div>
-                 <div className="hidden sm:block text-xs text-neon-yellow border border-neon-yellow/60 px-2 py-1 shadow-[0_0_12px_rgba(248,255,114,0.25)] animate-hud-blink">LV.999</div>
+                 <div className="text-xs text-neon-yellow border border-neon-yellow/60 px-2 py-1 shadow-[0_0_12px_rgba(248,255,114,0.25)] animate-hud-blink">LV.999</div>
                </div>
                <GlitchText as="h1" text={PROFILE.name} className="text-5xl md:text-7xl font-black font-cyber text-white tracking-normal text-level" />
                <p className="mt-3 text-lg sm:text-xl text-gray-300 font-light">
@@ -103,12 +110,20 @@ function App() {
               <div className="relative group">
                 <div className="absolute -inset-1 bg-gradient-to-r from-neon-purple via-neon-pink to-neon-cyan opacity-55 group-hover:opacity-90 blur transition duration-500"></div>
                 <div className="relative">
-                  <BeatSaberGame />
+                  {isDesktop ? (
+                    <Suspense fallback={<BeatSaberPlaceholder />}>
+                      <BeatSaberGame />
+                    </Suspense>
+                  ) : (
+                    <BeatSaberPlaceholder />
+                  )}
                 </div>
               </div>
-              <p className="mt-2 text-xs text-gray-500 text-right font-mono">
-                Left blade <span className="text-neon-purple">[W A S D]</span> · Right blade <span className="text-neon-cyan">[I J K L]</span> · 方向需匹配方块箭头
-              </p>
+              {isDesktop && (
+                <p className="mt-2 text-xs text-gray-500 text-right font-mono">
+                  Left blade <span className="text-neon-purple">[W A S D]</span> · Right blade <span className="text-neon-cyan">[I J K L]</span> · 方向需匹配方块箭头
+                </p>
+              )}
             </section>
 
           </div>
