@@ -1,6 +1,6 @@
 {
   "name": "FUBUKI_BB",
-  "description": "System Architect and Full-stack Engineer. Specialize in building robust backend architectures, game publishing SDKs, and scalable B2C/C2C trading platforms.",
+  "description": "Full-stack Engineer & System Architect designing AI-powered workflows—from scalable backends to game SDK ecosystems and trading platforms—with custom Skills and Agents.",
   "keywords": [
     "Full Stack Engineer",
     "Backend Developer",
@@ -37,5 +37,5 @@
   },
   "image": "https://0xbb.me/profile.png",
   "locale": "en_US",
-  "themeColor": "#00ffff"
+  "themeColor": "#9b7bff"
 }
