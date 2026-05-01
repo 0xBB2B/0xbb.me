@@ -51,6 +51,18 @@ const GAME_HEIGHT = 520;
 const PLAYER_WIDTH = 46;
 const PLAYER_HEIGHT = 34;
 const SHOT_COOLDOWN = 150;
+const ENEMY_PIXEL_COLUMNS = 11;
+const ENEMY_PIXEL_ROWS = 8;
+const ENEMY_BODY_PATTERN = [
+  '00100010010',
+  '00010101000',
+  '00111111100',
+  '01101110110',
+  '11111111111',
+  '10111111101',
+  '10100000101',
+  '00011011000',
+];
 
 /**
  * ArcadeShooter 渲染一个键盘控制的迷你打飞机游戏。
@@ -377,13 +389,85 @@ function drawBullet(context: CanvasRenderingContext2D, bullet: Bullet) {
  * drawEnemy 绘制敌方目标。
  */
 function drawEnemy(context: CanvasRenderingContext2D, enemy: Enemy) {
-  context.font = `${enemy.size}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
+  const pixelSize = enemy.size / ENEMY_PIXEL_COLUMNS;
+  const bodyHeight = pixelSize * ENEMY_PIXEL_ROWS;
+  const originX = enemy.x;
+  const originY = enemy.y + (enemy.size - bodyHeight) / 2;
+  const armFrame = Math.floor(enemy.y / 14) % 2;
+
   context.shadowColor = '#ff4fd8';
-  context.shadowBlur = 18;
-  context.fillText('👾', enemy.x + enemy.size / 2, enemy.y + enemy.size / 2);
+  context.shadowBlur = 12;
+  context.fillStyle = '#ff4fd8';
+  drawPixelPattern(context, ENEMY_BODY_PATTERN, originX, originY, pixelSize);
+  drawEnemyArms(context, originX, originY, pixelSize, armFrame === 0);
+
+  context.shadowColor = '#42f8ff';
+  context.shadowBlur = 8;
+  context.fillStyle = '#42f8ff';
+  fillPixel(context, originX, originY, pixelSize, 3, 3);
+  fillPixel(context, originX, originY, pixelSize, 7, 3);
   context.shadowBlur = 0;
+}
+
+/**
+ * drawPixelPattern 按字符串矩阵绘制像素图案。
+ */
+function drawPixelPattern(
+  context: CanvasRenderingContext2D,
+  pattern: string[],
+  originX: number,
+  originY: number,
+  pixelSize: number,
+) {
+  pattern.forEach((row, rowIndex) => {
+    [...row].forEach((cell, columnIndex) => {
+      if (cell === '1') {
+        fillPixel(context, originX, originY, pixelSize, columnIndex, rowIndex);
+      }
+    });
+  });
+}
+
+/**
+ * drawEnemyArms 绘制敌方目标上下摆动的手臂。
+ */
+function drawEnemyArms(
+  context: CanvasRenderingContext2D,
+  originX: number,
+  originY: number,
+  pixelSize: number,
+  armsUp: boolean,
+) {
+  const leftArm = armsUp
+    ? [[0, 2], [1, 1], [1, 2]]
+    : [[0, 5], [1, 6], [1, 5]];
+  const rightArm = armsUp
+    ? [[10, 2], [9, 1], [9, 2]]
+    : [[10, 5], [9, 6], [9, 5]];
+
+  [...leftArm, ...rightArm].forEach(([column, row]) => {
+    fillPixel(context, originX, originY, pixelSize, column, row);
+  });
+}
+
+/**
+ * fillPixel 绘制单个像素块。
+ */
+function fillPixel(
+  context: CanvasRenderingContext2D,
+  originX: number,
+  originY: number,
+  pixelSize: number,
+  column: number,
+  row: number,
+) {
+  const gap = Math.max(1, pixelSize * 0.08);
+  context.fillRect(
+    originX + column * pixelSize + gap / 2,
+    originY + row * pixelSize + gap / 2,
+    pixelSize - gap,
+    pixelSize - gap,
+  );
 }
 
 /**
