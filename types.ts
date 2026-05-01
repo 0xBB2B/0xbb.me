@@ -1,23 +1,3 @@
-import React from 'react';
-
-export enum TerminalCommandType {
-  HELP = 'HELP',
-  ABOUT = 'ABOUT',
-  PROJECTS = 'PROJECTS',
-  SKILLS = 'SKILLS',
-  CONTACT = 'CONTACT',
-  CLEAR = 'CLEAR',
-  AI = 'AI',
-  UNKNOWN = 'UNKNOWN'
-}
-
-export interface TerminalLine {
-  id: string;
-  type: 'input' | 'output' | 'system' | 'error';
-  content: string | React.ReactNode;
-  timestamp: Date;
-}
-
 export interface Project {
   id: string;
   title: string;
@@ -30,6 +10,6 @@ export interface Project {
 
 export interface Skill {
   name: string;
-  level: number; // 0-100
+  level: number; // 技能等级，普通技能按百分比展示，特殊技能可使用 LV.999。
   category: 'Frontend' | 'Backend' | 'DevOps' | 'Tools';
 }

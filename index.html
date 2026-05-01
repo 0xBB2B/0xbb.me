@@ -23,28 +23,40 @@
             },
             colors: {
               neon: {
-                pink: "#ff00ff",
-                cyan: "#00ffff",
-                purple: "#bc13fe",
-                yellow: "#f9f871",
-                bg: "#050505",
-                panel: "#0a0a0a",
+                pink: "#ff4fd8",
+                cyan: "#42f8ff",
+                purple: "#8b5cf6",
+                violet: "#5f36ff",
+                yellow: "#f8ff72",
+                bg: "#05040b",
+                panel: "#100c1f",
+                ink: "#15102a",
               },
             },
             animation: {
               "pulse-fast": "pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite",
               glitch: "glitch 1s linear infinite",
               scanline: "scanline 8s linear infinite",
+              "pixel-drift": "pixel-drift 12s linear infinite",
+              "hud-blink": "hud-blink 1.7s steps(2, end) infinite",
             },
             keyframes: {
               glitch: {
-                "2%, 64%": { transform: "translate(2px,0) skew(0deg)" },
-                "4%, 60%": { transform: "translate(-2px,0) skew(0deg)" },
-                "62%": { transform: "translate(0,0) skew(5deg)" },
+                "2%, 64%": { transform: "translate(3px,0) skew(0deg)" },
+                "4%, 60%": { transform: "translate(-3px,0) skew(0deg)" },
+                "62%": { transform: "translate(0,0) skew(7deg)" },
               },
               scanline: {
                 "0%": { transform: "translateY(-100%)" },
                 "100%": { transform: "translateY(100%)" },
+              },
+              "pixel-drift": {
+                "0%": { transform: "translate3d(0,0,0)" },
+                "100%": { transform: "translate3d(-48px,48px,0)" },
+              },
+              "hud-blink": {
+                "0%, 75%": { opacity: "1" },
+                "76%, 100%": { opacity: "0.28" },
               },
             },
           },
@@ -52,7 +64,7 @@
       };
     </script>
     <style>
-      /* Custom scrollbar for Webkit */
+      /* Webkit 滚动条样式 */
       ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
@@ -68,9 +80,13 @@
         background: #00ffff;
       }
       body {
-        background-color: #050505;
+        background-color: #05040b;
         color: #e0e0e0;
         overflow-x: hidden;
+      }
+      body::selection {
+        background: #ff4fd8;
+        color: #05040b;
       }
       .crt::before {
         content: " ";
@@ -94,14 +110,16 @@
         background-size: 100% 2px, 3px 100%;
         pointer-events: none;
       }
+      .text-level {
+        text-shadow: 0 0 18px rgba(66, 248, 255, 0.9), 2px 0 rgba(255, 79, 216, 0.8), -2px 0 rgba(139, 92, 246, 0.7);
+      }
     </style>
     <script type="importmap">
       {
         "imports": {
           "react": "https://aistudiocdn.com/react@^19.2.0",
           "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-          "react/": "https://aistudiocdn.com/react@^19.2.0/",
-          "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
+          "react/": "https://aistudiocdn.com/react@^19.2.0/"
         }
       }
     </script>
