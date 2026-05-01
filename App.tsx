@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { GlitchText } from './components/GlitchText.tsx';
-import { Terminal } from './components/Terminal.tsx';
+import { ArcadeShooter } from './components/ArcadeShooter.tsx';
 import { ProjectCard } from './components/ProjectCard.tsx';
 import { CharacterVisual } from './components/CharacterVisual.tsx';
-import { PROJECTS, SKILLS, SOCIAL_LINKS, PROFILE, TERMINAL_CONFIG } from './constants';
+import { PROJECTS, SKILLS, SOCIAL_LINKS, PROFILE } from './constants';
 
+/**
+ * App 渲染个人主页主界面。
+ */
 function App() {
   const [mounted, setMounted] = useState(false);
 
@@ -89,20 +92,20 @@ function App() {
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-neon-cyan"></div>
-                  <h2 className="text-2xl font-cyber font-bold text-white tracking-wide">{TERMINAL_CONFIG.header}</h2>
+                  <h2 className="text-2xl font-cyber font-bold text-white tracking-wide">STAR_RAID</h2>
                 </div>
                 <div className="text-xs text-neon-pink animate-pulse break-all sm:text-right">
-                  {TERMINAL_CONFIG.subHeader}
+                  /// LEFT_RIGHT_SPACE
                 </div>
               </div>
               <div className="relative group">
                 <div className="absolute -inset-1 bg-gradient-to-r from-neon-cyan via-neon-purple to-neon-pink opacity-45 group-hover:opacity-75 blur transition duration-500"></div>
                 <div className="relative">
-                  <Terminal />
+                  <ArcadeShooter />
                 </div>
               </div>
               <p className="mt-2 text-xs text-gray-600 text-right font-mono">
-                {TERMINAL_CONFIG.hint} <span className="text-neon-cyan">{TERMINAL_CONFIG.hintCommand}</span>
+                Move with <span className="text-neon-cyan">← →</span>, fire with <span className="text-neon-cyan">SPACE</span>
               </p>
             </section>
 
