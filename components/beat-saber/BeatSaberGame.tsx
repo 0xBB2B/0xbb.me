@@ -16,16 +16,16 @@ import {
   createSaber,
 } from './sceneAssets';
 
-// 键盘 → 手 / 切击方向映射。
+// 键盘 → 手 / 切击方向映射：左手 WASD（紫剑），右手 IJKL（青剑）。
 const KEY_MAP: Record<string, [Hand, CutDirection]> = {
   KeyW: ['L', 'U'],
   KeyA: ['L', 'L'],
   KeyS: ['L', 'D'],
   KeyD: ['L', 'R'],
-  ArrowUp: ['R', 'U'],
-  ArrowLeft: ['R', 'L'],
-  ArrowDown: ['R', 'D'],
-  ArrowRight: ['R', 'R'],
+  KeyI: ['R', 'U'],
+  KeyJ: ['R', 'L'],
+  KeyK: ['R', 'D'],
+  KeyL: ['R', 'R'],
 };
 
 // 单次切击尝试时，找方块允许的"已经过判定线但还没飞远"的容错。
@@ -46,6 +46,9 @@ interface Particle {
   life: number;
   ttl: number;
 }
+
+// 单次挥剑动画的总时长（毫秒）。
+const SWING_DURATION_MS = 280;
 
 interface SaberFlash {
   // 闪烁剩余时间（毫秒）；>0 时光剑放大并提亮。
@@ -266,12 +269,12 @@ export const BeatSaberGame: React.FC = () => {
     };
 
     /**
-     * flashSaber 触发对应手光剑的高亮闪烁。
+     * flashSaber 触发对应手光剑的高亮闪烁与挥砍弧线。
      */
     const flashSaber = (hand: Hand, direction: CutDirection) => {
       const flash = saberFlashRef.current[hand];
       const [vx, vy] = DIRECTION_VECTORS[direction] ?? [0, 0];
-      flash.remainingMs = 140;
+      flash.remainingMs = SWING_DURATION_MS;
       flash.swingX = vx;
       flash.swingY = vy;
     };
@@ -377,6 +380,9 @@ export const BeatSaberGame: React.FC = () => {
 
     /**
      * updateNotes 推进每个方块的状态机：spawn → active → missed/cleared。
+     *
+     * MISS 后方块不会立刻消失：它会在原 X/Y 上轻微下坠并染红渐隐，
+     * 同时继续沿 Z 飞过相机后被回收，避免出现"卡在屏幕中央"的死方块。
      */
     const updateNotes = (elapsedMs: number) => {
       const scene = sceneRef.current;
@@ -398,20 +404,32 @@ export const BeatSaberGame: React.FC = () => {
         if (entry.status === 'active' && entry.mesh) {
           const z = computeNoteZ(entry.note.time, elapsedMs, chart.approachMs);
           entry.mesh.position.z = z;
-          // 旋转一点，方便玩家看清正面。
           entry.mesh.rotation.x = -0.05;
 
-          // 飞越判定线 + 容错时间后未被切：标记为 MISS。
+          // 飞越判定线 + 容错时间后未被切：标记为 MISS 并启动退场动画。
           const overshoot = elapsedMs - entry.note.time;
           if (overshoot > MISS_THRESHOLD_MS + POST_JUDGE_GRACE_MS) {
             entry.status = 'missed';
             statsRef.current = applyJudgement(statsRef.current, 'MISS');
             lastJudgementRef.current = { kind: 'MISS', at: elapsedMs };
             missedThisFrame += 1;
+            paintMissed(entry.mesh);
           }
+        }
 
-          // 离开视野彻底回收。
-          if (z > PAST_Z) {
+        if (entry.status === 'missed' && entry.mesh) {
+          // MISS 退场：继续沿 Z 飞、同时下坠 + 渐隐。
+          const z = computeNoteZ(entry.note.time, elapsedMs, chart.approachMs);
+          entry.mesh.position.z = z;
+          const overshoot = Math.max(elapsedMs - entry.note.time - MISS_THRESHOLD_MS, 0);
+          const dropSeconds = overshoot / 1000;
+          entry.mesh.position.y = NOTE_Y - 1.2 * dropSeconds * dropSeconds * 6;
+          entry.mesh.rotation.x += 0.12;
+          entry.mesh.rotation.z += 0.08;
+          fadeMissed(entry.mesh, overshoot);
+
+          // 离场或彻底透明后回收。
+          if (z > PAST_Z || overshoot > 700 || entry.mesh.position.y < -2) {
             scene.remove(entry.mesh);
             disposeMesh(entry.mesh);
             entry.mesh = null;
@@ -425,7 +443,11 @@ export const BeatSaberGame: React.FC = () => {
     };
 
     /**
-     * updateSabers 平滑光剑闪烁与摆动姿态，回到默认朝向。
+     * updateSabers 平滑光剑挥砍弧线、回弹到默认姿态。
+     *
+     * 挥砍轨迹：phase 在 0..1，0 → 1 是从蓄力到顶点，1 → 0 是回拉。
+     * 顶点处剑身大幅倾斜（最大约 1.3 rad）+ 沿挥砍方向轻微平移，
+     * 配合 0.4 倍尺寸放大形成强烈的"砍下去"动作。
      */
     const updateSabers = (dt: number) => {
       const sabers = sabersRef.current;
@@ -435,22 +457,38 @@ export const BeatSaberGame: React.FC = () => {
       (['L', 'R'] as Hand[]).forEach((hand) => {
         const group = sabers[hand];
         const flash = saberFlashRef.current[hand];
+        const baseX = hand === 'L' ? -0.55 : 0.55;
+        const baseY = 0.95;
+        const baseZ = 3.4;
         const baseRotZ = hand === 'L' ? 0.18 : -0.18;
         const baseRotX = -0.2;
         const baseScale = 1;
 
         if (flash.remainingMs > 0) {
           flash.remainingMs -= dt;
-          const t = Math.max(flash.remainingMs / 140, 0);
-          const swing = 0.45 * t;
-          group.rotation.z = baseRotZ + flash.swingX * swing;
-          group.rotation.x = baseRotX - flash.swingY * swing;
-          const pulse = 1 + 0.32 * t;
+          const remaining = Math.max(flash.remainingMs, 0) / SWING_DURATION_MS;
+          // 用三角形脉冲：前 35% 蓄力上升，后 65% 回拉下降，让顶点更明显。
+          const progress = 1 - remaining;
+          const phase = progress < 0.35
+            ? progress / 0.35
+            : Math.max(0, 1 - (progress - 0.35) / 0.65);
+
+          const arc = 1.35 * phase;
+          group.rotation.z = baseRotZ + flash.swingX * arc;
+          group.rotation.x = baseRotX - flash.swingY * arc;
+          // 沿挥砍方向轻微平移，提示剑尖轨迹。
+          group.position.x = baseX + flash.swingX * 0.6 * phase;
+          group.position.y = baseY + flash.swingY * 0.55 * phase;
+          group.position.z = baseZ - 0.4 * phase;
+          const pulse = 1 + 0.4 * phase;
           group.scale.set(pulse, pulse, pulse);
         } else {
-          group.rotation.z += (baseRotZ - group.rotation.z) * 0.15;
-          group.rotation.x += (baseRotX - group.rotation.x) * 0.15;
-          const s = group.scale.x + (baseScale - group.scale.x) * 0.2;
+          group.rotation.z += (baseRotZ - group.rotation.z) * 0.18;
+          group.rotation.x += (baseRotX - group.rotation.x) * 0.18;
+          group.position.x += (baseX - group.position.x) * 0.18;
+          group.position.y += (baseY - group.position.y) * 0.18;
+          group.position.z += (baseZ - group.position.z) * 0.18;
+          const s = group.scale.x + (baseScale - group.scale.x) * 0.22;
           group.scale.set(s, s, s);
         }
       });
@@ -583,7 +621,7 @@ export const BeatSaberGame: React.FC = () => {
               <div>
                 LEFT HAND <span className="text-neon-purple">[ W A S D ]</span>
                 {' / '}
-                RIGHT HAND <span className="text-neon-cyan">[ ↑ ← ↓ → ]</span>
+                RIGHT HAND <span className="text-neon-cyan">[ I J K L ]</span>
               </div>
               <div className="mt-1 opacity-80">
                 方向必须匹配方块上的箭头；红块只能左手，青块只能右手。
@@ -646,7 +684,7 @@ const HudLayer: React.FC<HudLayerProps> = ({ snapshot, chartTitle }) => {
         // L_BLADE [W A S D]
       </div>
       <div className="absolute bottom-3 right-3 text-[10px] tracking-[0.28em] text-neon-cyan">
-        R_BLADE [↑ ← ↓ →] //
+        R_BLADE [I J K L] //
       </div>
     </div>
   );
@@ -668,6 +706,33 @@ function judgementColor(j: Judgement): string {
     case 'MISS':
       return 'text-red-400';
   }
+}
+
+/**
+ * paintMissed 在 MISS 触发瞬间，把方块六面贴图替换为红色基底材质，
+ * 并打开 transparent，方便随后调用 fadeMissed 渐隐。
+ */
+function paintMissed(mesh: THREE.Mesh) {
+  const tint = new THREE.Color(0xff3050);
+  const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  materials.forEach((m) => {
+    const mat = m as THREE.MeshBasicMaterial;
+    mat.color = tint;
+    mat.map = null;
+    mat.transparent = true;
+    mat.needsUpdate = true;
+  });
+}
+
+/**
+ * fadeMissed 根据已 MISS 持续时长，让方块持续变透明。
+ */
+function fadeMissed(mesh: THREE.Mesh, overshootMs: number) {
+  const opacity = Math.max(1 - overshootMs / 600, 0);
+  const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  materials.forEach((m) => {
+    (m as THREE.MeshBasicMaterial).opacity = opacity;
+  });
 }
 
 /**

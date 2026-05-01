@@ -107,7 +107,7 @@ function App() {
                 </div>
               </div>
               <p className="mt-2 text-xs text-gray-500 text-right font-mono">
-                Left blade <span className="text-neon-purple">[W A S D]</span> · Right blade <span className="text-neon-cyan">[↑ ← ↓ →]</span> · 方向需匹配方块箭头
+                Left blade <span className="text-neon-purple">[W A S D]</span> · Right blade <span className="text-neon-cyan">[I J K L]</span> · 方向需匹配方块箭头
               </p>
             </section>
 
