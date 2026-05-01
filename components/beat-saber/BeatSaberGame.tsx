@@ -445,9 +445,14 @@ export const BeatSaberGame: React.FC = () => {
     /**
      * updateSabers 平滑光剑挥砍弧线、回弹到默认姿态。
      *
-     * 挥砍轨迹：phase 在 0..1，0 → 1 是从蓄力到顶点，1 → 0 是回拉。
-     * 顶点处剑身大幅倾斜（最大约 1.3 rad）+ 沿挥砍方向轻微平移，
-     * 配合 0.4 倍尺寸放大形成强烈的"砍下去"动作。
+     * 几何上：剑身沿 -Z 方向延伸，pivot 落在剑柄前侧。挥砍方向必须围绕
+     * 与剑身垂直的轴旋转，剑尖才会真正划过空间：
+     *   - 上下挥（swingY） → 绕 X 轴
+     *   - 左右挥（swingX） → 绕 Y 轴
+     * 绕 Z 轴只是"剑身打转"，剑尖基本不动，所以这里只用作静态保留倾角。
+     *
+     * phase 走三角形脉冲：前 30% 蓄力上升至顶点，后 70% 回拉。顶点处
+     * 角度可达 1.6 rad，配合沿挥砍方向的位移与缩放，形成明显的剑尖轨迹。
      */
     const updateSabers = (dt: number) => {
       const sabers = sabersRef.current;
@@ -460,34 +465,39 @@ export const BeatSaberGame: React.FC = () => {
         const baseX = hand === 'L' ? -0.55 : 0.55;
         const baseY = 0.95;
         const baseZ = 3.4;
+        // 静态保留倾角：仅用于"持剑姿态"，不参与挥砍。
         const baseRotZ = hand === 'L' ? 0.18 : -0.18;
-        const baseRotX = -0.2;
+        const baseRotX = -0.18;
+        const baseRotY = hand === 'L' ? 0.05 : -0.05;
         const baseScale = 1;
 
         if (flash.remainingMs > 0) {
           flash.remainingMs -= dt;
           const remaining = Math.max(flash.remainingMs, 0) / SWING_DURATION_MS;
-          // 用三角形脉冲：前 35% 蓄力上升，后 65% 回拉下降，让顶点更明显。
           const progress = 1 - remaining;
-          const phase = progress < 0.35
-            ? progress / 0.35
-            : Math.max(0, 1 - (progress - 0.35) / 0.65);
+          const phase = progress < 0.3
+            ? progress / 0.3
+            : Math.max(0, 1 - (progress - 0.3) / 0.7);
 
-          const arc = 1.35 * phase;
-          group.rotation.z = baseRotZ + flash.swingX * arc;
-          group.rotation.x = baseRotX - flash.swingY * arc;
-          // 沿挥砍方向轻微平移，提示剑尖轨迹。
-          group.position.x = baseX + flash.swingX * 0.6 * phase;
-          group.position.y = baseY + flash.swingY * 0.55 * phase;
-          group.position.z = baseZ - 0.4 * phase;
-          const pulse = 1 + 0.4 * phase;
+          const arc = 1.6 * phase;
+          // 上下挥 → 绕 X 轴：swingY 正表示向上挥，剑尖应抬升 → rotation.x 取正。
+          group.rotation.x = baseRotX + flash.swingY * arc;
+          // 左右挥 → 绕 Y 轴：swingX 正表示向右挥，剑尖应朝 +X → rotation.y 取负。
+          group.rotation.y = baseRotY - flash.swingX * arc;
+          group.rotation.z = baseRotZ;
+          // 沿挥砍方向位移，强化剑尖轨迹的位移感。
+          group.position.x = baseX + flash.swingX * 0.55 * phase;
+          group.position.y = baseY + flash.swingY * 0.5 * phase;
+          group.position.z = baseZ - 0.35 * phase;
+          const pulse = 1 + 0.35 * phase;
           group.scale.set(pulse, pulse, pulse);
         } else {
-          group.rotation.z += (baseRotZ - group.rotation.z) * 0.18;
-          group.rotation.x += (baseRotX - group.rotation.x) * 0.18;
-          group.position.x += (baseX - group.position.x) * 0.18;
-          group.position.y += (baseY - group.position.y) * 0.18;
-          group.position.z += (baseZ - group.position.z) * 0.18;
+          group.rotation.x += (baseRotX - group.rotation.x) * 0.2;
+          group.rotation.y += (baseRotY - group.rotation.y) * 0.2;
+          group.rotation.z += (baseRotZ - group.rotation.z) * 0.2;
+          group.position.x += (baseX - group.position.x) * 0.2;
+          group.position.y += (baseY - group.position.y) * 0.2;
+          group.position.z += (baseZ - group.position.z) * 0.2;
           const s = group.scale.x + (baseScale - group.scale.x) * 0.22;
           group.scale.set(s, s, s);
         }

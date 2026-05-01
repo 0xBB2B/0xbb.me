@@ -37,4 +37,14 @@ describe('createDemoChart', () => {
     const chart = createDemoChart();
     expect(chart.approachMs).toBeGreaterThanOrEqual(800);
   });
+
+  test('谱面覆盖左右两手各 4 个方向，确保 W/A/S/D 与 I/J/K/L 都用得上', () => {
+    const { notes } = createDemoChart();
+    const combos = new Set(notes.map((n) => `${n.hand}-${n.cut}`));
+    // 8 个键位对应的组合：L+U/D/L/R 与 R+U/D/L/R。
+    const required = ['L-U', 'L-D', 'L-L', 'L-R', 'R-U', 'R-D', 'R-L', 'R-R'];
+    required.forEach((c) => {
+      expect(combos.has(c)).toBe(true);
+    });
+  });
 });

@@ -1,19 +1,29 @@
 import type { BeatChart, CutDirection, Hand, Lane, Note } from './types';
 import { createSoundtrack, stepDurationMs, trackDurationMs } from './chiptune';
 
-// 每个拍点轮流的切击方向，营造视觉节奏。
-const CUT_PATTERN: CutDirection[] = ['D', 'L', 'U', 'R'];
-
-// 4 个轨道循环放置。
-const LANE_PATTERN: Lane[] = [0, 1, 2, 3];
+// 显式枚举 8 个 (hand, cut) 组合，确保谱面里全部 8 个键位
+// （左手 W/A/S/D 与右手 I/J/K/L）都会被用上。
+//
+// 早期版本是"hand 周期 4 + cut 周期 4"两套独立循环，但它们的最小公
+// 倍数也是 4，结果只会出现 4 种组合（L+D, L+L, R+U, R+R），导致
+// 玩家发现 W/D/J/K 永远没有方块来。这里用一张 8 步循环表彻底打破锁。
+const NOTE_PATTERN: ReadonlyArray<{ hand: Hand; cut: CutDirection; lane: Lane }> = [
+  { hand: 'L', cut: 'D', lane: 0 },
+  { hand: 'R', cut: 'U', lane: 3 },
+  { hand: 'L', cut: 'L', lane: 1 },
+  { hand: 'R', cut: 'R', lane: 2 },
+  { hand: 'L', cut: 'U', lane: 0 },
+  { hand: 'R', cut: 'D', lane: 3 },
+  { hand: 'L', cut: 'R', lane: 1 },
+  { hand: 'R', cut: 'L', lane: 2 },
+];
 
 /**
  * createDemoChart 根据 ChiptuneEngine 的内置 BGM 生成对应的方块谱面。
  *
  * 设计原则：
  *   - 每 4 步（即每个 4 分音符）生成 1 个方块，节奏与拍点对齐；
- *   - 轨道与手在 4 步 / 8 步周期内交替，避免单调；
- *   - 切击方向按 4 拍循环 D→L→U→R，让玩家形成空间记忆；
+ *   - 用 8 步循环的 NOTE_PATTERN 保证全部 8 个键位都会出现；
  *   - 谱面起点偏移 2 拍，给玩家"空拍准备"的入场感。
  */
 export function createDemoChart(): BeatChart {
@@ -24,22 +34,18 @@ export function createDemoChart(): BeatChart {
   const noteStepInterval = 4;
   // 入场预备的空拍数。
   const introBeats = 2;
-  const introMs = introBeats * stepMs * 4;
   const approachMs = 1600;
 
   const notes: Note[] = [];
   for (let step = introBeats * 4; step < totalSteps; step += noteStepInterval) {
     const beatIndex = step / noteStepInterval;
-    const lane = LANE_PATTERN[beatIndex % LANE_PATTERN.length];
-    const cut = CUT_PATTERN[beatIndex % CUT_PATTERN.length];
-    // 左右手交替；每 4 拍换一次"主导手"，让两手都有连击段。
-    const hand: Hand = Math.floor(beatIndex / 2) % 2 === 0 ? 'L' : 'R';
+    const slot = NOTE_PATTERN[beatIndex % NOTE_PATTERN.length];
 
     notes.push({
       time: step * stepMs,
-      lane,
-      hand,
-      cut,
+      lane: slot.lane,
+      hand: slot.hand,
+      cut: slot.cut,
     });
   }
 
