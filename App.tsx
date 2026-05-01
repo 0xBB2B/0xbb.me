@@ -75,7 +75,7 @@ function App() {
 
           <CharacterVisual className="lg:hidden mb-6" />
 
-          <div className="w-full lg:w-7/12 flex flex-col space-y-12">
+          <div className="w-full lg:w-2/3 flex flex-col space-y-12">
 
             <section className="space-y-4">
               <div className="flex items-center gap-2 mb-6">
@@ -111,7 +111,7 @@ function App() {
 
           </div>
 
-          <div className="w-full lg:w-5/12 flex flex-col space-y-12">
+          <div className="w-full lg:w-1/3 flex flex-col space-y-12">
 
             <section className="bg-neon-panel/55 p-6 border border-neon-purple/40 relative overflow-hidden shadow-[0_0_36px_rgba(139,92,246,0.12)]">
                <div className="flex items-center gap-2 mb-6 relative z-10">
