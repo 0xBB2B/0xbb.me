@@ -48,8 +48,8 @@ type GameState = {
 
 const GAME_WIDTH = 520;
 const GAME_HEIGHT = 520;
-const PLAYER_WIDTH = 64;
-const PLAYER_HEIGHT = 72;
+const PLAYER_WIDTH = 48;
+const PLAYER_HEIGHT = 58;
 const SHOT_COOLDOWN = 150;
 const PLAYER_PIXEL_COLUMNS = 16;
 const PLAYER_PIXEL_ROWS = 18;
@@ -101,6 +101,22 @@ const CHIBI_HIGHLIGHT_PIXELS = [
   [12, 4],
   [3, 11],
   [12, 11],
+];
+const CHIBI_HAIR_TIP_PIXELS = [
+  [3, 7],
+  [4, 8],
+  [11, 8],
+  [12, 7],
+  [5, 9],
+  [10, 9],
+];
+const CHIBI_COAT_TAIL_PIXELS = [
+  [4, 14],
+  [5, 15],
+  [6, 16],
+  [9, 16],
+  [10, 15],
+  [11, 14],
 ];
 const ENEMY_PIXEL_COLUMNS = 11;
 const ENEMY_PIXEL_ROWS = 8;
@@ -259,7 +275,7 @@ function createInitialState(best = 0, isStarted = false): GameState {
   return {
     player: {
       x: GAME_WIDTH / 2 - PLAYER_WIDTH / 2,
-      y: GAME_HEIGHT - 90,
+      y: GAME_HEIGHT - 76,
       width: PLAYER_WIDTH,
       height: PLAYER_HEIGHT,
       speed: 0.42,
@@ -298,7 +314,7 @@ function updateGame(state: GameState, delta: number) {
   if (state.keys.has('Space') && state.lastShotAt >= SHOT_COOLDOWN) {
     state.bullets.push({
       x: state.player.x + state.player.width / 2 - 3,
-      y: state.player.y - 12,
+      y: state.player.y - 10,
       width: 6,
       height: 18,
       speed: 0.68,
@@ -414,30 +430,44 @@ function drawPlayer(context: CanvasRenderingContext2D, player: Player) {
   const originY = player.y;
 
   context.shadowColor = '#42f8ff';
-  context.shadowBlur = 12;
-  context.fillStyle = '#42f8ff';
+  context.shadowBlur = 9;
+  context.fillStyle = '#68e8ff';
   drawPixelPattern(context, CHIBI_WING_PATTERN, originX, originY + pixelSize * 4, pixelSize);
 
   context.shadowColor = '#f1f5f9';
-  context.shadowBlur = 10;
-  context.fillStyle = '#dbeafe';
+  context.shadowBlur = 8;
+  context.fillStyle = '#e8edff';
   drawPixelPattern(context, CHIBI_HAIR_PATTERN, originX, originY, pixelSize);
 
+  context.shadowColor = '#7dd3fc';
+  context.shadowBlur = 7;
+  context.fillStyle = '#7dd3fc';
+  CHIBI_HAIR_TIP_PIXELS.forEach(([column, row]) => {
+    fillPixel(context, originX, originY, pixelSize, column, row);
+  });
+
   context.shadowColor = '#ffb7d5';
-  context.shadowBlur = 6;
+  context.shadowBlur = 5;
   context.fillStyle = '#ffd1df';
   drawPixelPattern(context, CHIBI_FACE_PATTERN, originX, originY + pixelSize * 5, pixelSize);
 
   context.shadowColor = '#8b5cf6';
-  context.shadowBlur = 10;
-  context.fillStyle = '#8b5cf6';
+  context.shadowBlur = 8;
+  context.fillStyle = '#2b2447';
   drawPixelPattern(context, CHIBI_BODY_PATTERN, originX, originY + pixelSize * 9, pixelSize);
 
-  context.fillStyle = '#ff4fd8';
+  context.fillStyle = '#7c3aed';
   drawPixelPattern(context, CHIBI_JACKET_PATTERN, originX, originY + pixelSize * 10, pixelSize);
 
+  context.shadowColor = '#38bdf8';
+  context.shadowBlur = 7;
+  context.fillStyle = '#38bdf8';
+  CHIBI_COAT_TAIL_PIXELS.forEach(([column, row]) => {
+    fillPixel(context, originX, originY, pixelSize, column, row);
+  });
+
   context.shadowColor = '#42f8ff';
-  context.shadowBlur = 8;
+  context.shadowBlur = 6;
   context.fillStyle = '#42f8ff';
   fillPixel(context, originX, originY, pixelSize, 5, 6);
   fillPixel(context, originX, originY, pixelSize, 10, 6);
