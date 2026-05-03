@@ -56,8 +56,8 @@ describe('createDemoChart', () => {
   });
 
   test('首方块 spawn 时刻 ≥ 0：introBeats 必须够装下 approachMs', () => {
-    // 防回归：之前 introBeats=2 拍 (1026ms) < approachMs=1600ms 导致首方块
-    // "晚出生没飞够"，视觉滞后于音乐。现在 introBeats 动态 = ⌈approach/beat⌉。
+    // 不变量：方块只能在 BGM 起播 (t=0) 之后 spawn，所以
+    // notes[0].time − approachMs 必须 ≥ 0；否则方块到判定线时距离不足。
     const chart = createDemoChart(mulberry32(9));
     const firstSpawnMs = chart.notes[0].time - chart.approachMs;
     expect(firstSpawnMs).toBeGreaterThanOrEqual(0);

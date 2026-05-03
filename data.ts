@@ -33,7 +33,7 @@ export const APP_DATA = {
     {
       id: "1",
       title: "0xbb.me",
-      description: "Silver Wolf-themed portfolio with a built-in 3D dual-hand rhythm-blade game (three.js + Web Audio chiptune). Aha! Time-inspired neon HUD, fully keyboard-driven.",
+      description: "Silver Wolf-themed portfolio with a built-in 3D dual-hand rhythm-blade game (three.js + Web Audio). Aha! Time-inspired neon HUD, fully keyboard-driven.",
       tech: ["React", "TypeScript", "Vite", "Tailwind CSS", "three.js", "Web Audio"],
       status: "ONLINE",
       repo: "https://github.com/0xBB2B/0xbb.me",

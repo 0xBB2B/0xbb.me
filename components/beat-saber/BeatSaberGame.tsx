@@ -129,8 +129,10 @@ export const BeatSaberGame: React.FC = () => {
   const frameRef = useRef<number | null>(null);
   const engineRef = useRef<ChiptuneEngine | null>(null);
   const startedAtRef = useRef<number>(0);
-  // BGM 已经真正开始播放——用来区分"刚点 START 还在 await resume"
-  // 与"BGM 自然结束、引擎转入 inactive"两种 isPlaying=false 场景。
+  // hasStartedRef = true 当且仅当 BGM source 已经 source.start() 过。
+  // 用于区分两种 engine.isPlaying() === false 场景：START 前还在 await
+  // resume / loadBgm（要把 elapsedMs 钳为 0），与 BGM 自然结束（要让
+  // 时间继续推进以触发 finished 判定）。
   const hasStartedRef = useRef<boolean>(false);
   const statusRef = useRef<UISnapshot['status']>('idle');
   const lastFrameMsRef = useRef<number>(0);
