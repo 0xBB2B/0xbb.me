@@ -6,49 +6,63 @@ interface ProjectCardProps {
   project: Project;
 }
 
+/**
+ * 状态对应的胶贴风格 className，与 sticker-chip-* 体系保持一致。
+ */
+const STATUS_STICKER: Record<string, string> = {
+  ONLINE: 'sticker-chip sticker-chip-cyan',
+  DEVELOPMENT: 'sticker-chip', // 默认黄色
+  OFFLINE: 'sticker-chip sticker-chip-pink',
+};
+
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
+  const statusClass = STATUS_STICKER[project.status] ?? 'sticker-chip';
   return (
-    <div className="group relative bg-neon-panel/85 border border-neon-purple/35 hover:border-neon-cyan/70 transition-all duration-300 overflow-hidden shadow-[0_0_26px_rgba(139,92,246,0.1)]">
+    <div className="group relative bg-neon-panel border-2 border-neon-purple hover:border-neon-cyan transition-all duration-200 overflow-hidden pixel-clip-sm pixel-shadow-purple hover:pixel-shadow-cyan">
+      {/* 卡片内半色调质感叠层。 */}
+      <div className="absolute inset-0 halftone-dots-dense opacity-20 pointer-events-none mix-blend-screen"></div>
+      {/* 斜条纹底纹强化「贴纸」观感。 */}
+      <div className="absolute inset-0 diagonal-stripes opacity-60 pointer-events-none"></div>
+
       <div className="p-6 relative z-10">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-start mb-4 gap-3">
           <GlitchText as="h3" text={project.title} className="text-xl font-bold font-cyber text-white" />
-          <span className={`text-xs px-2 py-1 font-mono border ${
-            project.status === 'ONLINE' ? 'border-neon-cyan text-neon-cyan shadow-[0_0_10px_rgba(66,248,255,0.3)]' :
-            project.status === 'DEVELOPMENT' ? 'border-neon-yellow text-neon-yellow' :
-            'border-red-500 text-red-500'
-          }`}>
+          <span className={`${statusClass} text-[7px] shrink-0`}>
             {project.status}
           </span>
         </div>
-        
+
         <p className="text-gray-400 font-mono text-sm mb-4 leading-relaxed h-20 overflow-y-auto custom-scrollbar">
           {project.description}
         </p>
-        
+
         <div className="flex flex-wrap gap-2 mb-6">
           {project.tech.map(tech => (
-            <span key={tech} className="text-[10px] uppercase font-bold text-neon-cyan bg-neon-cyan/10 border border-neon-cyan/20 px-2 py-1">
+            <span key={tech} className="font-pixel text-[7px] uppercase text-neon-cyan bg-neon-bg border-2 border-neon-cyan/60 px-2 py-1">
               {tech}
             </span>
           ))}
         </div>
-        
+
         <div className="flex gap-4 mt-auto">
           {project.link && (
-            <a href={project.link} className="flex-1 text-center py-2 text-xs font-bold bg-neon-bg border border-neon-cyan/40 hover:bg-neon-cyan hover:text-black hover:border-neon-cyan transition-all uppercase tracking-widest">
-              Launch
+            <a
+              href={project.link}
+              className="flex-1 text-center py-2 font-pixel text-[10px] bg-neon-cyan text-neon-bg border-2 border-neon-bg pixel-shadow-tight hover:translate-y-[-2px] transition-transform tracking-widest"
+            >
+              LAUNCH
             </a>
           )}
           {project.repo && (
-            <a href={project.repo} className="flex-1 text-center py-2 text-xs font-bold bg-neon-bg border border-neon-pink/40 hover:bg-neon-pink hover:text-black hover:border-neon-pink transition-all uppercase tracking-widest">
-              Source
+            <a
+              href={project.repo}
+              className="flex-1 text-center py-2 font-pixel text-[10px] bg-neon-pink text-neon-bg border-2 border-neon-bg pixel-shadow-tight hover:translate-y-[-2px] transition-transform tracking-widest"
+            >
+              SOURCE
             </a>
           )}
         </div>
       </div>
-      
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(66,248,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,79,216,0.04)_1px,transparent_1px)] bg-[size:16px_16px] opacity-60 pointer-events-none"></div>
-      <div className="absolute inset-0 bg-neon-cyan/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out pointer-events-none" />
     </div>
   );
 };

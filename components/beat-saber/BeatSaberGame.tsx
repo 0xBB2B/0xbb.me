@@ -763,7 +763,7 @@ export const BeatSaberGame: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full overflow-hidden border border-neon-purple/55 bg-[#06031a] shadow-[0_0_36px_rgba(155,123,255,0.22)]">
+    <div className="relative w-full overflow-hidden bg-[#06031a]">
       <div ref={containerRef} className="relative aspect-[16/10] w-full bg-[#06031a]">
         <div className="pointer-events-none absolute inset-0 z-10">
           <HudLayer snapshot={snapshot} chartTitle={chartRef.current.title} />
