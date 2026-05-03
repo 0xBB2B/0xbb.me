@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&family=Orbitron:wght@400..900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&family=Orbitron:wght@400..900&family=Press+Start+2P&family=VT323&display=swap"
       rel="stylesheet"
     />
     <script>
@@ -20,6 +20,8 @@
             fontFamily: {
               mono: ['"JetBrains Mono"', "monospace"],
               cyber: ['"Orbitron"', "sans-serif"],
+              pixel: ['"Press Start 2P"', '"VT323"', "monospace"],
+              pixelbig: ['"VT323"', '"Press Start 2P"', "monospace"],
             },
             colors: {
               // 银狼 LV.999 「阿哈时刻」配色：紫罗兰 / 品红粉 / 像素青。
@@ -39,7 +41,11 @@
               glitch: "glitch 1s linear infinite",
               scanline: "scanline 8s linear infinite",
               "pixel-drift": "pixel-drift 12s linear infinite",
+              "halftone-drift": "halftone-drift 24s linear infinite",
+              "stripe-drift": "stripe-drift 18s linear infinite",
+              "pattern-drift": "pattern-drift 60s linear infinite",
               "hud-blink": "hud-blink 1.7s steps(2, end) infinite",
+              "sticker-wiggle": "sticker-wiggle 5s steps(8, end) infinite",
             },
             keyframes: {
               glitch: {
@@ -55,9 +61,25 @@
                 "0%": { transform: "translate3d(0,0,0)" },
                 "100%": { transform: "translate3d(-48px,48px,0)" },
               },
+              "halftone-drift": {
+                "0%": { backgroundPosition: "0 0, 0 0" },
+                "100%": { backgroundPosition: "120px 80px, -80px 60px" },
+              },
+              "stripe-drift": {
+                "0%": { backgroundPosition: "0 0" },
+                "100%": { backgroundPosition: "120px 0" },
+              },
+              "pattern-drift": {
+                "0%": { backgroundPosition: "0 0" },
+                "100%": { backgroundPosition: "320px 320px" },
+              },
               "hud-blink": {
                 "0%, 75%": { opacity: "1" },
                 "76%, 100%": { opacity: "0.28" },
+              },
+              "sticker-wiggle": {
+                "0%, 100%": { transform: "rotate(-2deg)" },
+                "50%": { transform: "rotate(2deg)" },
               },
             },
           },
@@ -155,6 +177,99 @@
         100% { transform: translateY(120%); opacity: 0; }
       }
       .animate-lv999-sweep { animation: lv999-sweep 1.6s linear infinite; }
+
+      /* === 像素点阵 / 半色调 (halftone) === */
+      /* 双层 radial-gradient 平铺出半色调圆点：一层亮一层暗，错位呼吸。 */
+      .halftone-dots {
+        background-image:
+          radial-gradient(rgba(255, 79, 216, 0.18) 1.5px, transparent 1.6px),
+          radial-gradient(rgba(102, 224, 255, 0.12) 1px, transparent 1.2px);
+        background-size: 14px 14px, 22px 22px;
+        background-position: 0 0, 7px 11px;
+      }
+      .halftone-dots-dense {
+        background-image:
+          radial-gradient(rgba(255, 255, 255, 0.16) 1.2px, transparent 1.4px),
+          radial-gradient(rgba(155, 123, 255, 0.18) 1px, transparent 1.2px);
+        background-size: 8px 8px, 14px 14px;
+        background-position: 0 0, 4px 4px;
+      }
+
+      /* === 斜条纹底纹（参考图角色身后的紫色对角线） === */
+      .diagonal-stripes {
+        background-image: repeating-linear-gradient(
+          115deg,
+          rgba(155, 123, 255, 0.08) 0 4px,
+          transparent 4px 14px
+        );
+      }
+      .diagonal-stripes-strong {
+        background-image: repeating-linear-gradient(
+          115deg,
+          rgba(255, 79, 216, 0.18) 0 3px,
+          transparent 3px 10px
+        );
+      }
+
+      /* === Miku 风格 wallpaper：葱 / 音符 / 星 / 双马尾剪影 / 39·01 像素徽标 === */
+      /* 设计原则：保留紫色主调，元素用青/粉/紫/黄四色错落；200×200 格子兼顾
+         密度与留白，避免重复感太强又能形成"图案密度"的视觉节奏。 */
+      .bb-wallpaper {
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200' shape-rendering='crispEdges'><g fill='%2366e0ff' fill-opacity='0.22'><rect x='28' y='32' width='3' height='14'/><polygon points='25,32 29.5,24 34,32'/></g><g fill='%2366e0ff' fill-opacity='0.18' transform='translate(155 150) rotate(18)'><rect x='0' y='0' width='3' height='12'/><polygon points='-3,0 1.5,-7 6,0'/></g><g fill='%23ff4fd8' fill-opacity='0.22'><ellipse cx='160' cy='52' rx='4' ry='3'/><rect x='162.5' y='38' width='1.4' height='14'/><path d='M163.9 38 q 6 4 0 8' fill='none' stroke='%23ff4fd8' stroke-width='1.2' stroke-opacity='0.22'/></g><g fill='%23ff4fd8' fill-opacity='0.20'><ellipse cx='52' cy='148' rx='3.5' ry='2.6'/><rect x='54' y='136' width='1.2' height='12'/></g><g fill='%23f8ff72' fill-opacity='0.22'><polygon points='100,88 102.4,95 110,95 103.8,99.5 106.2,107 100,102.5 93.8,107 96.2,99.5 90,95 97.6,95'/><polygon points='32,176 33.4,180 38,180 34.3,182.6 35.7,187 32,184.4 28.3,187 29.7,182.6 26,180 30.6,180'/><polygon points='178,108 179.2,111 183,111 180,113 181.2,116.5 178,114.5 174.8,116.5 176,113 173,111 176.8,111'/></g><g fill='%239b7bff' fill-opacity='0.24'><rect x='14' y='100' width='4' height='1'/><rect x='14' y='106' width='4' height='1'/><rect x='14' y='100' width='1' height='7'/><rect x='17' y='100' width='1' height='7'/><rect x='22' y='100' width='1' height='7'/><rect x='21' y='100' width='1' height='1'/><rect x='19' y='106' width='5' height='1'/></g><g fill='%239b7bff' fill-opacity='0.22'><rect x='118' y='40' width='4' height='1'/><rect x='118' y='43' width='3' height='1'/><rect x='118' y='46' width='4' height='1'/><rect x='121' y='40' width='1' height='7'/><rect x='124' y='40' width='4' height='1'/><rect x='124' y='40' width='1' height='3'/><rect x='127' y='40' width='1' height='7'/><rect x='124' y='43' width='4' height='1'/><rect x='124' y='46' width='4' height='1'/></g><g stroke='%2366e0ff' stroke-width='1.1' stroke-opacity='0.18' fill='none'><path d='M68 60 q -3 9 -1 17 q 1 5 -2 9'/><path d='M82 60 q 3 9 1 17 q -1 5 2 9'/></g><g fill='%23ff4fd8' fill-opacity='0.18'><path d='M186 178 l3 -3 l3 3 q 0 3 -3 5 q -3 -2 -3 -5 z'/></g></svg>");
+        background-size: 200px 200px;
+      }
+
+      /* === 像素硬阴影（无 blur） === */
+      .pixel-shadow-pink   { box-shadow: 4px 4px 0 0 #ff4fd8, 6px 6px 0 0 rgba(0,0,0,0.6); }
+      .pixel-shadow-cyan   { box-shadow: 4px 4px 0 0 #66e0ff, 6px 6px 0 0 rgba(0,0,0,0.6); }
+      .pixel-shadow-purple { box-shadow: 4px 4px 0 0 #9b7bff, 6px 6px 0 0 rgba(0,0,0,0.6); }
+      .pixel-shadow-yellow { box-shadow: 4px 4px 0 0 #f8ff72, 6px 6px 0 0 rgba(0,0,0,0.6); }
+      .pixel-shadow-tight  { box-shadow: 2px 2px 0 0 #000, 4px 4px 0 0 #9b7bff; }
+
+      /* === 色差错位描边（chromatic aberration）—— 给图片/剪影用 === */
+      .chrome-edge {
+        filter:
+          drop-shadow(2px 0 0 #ff4fd8)
+          drop-shadow(-2px 0 0 #66e0ff)
+          drop-shadow(0 0 1px rgba(0,0,0,0.8));
+      }
+      .chrome-edge-soft {
+        filter:
+          drop-shadow(1px 0 0 rgba(255,79,216,0.85))
+          drop-shadow(-1px 0 0 rgba(102,224,255,0.85));
+      }
+
+      /* === 像素胶贴徽章（参考图右下角 LV.999 贴纸） === */
+      .sticker-chip {
+        font-family: '"Press Start 2P"', monospace;
+        display: inline-block;
+        padding: 6px 10px;
+        border: 2px solid #06031a;
+        background: #f8ff72;
+        color: #06031a;
+        box-shadow: 3px 3px 0 0 #06031a, 5px 5px 0 0 #ff4fd8;
+        text-shadow: none;
+        letter-spacing: 0.08em;
+        line-height: 1;
+        image-rendering: pixelated;
+      }
+      .sticker-chip-pink   { background: #ff4fd8; color: #06031a; box-shadow: 3px 3px 0 0 #06031a, 5px 5px 0 0 #66e0ff; }
+      .sticker-chip-cyan   { background: #66e0ff; color: #06031a; box-shadow: 3px 3px 0 0 #06031a, 5px 5px 0 0 #ff4fd8; }
+      .sticker-chip-purple { background: #9b7bff; color: #06031a; box-shadow: 3px 3px 0 0 #06031a, 5px 5px 0 0 #f8ff72; }
+      .sticker-chip-dark   { background: #120a2a; color: #66e0ff; border-color: #66e0ff; box-shadow: 3px 3px 0 0 #06031a, 5px 5px 0 0 #9b7bff; }
+
+      /* === 像素切角（已有 .pixel-frame，再补一个更小切角的） === */
+      .pixel-clip-sm {
+        clip-path: polygon(
+          0 6px, 6px 0, calc(100% - 6px) 0, 100% 6px,
+          100% calc(100% - 6px), calc(100% - 6px) 100%,
+          6px 100%, 0 calc(100% - 6px)
+        );
+      }
+
+      /* === 像素字 (utility) === */
+      .font-pixel { font-family: '"Press Start 2P"', monospace; image-rendering: pixelated; }
+      .font-pixelbig { font-family: '"VT323"', '"Press Start 2P"', monospace; }
     </style>
     <script type="importmap">
       {
