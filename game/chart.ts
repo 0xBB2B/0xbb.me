@@ -10,6 +10,13 @@ import type { BeatChart, CutDirection, Hand, Lane, Note } from './types';
 export const BGM_URL = '/music.ogg';
 export const BGM_BPM = 117;
 export const BGM_DURATION_MS = 32_100;
+/**
+ * BGM_OFFSET_MS：裁剪片段中第一个清晰鼓点距 t=0 的偏移。
+ * 通过前 3 秒的 onset 峰值检测得出（首个明显峰值约在 256ms 处）。
+ * 谱面所有拍点都以 BGM_OFFSET_MS 为相位锚点累加 beatMs，方块切击
+ * 时刻才与音乐 onset 对齐——之前默认 0 导致整条谱面相位早于音乐。
+ */
+export const BGM_OFFSET_MS = 256;
 
 // 全部 8 种 (hand, cut) 组合——对应键盘 8 个方向键。
 const ALL_COMBOS: ReadonlyArray<{ hand: Hand; cut: CutDirection }> = [
@@ -36,11 +43,15 @@ function shuffle<T>(arr: ReadonlyArray<T>, rng: () => number): T[] {
 }
 
 /**
- * createDemoChart 基于 BGM 的 BPM 与时长生成方块谱面。
+ * createDemoChart 基于 BGM 的 BPM、时长、首拍偏移生成方块谱面。
  *
  * 拍点策略：
- *   - 以 BPM 推算每拍毫秒数（117 BPM ≈ 513ms/拍），每拍出一个方块；
- *   - 前 introBeats 拍不出方块，预留 READY? 暖场段；
+ *   - beatMs = 60_000 / BGM_BPM（117 BPM ≈ 513ms/拍），每拍出一个方块；
+ *   - introBeats = ⌈approachMs / beatMs⌉——首方块的 spawn 时刻
+ *     (= time − approachMs) 必须 ≥ 0，否则方块会"晚出生 + 没飞够"导致
+ *     视觉滞后于音乐；动态计算让未来调整 approachMs 时无需手动配套；
+ *   - 每个拍点的 time = BGM_OFFSET_MS + (introBeats + i) × beatMs，
+ *     以音乐首鼓点为相位锚点累加，方块切击时刻才与音乐 onset 对齐；
  *   - 每个拍点的 (hand, cut) 从一个"包含全部 8 种组合的洗牌袋"中抽取，
  *     抽空再重洗——这样既保证序列随机不可预测，又保证每 8 个方块至少
  *     覆盖完所有 8 种组合，玩家不会出现"某个键永远等不到方块"。
@@ -51,9 +62,8 @@ function shuffle<T>(arr: ReadonlyArray<T>, rng: () => number): T[] {
  */
 export function createDemoChart(rng: () => number = Math.random): BeatChart {
   const beatMs = 60_000 / BGM_BPM;
-  const introBeats = 2;
   const approachMs = 1600;
-  const totalBeats = Math.floor(BGM_DURATION_MS / beatMs);
+  const introBeats = Math.ceil(approachMs / beatMs);
 
   let bag: { hand: Hand; cut: CutDirection }[] = [];
   const drawCombo = () => {
@@ -64,18 +74,16 @@ export function createDemoChart(rng: () => number = Math.random): BeatChart {
   };
 
   const notes: Note[] = [];
-  for (let beat = introBeats; beat < totalBeats; beat += 1) {
+  for (let i = 0; ; i += 1) {
+    const time = BGM_OFFSET_MS + (introBeats + i) * beatMs;
+    if (time >= BGM_DURATION_MS) {
+      break;
+    }
     const slot = drawCombo();
     const lane: Lane = slot.hand === 'L'
       ? (rng() < 0.5 ? 0 : 1)
       : (rng() < 0.5 ? 2 : 3);
-
-    notes.push({
-      time: beat * beatMs,
-      lane,
-      hand: slot.hand,
-      cut: slot.cut,
-    });
+    notes.push({ time, lane, hand: slot.hand, cut: slot.cut });
   }
 
   return {
@@ -85,9 +93,4 @@ export function createDemoChart(rng: () => number = Math.random): BeatChart {
     approachMs,
     notes,
   };
-}
-
-// 谱面起点之前留出的"空拍准备"段长度，UI 可用于显示 READY?。
-export function chartIntroMs(): number {
-  return (60_000 / BGM_BPM) * 2;
 }
