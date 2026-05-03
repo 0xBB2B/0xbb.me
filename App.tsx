@@ -37,17 +37,6 @@ const SOCIAL_ICON: Record<string, React.ComponentType<{ size?: number; className
 };
 
 /**
- * 把 PROFILE.name 截短为顶部导航 logo 字串：超过 8 字符截断后补 _SYS 后缀。
- *
- * 让 logo 在窄屏也能保持紧凑节奏，并和 Aether Link 原版 SW_00.SYS 命名风格对齐。
- */
-function buildLogoText(name: string): string {
-  const upper = name.toUpperCase();
-  if (upper.length <= 8) return `${upper}.SYS`;
-  return `${upper.slice(0, 8)}_SYS`;
-}
-
-/**
  * App 渲染 Aether Link 主题作品集主界面。
  *
  * 主要分段：
@@ -67,8 +56,6 @@ function App() {
   }, []);
 
   if (!mounted) return null;
-
-  const logoText = buildLogoText(PROFILE.name);
 
   return (
     <div className="relative min-h-screen selection:bg-game-teal selection:text-game-dark overflow-hidden">
@@ -96,7 +83,7 @@ function App() {
           animate={{ opacity: 1, x: 0 }}
           className="font-pixel text-xs tracking-tighter text-game-teal"
         >
-          {logoText}
+          {PROFILE.name.toUpperCase()}.SYS
         </motion.div>
         <div className="hidden md:flex gap-8 items-center">
           {NAV_ITEMS.map((item, i) => (
