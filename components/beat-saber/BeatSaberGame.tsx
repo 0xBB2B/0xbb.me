@@ -1,7 +1,24 @@
 import * as THREE from 'three';
 import React, { useEffect, useRef, useState } from 'react';
-import { ChiptuneEngine, createSoundtrack } from '../../game/chiptune';
-import { createDemoChart } from '../../game/chart';
+import { ChiptuneEngine } from '../../game/chiptune';
+import { BGM_URL, createDemoChart, createOnsetChart } from '../../game/chart';
+import { analyzeAudioBuffer } from '../../game/audioAnalysis';
+
+/**
+ * BgmAnalysis 是 BeatSaberGame 内部缓存的 BGM 分析结果。
+ *
+ * - 当 onsetTimesMs.length 足够多时，谱面走 createOnsetChart：方块严格
+ *   贴每个检测到的鼓点，不假设音乐严格匀速；
+ * - 不够多 / 分析失败时，走 createDemoChart 用 bpm/offsetMs 兜底。
+ */
+interface BgmAnalysis {
+  bpm: number;
+  offsetMs: number;
+  durationMs: number;
+  onsetTimesMs: number[];
+}
+
+const ONSET_DRIVEN_MIN_COUNT = 16;
 import { findHitTarget } from '../../game/judge';
 import {
   accuracy,
@@ -129,13 +146,20 @@ export const BeatSaberGame: React.FC = () => {
   const frameRef = useRef<number | null>(null);
   const engineRef = useRef<ChiptuneEngine | null>(null);
   const startedAtRef = useRef<number>(0);
-  // BGM 已经真正开始播放——用来区分"刚点 START 还在 await resume"
-  // 与"BGM 自然结束、引擎转入 inactive"两种 isPlaying=false 场景。
+  // hasStartedRef = true 当且仅当 BGM source 已经 source.start() 过。
+  // 用于区分两种 engine.isPlaying() === false 场景：START 前还在 await
+  // resume / loadBgm（要把 elapsedMs 钳为 0），与 BGM 自然结束（要让
+  // 时间继续推进以触发 finished 判定）。
   const hasStartedRef = useRef<boolean>(false);
   const statusRef = useRef<UISnapshot['status']>('idle');
   const lastFrameMsRef = useRef<number>(0);
   // LV.999 全连特效起始时刻（rAF 时间），用来判断是否到达切换结算的窗口。
   const lv999StartedAtRef = useRef<number>(0);
+  // 浏览器侧 onset 分析结果，挂载阶段加载 BGM 后自动填充。
+  // null 表示尚未分析（START 前还在加载，或音频解码 / 分析失败）；
+  // 非空时 START 优先走 onset-driven 谱面，方块严格对齐实际鼓点；
+  // onset 不足 ONSET_DRIVEN_MIN_COUNT 时退化到 BPM 均匀谱面。
+  const analysisRef = useRef<BgmAnalysis | null>(null);
   // 谱面放在 ref 里，每次 START 会调 createDemoChart() 重抽方向，
   // 让玩家每局看到的方向序列都不一样。曲目时长 / 标题保持稳定。
   const chartRef = useRef<BeatChart>(createDemoChart());
@@ -230,6 +254,34 @@ export const BeatSaberGame: React.FC = () => {
   useEffect(() => {
     const engine = new ChiptuneEngine();
     engineRef.current = engine;
+    // 提前 fetch / decode BGM 并跑 onset 分析：
+    //   - decodeAudioData 在 AudioContext suspended 状态下也能工作；
+    //   - 分析在 OfflineAudioContext 里跑，与播放上下文独立；
+    //   - 分析完成前 timingRef = null，createDemoChart 走 BGM_* 常量兜底，
+    //     游戏仍可在分析失败 / 慢网下退化为静态 timing。
+    void (async () => {
+      try {
+        await engine.loadBgm(BGM_URL);
+        const buffer = engine.getBgmBuffer();
+        if (!buffer) {
+          return;
+        }
+        const analysis = await analyzeAudioBuffer(buffer);
+        analysisRef.current = {
+          bpm: analysis.bpm,
+          offsetMs: analysis.offsetMs,
+          durationMs: buffer.duration * 1000,
+          onsetTimesMs: analysis.onsetTimesMs,
+        };
+        // eslint-disable-next-line no-console
+        console.info(
+          `[BGM] BPM=${analysis.bpm.toFixed(1)} offset=${analysis.offsetMs.toFixed(0)}ms `
+            + `duration=${(buffer.duration).toFixed(2)}s onsets=${analysis.onsetTimesMs.length}`,
+        );
+      } catch (err) {
+        console.error('failed to preload / analyze BGM', err);
+      }
+    })();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       const mapping = KEY_MAP[event.code];
@@ -654,8 +706,46 @@ export const BeatSaberGame: React.FC = () => {
       particlesRef.current = [];
     }
 
-    // 每局重新随机一份谱面，让方向序列每次都不一样。
-    chartRef.current = createDemoChart();
+    await engine.resume();
+    // 兜底：如果挂载阶段的预加载尚未完成（极端慢网），这里再 await 一次。
+    if (!engine.hasBgm()) {
+      try {
+        await engine.loadBgm(BGM_URL);
+      } catch (err) {
+        console.error('failed to load BGM at start', err);
+      }
+    }
+    // 若 BGM 已就绪但 onset 分析仍未完成（用户点 START 比分析快），同步补跑。
+    if (!analysisRef.current) {
+      const buffer = engine.getBgmBuffer();
+      if (buffer) {
+        try {
+          const analysis = await analyzeAudioBuffer(buffer);
+          analysisRef.current = {
+            bpm: analysis.bpm,
+            offsetMs: analysis.offsetMs,
+            durationMs: buffer.duration * 1000,
+            onsetTimesMs: analysis.onsetTimesMs,
+          };
+        } catch (err) {
+          console.error('failed to analyze BGM at start', err);
+        }
+      }
+    }
+
+    // 优先 onset-driven：方块严格贴每个检测到的鼓点，避开均匀 BPM 假设
+    // 在曲目中后段累积的相位漂移。onset 数量过少时退化到 BPM 均匀。
+    const analysis = analysisRef.current;
+    if (analysis && analysis.onsetTimesMs.length >= ONSET_DRIVEN_MIN_COUNT) {
+      chartRef.current = createOnsetChart(analysis.onsetTimesMs, analysis.durationMs);
+    } else {
+      chartRef.current = createDemoChart(
+        undefined,
+        analysis
+          ? { bpm: analysis.bpm, offsetMs: analysis.offsetMs, durationMs: analysis.durationMs }
+          : undefined,
+      );
+    }
     notesRef.current = chartRef.current.notes.map((note) => ({
       note,
       mesh: null,
@@ -667,8 +757,7 @@ export const BeatSaberGame: React.FC = () => {
     statusRef.current = 'playing';
     setSnapshot({ ...buildInitialSnapshot(chartRef.current.durationMs), status: 'playing' });
 
-    await engine.resume();
-    engine.startTrack(createSoundtrack());
+    engine.startBgm();
     startedAtRef.current = performance.now();
     hasStartedRef.current = true;
   };

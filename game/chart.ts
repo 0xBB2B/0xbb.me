@@ -1,5 +1,29 @@
 import type { BeatChart, CutDirection, Hand, Lane, Note } from './types';
-import { createSoundtrack, stepDurationMs, trackDurationMs } from './chiptune';
+
+/**
+ * BGM 常量：所有谱面拍点都基于这三项推导。
+ *
+ * 数值来源——音频文件 public/music.ogg 由资源提供方自行裁剪好直接放入仓库，
+ * 项目侧不再做二次截取；BPM 通过振幅自相关分析得出（peak ≈ 117.2 BPM，
+ * 145 BPM 的相关分数仅为 1/32），DURATION_MS 与 ogg 实际时长（32.11s）对齐。
+ */
+export const BGM_URL = '/music.ogg';
+export const BGM_BPM = 117;
+export const BGM_DURATION_MS = 32_100;
+/**
+ * BGM_OFFSET_MS：裁剪片段中第一个清晰鼓点距 t=0 的偏移。
+ * 通过前 3 秒的 onset 峰值检测得出（首个明显峰值约在 256ms 处）。
+ * 谱面所有拍点都以 BGM_OFFSET_MS 为相位锚点累加 stepMs，让方块
+ * 切击时刻与音乐 onset 对齐。
+ */
+export const BGM_OFFSET_MS = 256;
+
+/**
+ * BEAT_SUBDIVISIONS：一拍切成多少个方块拍点。
+ * 1 = 每拍 1 方块（4 分音符密度）；2 = 每半拍 1 方块（8 分音符密度）。
+ * 117 BPM 下 stepMs ≈ 256ms，刚好对应音频 onset 间距的最小节奏单元。
+ */
+export const BEAT_SUBDIVISIONS = 2;
 
 // 全部 8 种 (hand, cut) 组合——对应键盘 8 个方向键。
 const ALL_COMBOS: ReadonlyArray<{ hand: Hand; cut: CutDirection }> = [
@@ -26,24 +50,45 @@ function shuffle<T>(arr: ReadonlyArray<T>, rng: () => number): T[] {
 }
 
 /**
- * createDemoChart 根据 ChiptuneEngine 的内置 BGM 生成方块谱面。
+ * ChartTiming 是 createDemoChart 的可选时间参数。
  *
- * 谱面随机化策略：
+ * 默认值取自 BGM_BPM / BGM_OFFSET_MS / BGM_DURATION_MS 常量，作为分析失败
+ * 或离线（unit test）场景下的兜底；运行时可由浏览器侧 analyzeAudioBuffer
+ * 动态推断后传入，让相位锚点跟着实际音频校准。
+ */
+export interface ChartTiming {
+  bpm: number;
+  offsetMs: number;
+  durationMs: number;
+}
+
+/**
+ * createDemoChart 基于 BGM 的 BPM、时长、首拍偏移生成方块谱面。
+ *
+ * 拍点策略：
+ *   - stepMs = (60_000 / timing.bpm) / BEAT_SUBDIVISIONS，每 step 出一个方块；
+ *     117 BPM × 2 细分 ≈ 256ms/step，对应 8 分音符密度；
+ *   - introSteps = ⌈approachMs / stepMs⌉——保证首方块的 spawn 时刻
+ *     (= time − approachMs) ≥ 0，让 approachMs 或 BEAT_SUBDIVISIONS 调整时
+ *     无需手动配套；
+ *   - 每个拍点的 time = timing.offsetMs + (introSteps + i) × stepMs，
+ *     以音乐首鼓点为相位锚点累加，方块切击时刻与音乐 onset 对齐；
  *   - 每个拍点的 (hand, cut) 从一个"包含全部 8 种组合的洗牌袋"中抽取，
- *     抽空再重洗——这样既保证序列随机不重复成预测式，又保证每 8 个
- *     方块至少覆盖完所有 8 种组合，玩家不会出现"某个键永远等不到方块"。
+ *     抽空再重洗——这样既保证序列随机不可预测，又保证每 8 个方块至少
+ *     覆盖完所有 8 种组合，玩家不会出现"某个键永远等不到方块"。
  *   - lane 仅根据 hand 二选一（左手 0 或 1、右手 2 或 3），让左右手的
  *     方块自然分布在屏幕两侧，符合 Beat Saber 的双轨道直觉。
  *
  * @param rng 随机源，默认使用 Math.random；测试时可传确定性 RNG。
+ * @param timing 可选的 BPM / offset / 总时长；默认走 BGM_* 常量兜底。
  */
-export function createDemoChart(rng: () => number = Math.random): BeatChart {
-  const track = createSoundtrack();
-  const stepMs = stepDurationMs(track);
-  const totalSteps = track.tracks.lead.length * track.loops;
-  const noteStepInterval = 4;
-  const introBeats = 2;
+export function createDemoChart(
+  rng: () => number = Math.random,
+  timing: ChartTiming = { bpm: BGM_BPM, offsetMs: BGM_OFFSET_MS, durationMs: BGM_DURATION_MS },
+): BeatChart {
+  const stepMs = 60_000 / timing.bpm / BEAT_SUBDIVISIONS;
   const approachMs = 1600;
+  const introSteps = Math.ceil(approachMs / stepMs);
 
   let bag: { hand: Hand; cut: CutDirection }[] = [];
   const drawCombo = () => {
@@ -54,31 +99,89 @@ export function createDemoChart(rng: () => number = Math.random): BeatChart {
   };
 
   const notes: Note[] = [];
-  for (let step = introBeats * 4; step < totalSteps; step += noteStepInterval) {
+  for (let i = 0; ; i += 1) {
+    const time = timing.offsetMs + (introSteps + i) * stepMs;
+    if (time >= timing.durationMs) {
+      break;
+    }
     const slot = drawCombo();
     const lane: Lane = slot.hand === 'L'
       ? (rng() < 0.5 ? 0 : 1)
       : (rng() < 0.5 ? 2 : 3);
-
-    notes.push({
-      time: step * stepMs,
-      lane,
-      hand: slot.hand,
-      cut: slot.cut,
-    });
+    notes.push({ time, lane, hand: slot.hand, cut: slot.cut });
   }
 
   return {
-    title: 'AHA! TIME // SILVER WOLF MIX',
-    bpm: track.bpm,
-    durationMs: trackDurationMs(track) + 2000,
+    title: 'STAGE 01 // FUBUKI MIX',
+    bpm: timing.bpm,
+    durationMs: timing.durationMs + 2_000,
     approachMs,
     notes,
   };
 }
 
-// 谱面起点之前留出的"空拍准备"段长度，UI 可用于显示 READY?。
-export function chartIntroMs(): number {
-  const track = createSoundtrack();
-  return stepDurationMs(track) * 4 * 2;
+/**
+ * createOnsetChart 直接用 onset 时间列表作为方块拍点，避开均匀 BPM 假设。
+ *
+ * 适用场景：歌曲非严格匀速、BPM 有微小漂移、或要让方块严格跟实际鼓点。
+ * 上游通过 analyzeAudioBuffer 拿到 onsetTimesMs[]，过滤 + 强制最小间距后
+ * 直接当方块时间。
+ *
+ * 过滤规则（按顺序）：
+ *   1. 早于 approachMs 的 onset 丢弃——spawn 时刻 = time − approachMs 必须 ≥ 0；
+ *   2. 晚于等于 durationMs 的 onset 丢弃——避免方块落在 BGM 之外；
+ *   3. 距上一个保留 onset 间距 < minGapMs 的丢弃——防止过密玩家手忙。
+ *
+ * @param onsetTimesMs 升序的 onset 时间数组（毫秒）
+ * @param durationMs BGM 总时长（毫秒）
+ * @param rng 随机源，决定 (hand, cut, lane) 序列
+ * @param options 可选 approachMs / minGapMs 覆盖
+ */
+export function createOnsetChart(
+  onsetTimesMs: ReadonlyArray<number>,
+  durationMs: number,
+  rng: () => number = Math.random,
+  options: { approachMs?: number; minGapMs?: number } = {},
+): BeatChart {
+  const approachMs = options.approachMs ?? 1600;
+  const minGapMs = options.minGapMs ?? 250;
+
+  // 过滤：spawn ≥ 0、不超尾、强制最小间距
+  const kept: number[] = [];
+  for (const t of onsetTimesMs) {
+    if (t < approachMs) {
+      continue;
+    }
+    if (t >= durationMs) {
+      break;
+    }
+    if (kept.length > 0 && t - kept[kept.length - 1] < minGapMs) {
+      continue;
+    }
+    kept.push(t);
+  }
+
+  let bag: { hand: Hand; cut: CutDirection }[] = [];
+  const drawCombo = () => {
+    if (bag.length === 0) {
+      bag = shuffle(ALL_COMBOS, rng);
+    }
+    return bag.pop()!;
+  };
+
+  const notes: Note[] = kept.map((time) => {
+    const slot = drawCombo();
+    const lane: Lane = slot.hand === 'L'
+      ? (rng() < 0.5 ? 0 : 1)
+      : (rng() < 0.5 ? 2 : 3);
+    return { time, lane, hand: slot.hand, cut: slot.cut };
+  });
+
+  return {
+    title: 'STAGE 01 // FUBUKI MIX',
+    bpm: BGM_BPM, // 仅用于 HUD 显示，谱面本身不再依赖 BPM
+    durationMs: durationMs + 2_000,
+    approachMs,
+    notes,
+  };
 }
