@@ -89,7 +89,7 @@ export const StatusCard: React.FC = () => {
       <div className="mt-8 pt-6 border-t-2 border-game-silver/20 flex justify-between items-center text-[10px] font-pixel">
         <span className="text-game-silver opacity-50">#AETHER_LINK</span>
         <a
-          href={`#${'levels'}`}
+          href="#game"
           className="text-game-teal hover:text-game-pink transition-colors"
         >
           VIEW_DETAILS &gt;

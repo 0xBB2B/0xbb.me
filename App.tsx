@@ -23,7 +23,7 @@ import { useMediaQuery } from './hooks/useMediaQuery';
 const BeatSaberGame = lazy(() => import('./components/beat-saber/BeatSaberGame.tsx'));
 
 // 顶部导航锚点；与下方各 section 的 id 对齐。
-const NAV_ITEMS = ['HOME', 'STATS', 'LEVELS', 'SKILLS'] as const;
+const NAV_ITEMS = ['HOME', 'STATS', 'GAME', 'SKILLS'] as const;
 
 // SOCIAL_LINKS 名称到 lucide 图标的映射，让社交按钮拥有统一视觉语言。
 // 注：lucide-react v1 砍掉了所有品牌 logo（GitHub/LinkedIn 等），故此处使用
@@ -138,7 +138,7 @@ function App() {
             className="flex flex-wrap justify-center gap-4"
           >
             <a
-              href="#levels"
+              href="#game"
               className="pixel-card bg-game-purple border-game-purple group hover:bg-game-teal hover:border-game-teal transition-all"
             >
               <span className="font-pixel text-xs flex items-center gap-2 group-hover:text-game-dark">
@@ -221,7 +221,7 @@ function App() {
         </section>
 
         {/* LEVELS：嵌入节奏光剑（替换 Aether 原版的 LEVEL_SELECT） */}
-        <section id="levels" className="py-24 px-6 max-w-7xl mx-auto">
+        <section id="game" className="py-24 px-6 max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
             <div>
               <div className="inline-block px-3 py-1 bg-game-pink/20 border border-game-pink text-game-pink font-pixel text-[10px] mb-4">
