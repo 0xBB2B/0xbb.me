@@ -1,21 +1,70 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
+import { motion } from 'motion/react';
+import {
+  BookOpen,
+  Briefcase,
+  ChevronDown,
+  Code2,
+  ExternalLink,
+  Gamepad2,
+  Layers,
+  Mail,
+  Sparkles,
+} from 'lucide-react';
 import { GlitchText } from './components/GlitchText.tsx';
-import { BeatSaberPlaceholder } from './components/beat-saber/BeatSaberPlaceholder.tsx';
 import { ProjectCard } from './components/ProjectCard.tsx';
-import { CharacterVisual } from './components/CharacterVisual.tsx';
-import { PROJECTS, SKILLS, SOCIAL_LINKS, PROFILE } from './constants';
+import { AetherBackground } from './components/aether/AetherBackground.tsx';
+import { Terminal } from './components/aether/Terminal.tsx';
+import { StatusCard } from './components/aether/StatusCard.tsx';
+import { BeatSaberPlaceholder } from './components/beat-saber/BeatSaberPlaceholder.tsx';
+import { PROFILE, PROJECTS, SKILLS, SOCIAL_LINKS } from './constants';
 import { useMediaQuery } from './hooks/useMediaQuery';
 
 // 桌面端才动态 import BeatSaberGame：把 three.js（约 600KB）从移动端
 // 首屏 bundle 中拆出来，移动端永远不下载也不渲染游戏组件。
 const BeatSaberGame = lazy(() => import('./components/beat-saber/BeatSaberGame.tsx'));
 
+// 顶部导航锚点；与下方各 section 的 id 对齐。
+const NAV_ITEMS = ['HOME', 'STATS', 'LEVELS', 'SKILLS', 'DEPLOYED'] as const;
+
+// SOCIAL_LINKS 名称到 lucide 图标的映射，让社交按钮拥有统一视觉语言。
+// 注：lucide-react v1 砍掉了所有品牌 logo（GitHub/LinkedIn 等），故此处使用
+// 语义化通用图标——Code2 代表代码仓库、Briefcase 代表职业网络、BookOpen
+// 代表技术内容平台——与 Aether Link 主题的极简像素美学保持一致。
+const SOCIAL_ICON: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  GitHub: Code2,
+  LinkedIn: Briefcase,
+  Email: Mail,
+  Juejin: BookOpen,
+};
+
+const FALLBACK_SOCIAL_ICON = ExternalLink;
+
 /**
- * App 渲染个人主页主界面。
+ * 把 PROFILE.name 截短为顶部导航 logo 字串：超过 8 字符截断后补 _SYS 后缀。
+ *
+ * 让 logo 在窄屏也能保持紧凑节奏，并和 Aether Link 原版 SW_00.SYS 命名风格对齐。
+ */
+function buildLogoText(name: string): string {
+  const upper = name.toUpperCase();
+  if (upper.length <= 8) return `${upper}.SYS`;
+  return `${upper.slice(0, 8)}_SYS`;
+}
+
+/**
+ * App 渲染 Aether Link 主题作品集主界面。
+ *
+ * 主要分段：
+ *  - HERO：玩家入口；
+ *  - STATS：玩家档案 + 状态卡；
+ *  - LEVELS：嵌入节奏光剑游戏；
+ *  - SKILLS：能力树进度条；
+ *  - DEPLOYED：真实部署项目列表；
+ *  - FOOTER：GAME OVER 收束。
  */
 function App() {
   const [mounted, setMounted] = useState(false);
-  // lg 以上视为桌面端，匹配下面 lg:flex-row 的整体布局断点。
+  // lg 以上视为桌面端，匹配 BeatSaber 键盘玩法的最小可用尺寸。
   const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   useEffect(() => {
@@ -24,204 +73,304 @@ function App() {
 
   if (!mounted) return null;
 
+  const logoText = buildLogoText(PROFILE.name);
+
   return (
-    <div className="min-h-screen bg-neon-bg text-gray-200 font-mono relative selection:bg-neon-pink selection:text-neon-bg pb-20 overflow-hidden">
-      {/* 背景四层叠加：深紫渐变 → BB 像素壁纸 → 半色调圆点 → 弱斜条纹（静态）→ HUD 横线。
-          相比初版刻意去掉了页面级 CRT 扫描与 stripe-drift 动画，让暗底也不刺眼。 */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* 1. 底色：深紫罗兰渐变 + 品红粉 / 紫罗兰角落径向光斑（呼应参考图舞台粉）。 */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(155,123,255,0.32),transparent_30%),radial-gradient(circle_at_82%_18%,rgba(255,94,199,0.22),transparent_28%),radial-gradient(circle_at_50%_92%,rgba(122,77,255,0.20),transparent_45%),linear-gradient(160deg,#0a0420_0%,#180b34_55%,#0a0420_100%)]"></div>
-        {/* 2. BB 像素壁纸：mix-blend-screen 让浅紫/粉壁纸元素在深底上自然发亮。 */}
-        <div className="absolute inset-0 bb-wallpaper opacity-65 mix-blend-screen animate-pattern-drift"></div>
-        {/* 3. 半色调点阵：双层粉/青圆点，叠出印刷网点质感（已降一档不透明度）。 */}
-        <div className="absolute inset-0 halftone-dots opacity-80 mix-blend-screen animate-halftone-drift"></div>
-        {/* 4. 紫色对角线条纹：静态低不透明度肌理（不带 stripe-drift 动画，避免眩晕）。 */}
-        <div className="absolute inset-0 diagonal-stripes opacity-85 mix-blend-screen"></div>
-        {/* 5. HUD 横线：紫罗兰 / 品红粉，深底上能凸显但不刺眼。 */}
-        <div className="absolute left-0 right-0 top-20 h-px bg-gradient-to-r from-transparent via-neon-purple/70 to-transparent"></div>
-        <div className="absolute left-0 right-0 bottom-28 h-px bg-gradient-to-r from-transparent via-neon-pink/55 to-transparent"></div>
+    <div className="relative min-h-screen selection:bg-game-teal selection:text-game-dark overflow-hidden">
+      {/* CRT 扫描线浮层 + 内阴影暗角 */}
+      <div className="scanline" />
+      <div className="fixed inset-0 pointer-events-none z-[150] shadow-[inset_0_0_100px_rgba(0,0,0,0.5)]" />
+
+      {/* Boot 启动终端：完成后自动淡出。 */}
+      <Terminal />
+
+      {/* 浮动方块背景（青 / 紫两组 motion 动画）。 */}
+      <AetherBackground />
+
+      {/* 背景装饰：径向辉光 + 1/4 网格竖线，给页面长滚动增加纵深感。 */}
+      <div className="fixed top-0 left-0 w-full h-full -z-20 opacity-20 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(168,85,247,0.1),transparent_70%)]" />
+        <div className="absolute h-full w-[1px] bg-game-silver/10 left-1/4" />
+        <div className="absolute h-full w-[1px] bg-game-silver/10 left-2/4" />
+        <div className="absolute h-full w-[1px] bg-game-silver/10 left-3/4" />
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl pt-12">
+      <nav className="fixed top-0 w-full z-50 p-6 flex justify-between items-center mix-blend-difference">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="font-pixel text-xs tracking-tighter text-game-teal"
+        >
+          {logoText}
+        </motion.div>
+        <div className="hidden md:flex gap-8 items-center">
+          {NAV_ITEMS.map((item, i) => (
+            <motion.a
+              key={item}
+              href={`#${item.toLowerCase()}`}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="font-cyber text-[10px] tracking-[0.2em] hover:text-game-teal transition-colors"
+            >
+              //{item}
+            </motion.a>
+          ))}
+        </div>
+      </nav>
 
-        <header className="flex flex-col md:flex-row justify-between items-center border-b-2 border-neon-purple/50 pb-6 mb-12 relative">
-           <div className="flex flex-col md:flex-row items-center gap-6 w-full md:w-auto text-center md:text-left">
-             <div className="relative hidden md:block">
-               {/* 像素剪影头像：硬色差 drop-shadow + 2px 切角描边。 */}
-               <img
-                 src={PROFILE.avatar}
-                 alt={PROFILE.name}
-                 className="relative w-24 h-24 border-2 border-neon-bg shrink-0 object-cover pixel-clip-sm chrome-edge"
-                 style={{ imageRendering: 'pixelated' }}
-               />
-             </div>
-             <div className="relative">
-               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
-                 <img src={PROFILE.avatar} alt={PROFILE.name} className="w-10 h-10 border-2 border-neon-bg pixel-clip-sm chrome-edge md:hidden" />
-                 <div className="font-pixel text-[9px] text-neon-cyan tracking-widest">{PROFILE.status}</div>
-                 <span className="sticker-chip animate-hud-blink text-[9px]">LV.999</span>
-               </div>
-               <GlitchText as="h1" text={PROFILE.name} className="text-5xl md:text-7xl font-black font-cyber text-white tracking-normal text-level" />
-               <p className="mt-3 text-lg sm:text-xl text-gray-300 font-light">
-                 <span className="text-neon-pink">{'>'}</span> {PROFILE.role}
-               </p>
-               <div className="mt-4 flex flex-wrap justify-center md:justify-start gap-3 text-[8px]">
-                 <span className="sticker-chip sticker-chip-purple">AHA! HACKER</span>
-                 <span className="sticker-chip sticker-chip-pink">PUNKLORDE</span>
-                 <span className="sticker-chip sticker-chip-cyan animate-aha-flicker">DATA ONLINE</span>
-               </div>
-             </div>
-           </div>
+      <main className="relative z-10">
+        {/* HERO */}
+        <section
+          id="home"
+          className="min-h-screen flex flex-col items-center justify-center pt-24 px-6 text-center"
+        >
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+            className="mb-6 relative"
+          >
+            <div className="absolute -inset-4 bg-game-purple/20 blur-3xl rounded-full" />
+            <Gamepad2 size={80} className="text-game-teal relative z-10" />
+          </motion.div>
 
-           <div className="flex gap-4 mt-8 md:mt-0 items-center">
-             {SOCIAL_LINKS.map((link: any) => (
-               <a
-                 key={link.name}
-                 href={link.url}
-                 className="group flex flex-col items-center gap-1 text-gray-300 hover:text-neon-cyan transition-colors"
-               >
-                 <div className="w-11 h-11 border-2 border-neon-bg bg-neon-panel font-pixel text-[10px] flex items-center justify-center pixel-clip-sm pixel-shadow-cyan group-hover:pixel-shadow-pink transition-all">
-                    {link.icon}
-                 </div>
-                 <span className="font-pixel text-[7px] tracking-wider uppercase opacity-0 group-hover:opacity-100 transition-opacity">{link.name}</span>
-               </a>
-             ))}
-           </div>
+          <GlitchText
+            text={PROFILE.name}
+            className="text-4xl md:text-7xl font-cyber font-black mb-4"
+          />
 
-           {/* 头部底部彩条：实色硬带 + 一抹微 glow，深底上仍是 HUD 收边但不眩光。 */}
-           <div className="absolute -bottom-[2px] left-0 w-1/3 h-[2px] bg-neon-cyan shadow-[0_0_6px_rgba(62,201,245,0.5)]"></div>
-           <div className="absolute -bottom-[2px] right-0 w-1/5 h-[2px] bg-neon-pink shadow-[0_0_6px_rgba(255,94,199,0.5)]"></div>
-        </header>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="font-mono text-game-silver text-sm md:text-lg max-w-2xl mx-auto uppercase tracking-wider mb-12"
+          >
+            {PROFILE.role}
+          </motion.p>
 
-        <div className="flex flex-col lg:flex-row gap-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+            className="flex flex-wrap justify-center gap-4"
+          >
+            <a
+              href="#levels"
+              className="pixel-card bg-game-purple border-game-purple group hover:bg-game-teal hover:border-game-teal transition-all"
+            >
+              <span className="font-pixel text-xs flex items-center gap-2 group-hover:text-game-dark">
+                PRESS_START <Layers size={14} />
+              </span>
+            </a>
+            <a
+              href={SOCIAL_LINKS.find((l) => l.name === 'GitHub')?.url ?? '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pixel-card border-game-silver/50 hover:border-game-pink transition-all"
+            >
+              <span className="font-pixel text-xs text-game-silver hover:text-game-pink">
+                JOIN_PARTY
+              </span>
+            </a>
+          </motion.div>
 
-          <CharacterVisual className="lg:hidden mb-6" />
+          <motion.div
+            animate={{ y: [0, 10, 0] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+            className="absolute bottom-10"
+          >
+            <ChevronDown size={32} className="text-game-silver opacity-20" />
+          </motion.div>
+        </section>
 
-          <div className="w-full lg:w-2/3 flex flex-col space-y-12">
-
-            <section className="space-y-4">
-              <div className="flex items-center gap-2 mb-6">
-                 <div className="w-2 h-2 bg-neon-pink animate-pulse"></div>
-                 <h2 className="text-2xl font-cyber font-bold text-white tracking-wide">USER_PROFILE</h2>
+        {/* STATS */}
+        <section
+          id="stats"
+          className="min-h-screen flex flex-col items-center justify-center py-24 px-6 bg-game-dark/50"
+        >
+          <div className="w-full max-w-6xl grid md:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="inline-block px-3 py-1 bg-game-teal/20 border border-game-teal text-game-teal font-pixel text-[10px] mb-6">
+                CHARACTER_DATA
               </div>
-                <p className="whitespace-pre-line leading-relaxed text-gray-300 text-lg border-l-4 border-neon-pink/70 bg-neon-panel/40 px-4 py-5">
-                  {PROFILE.bio}
-                </p>
+              <h2 className="font-cyber text-4xl md:text-5xl mb-8">PLAYER_PROFILE</h2>
+              <p className="font-mono text-game-silver leading-relaxed mb-4 whitespace-pre-line">
+                {PROFILE.bio}
+              </p>
+              <div className="flex items-center gap-3 text-xs font-mono text-game-silver mb-8">
+                <span className="font-pixel text-[10px] text-game-teal">LOC:</span>
+                <span>{PROFILE.location}</span>
+                <span className="w-2 h-2 bg-green-500 shadow-[0_0_6px_#22c55e] animate-pulse rounded-full" />
+              </div>
+              <div className="flex flex-wrap gap-4">
+                {SOCIAL_LINKS.map((link) => {
+                  const Icon = SOCIAL_ICON[link.name] ?? FALLBACK_SOCIAL_ICON;
+                  return (
+                    <a
+                      key={link.name}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={link.name}
+                      className="text-game-silver hover:text-game-teal transition-colors"
+                    >
+                      <Icon size={24} />
+                    </a>
+                  );
+                })}
+              </div>
+            </motion.div>
 
-            </section>
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="flex justify-center"
+            >
+              <StatusCard />
+            </motion.div>
+          </div>
+        </section>
 
-            <section>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="w-3 h-3 bg-neon-purple"></div>
-                  <h2 className="text-2xl font-cyber font-bold text-white tracking-wide">RHYTHM_BLADE</h2>
-                  <span className="sticker-chip sticker-chip-pink text-[8px]">AHA! TIME</span>
+        {/* LEVELS：嵌入节奏光剑（替换 Aether 原版的 LEVEL_SELECT） */}
+        <section id="levels" className="py-24 px-6 max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
+            <div>
+              <div className="inline-block px-3 py-1 bg-game-pink/20 border border-game-pink text-game-pink font-pixel text-[10px] mb-4">
+                BOSS_BATTLE
+              </div>
+              <h2 className="font-cyber text-4xl md:text-5xl uppercase italic">RHYTHM_BLADE</h2>
+              <p className="mt-3 font-mono text-game-silver text-sm uppercase tracking-widest">
+                Dual-saber arcade · three.js + Web Audio
+              </p>
+            </div>
+            {isDesktop && (
+              <div className="text-right font-pixel text-[10px] text-game-silver">
+                <div>
+                  L <span className="text-game-purple">[WASD]</span>
                 </div>
-                <div className="font-pixel text-[9px] text-neon-cyan animate-pulse break-all sm:text-right">
-                  /// DUAL_SABER
+                <div className="mt-1">
+                  R <span className="text-game-teal">[IJKL]</span>
                 </div>
               </div>
-              {/* 节奏光剑 3D 容器：硬切角 + 紫罗兰像素阴影框。 */}
-              <div className="relative group">
-                <div className="relative border-2 border-neon-purple bg-neon-bg pixel-clip-sm pixel-shadow-purple">
-                  {isDesktop ? (
-                    <Suspense fallback={<BeatSaberPlaceholder />}>
-                      <BeatSaberGame />
-                    </Suspense>
-                  ) : (
-                    <BeatSaberPlaceholder />
-                  )}
-                </div>
-              </div>
-              {isDesktop && (
-                <p className="mt-3 text-[10px] text-gray-400 text-right font-pixel">
-                  L <span className="text-neon-purple">[WASD]</span> · R <span className="text-neon-cyan">[IJKL]</span>
-                </p>
-              )}
-            </section>
-
+            )}
           </div>
 
-          <div className="w-full lg:w-1/3 flex flex-col space-y-12">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="pixel-card p-0 overflow-hidden"
+          >
+            {isDesktop ? (
+              <Suspense fallback={<BeatSaberPlaceholder />}>
+                <BeatSaberGame />
+              </Suspense>
+            ) : (
+              <BeatSaberPlaceholder />
+            )}
+          </motion.div>
+        </section>
 
-            <section className="bg-neon-panel/85 p-6 border-2 border-neon-purple relative overflow-hidden pixel-clip-sm pixel-shadow-purple">
-               {/* 半色调底纹叠在面板内，呼应整体壁纸印刷感。 */}
-               <div className="absolute inset-0 halftone-dots-dense opacity-25 pointer-events-none mix-blend-screen"></div>
-               <div className="flex items-center gap-3 mb-6 relative z-10">
-                 <div className="w-3 h-3 bg-neon-purple"></div>
-                 <h2 className="text-xl font-cyber font-bold text-white tracking-wide">SKILL_MATRIX</h2>
-                 <span className="ml-auto sticker-chip text-[8px]">MAX RANK</span>
-              </div>
+        {/* SKILLS */}
+        <section id="skills" className="py-24 px-6 bg-game-dark">
+          <div className="max-w-4xl mx-auto text-center mb-16">
+            <h2 className="font-cyber text-4xl md:text-5xl mb-6 flex items-center justify-center gap-4">
+              <Sparkles className="text-game-teal" /> ABILITY_TREE
+            </h2>
+            <p className="text-game-silver font-mono text-sm uppercase tracking-[0.2em]">
+              Upgrading system core... [100%]
+            </p>
+          </div>
 
-              <div className="space-y-4 relative z-10">
-                {SKILLS.map((skill: any) => (
-                  <div key={skill.name}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-200 font-bold font-mono">{skill.name}</span>
-                      <span className={`font-pixel text-[9px] ${skill.level >= 999 ? 'text-neon-yellow text-level' : 'text-neon-cyan'}`}>{skill.level >= 999 ? 'LV.999' : `${skill.level}%`}</span>
-                    </div>
-                    {/* 像素进度条：8 段离散块，更像复古血条。 */}
-                    <div className="h-3 w-full bg-neon-bg border border-neon-purple/60 overflow-hidden relative">
-                      <div
-                        className="h-full bg-gradient-to-r from-neon-purple via-neon-pink to-neon-cyan relative"
-                        style={{ width: `${Math.min(skill.level, 100)}%` }}
+          <div className="max-w-2xl mx-auto grid gap-12">
+            {SKILLS.map((skill, i) => {
+              const isMax = skill.level >= 999;
+              const fillPercent = isMax ? 100 : Math.min(skill.level, 100);
+              const valueText = isMax ? 'LV.999' : `${skill.level}%`;
+              return (
+                <motion.div
+                  key={skill.name}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  className="flex items-center gap-8"
+                >
+                  <div className="w-12 h-12 shrink-0 border-2 border-game-silver/20 flex items-center justify-center font-cyber text-xs text-game-silver">
+                    {(i + 1).toString().padStart(2, '0')}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between mb-2">
+                      <span className="font-pixel text-xs tracking-tight">{skill.name}</span>
+                      <span
+                        className={`font-pixel text-xs ${isMax ? 'text-game-pink' : 'text-game-teal'}`}
                       >
-                         <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent_0_10px,rgba(0,0,0,0.45)_10px_12px)]"></div>
-                         <div className="absolute top-0 right-0 h-full w-[2px] bg-white"></div>
-                      </div>
+                        {valueText}
+                      </span>
+                    </div>
+                    <div className="h-1 w-full bg-game-silver/10 rounded-full overflow-hidden">
+                      <motion.div
+                        className={`h-full ${isMax ? 'bg-game-pink' : 'bg-game-teal'}`}
+                        initial={{ width: 0 }}
+                        whileInView={{ width: `${fillPercent}%` }}
+                        transition={{ duration: 1.5, ease: 'circOut' }}
+                      />
                     </div>
                   </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="grid grid-cols-2 gap-5 mt-8">
-              <div className="border-2 border-neon-yellow p-4 bg-neon-panel pixel-clip-sm pixel-shadow-yellow group">
-                 <div className="font-pixel text-[8px] text-gray-400 mb-2 tracking-widest">CONTRIBUTIONS</div>
-                 <div className="text-3xl font-cyber text-neon-yellow group-hover:animate-pulse">{PROFILE.stats.contributions}</div>
-              </div>
-              <div className="border-2 border-neon-pink p-4 bg-neon-panel pixel-clip-sm pixel-shadow-pink group">
-                 <div className="font-pixel text-[8px] text-gray-400 mb-2 tracking-widest">UPTIME</div>
-                 <div className="text-3xl font-cyber text-neon-pink group-hover:animate-pulse">{PROFILE.stats.uptime}</div>
-              </div>
-              <div className="border-2 border-neon-cyan p-4 bg-neon-panel pixel-clip-sm pixel-shadow-cyan group col-span-2">
-                 <div className="font-pixel text-[8px] text-gray-400 mb-2 tracking-widest">CURRENT LOCATION</div>
-                 <div className="text-xl font-mono text-neon-cyan flex items-center justify-between">
-                   <span>{PROFILE.location}</span>
-                   <span className="w-3 h-3 bg-green-500 shadow-[0_0_6px_#22c55e] animate-ping"></span>
-                 </div>
-              </div>
-            </section>
-
+                </motion.div>
+              );
+            })}
           </div>
-        </div>
-
-        {/* Projects Grid Section */}
-        {PROJECTS && PROJECTS.length > 0 && (
-        <section className="mt-24 mb-12">
-           <div className="flex flex-wrap items-center gap-3 mb-8 border-b-2 border-neon-purple/60 pb-4">
-              <div className="w-3 h-3 bg-white"></div>
-              <h2 className="flex-1 min-w-0 text-2xl sm:text-3xl font-cyber font-bold text-white tracking-wide break-all leading-tight">
-                DEPLOYED_PROJECTS
-              </h2>
-              <span className="sticker-chip sticker-chip-cyan text-[8px]">ARCADE</span>
-           </div>
-
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-             {PROJECTS.map(project => (
-               <ProjectCard key={project.id} project={project} />
-             ))}
-           </div>
         </section>
+
+        {/* DEPLOYED：真实部署项目（保留 Aether 卡片骨架，移动到独立段） */}
+        {PROJECTS && PROJECTS.length > 0 && (
+          <section id="deployed" className="py-24 px-6 max-w-7xl mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
+              <div>
+                <div className="inline-block px-3 py-1 bg-game-purple/20 border border-game-purple text-game-purple font-pixel text-[10px] mb-4">
+                  RECENT_QUESTS
+                </div>
+                <h2 className="font-cyber text-4xl md:text-5xl uppercase italic">
+                  DEPLOYED_PROJECTS
+                </h2>
+              </div>
+              <div className="text-right">
+                <span className="font-pixel text-[10px] text-game-silver block mb-2 opacity-50">
+                  TOTAL:
+                </span>
+                <span className="font-cyber text-2xl text-game-teal">
+                  {PROJECTS.length.toString().padStart(2, '0')}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {PROJECTS.map((project, i) => (
+                <ProjectCard key={project.id} project={project} index={i} />
+              ))}
+            </div>
+          </section>
         )}
 
-        {/* Footer */}
-        <footer className="mt-10 border-t border-neon-purple/35 py-8 text-center text-xs text-gray-500 flex flex-col items-center gap-4">
-           <p>{PROFILE.footer}</p>
-           <p>{PROFILE.copyright.replace('2024', new Date().getFullYear().toString())}</p>
+        <footer className="py-24 px-6 text-center border-t border-game-silver/10">
+          <GlitchText
+            text="GAME OVER"
+            className="text-6xl md:text-8xl font-cyber mb-8 opacity-20"
+          />
+          <p className="font-pixel text-[10px] text-game-silver mb-4 uppercase">
+            {PROFILE.footer}
+          </p>
+          <p className="font-mono text-[10px] text-game-silver/50">
+            © {new Date().getFullYear()} {PROFILE.copyright}
+          </p>
         </footer>
-
-      </div>
+      </main>
     </div>
   );
 }

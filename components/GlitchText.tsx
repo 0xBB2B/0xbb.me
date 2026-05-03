@@ -1,23 +1,65 @@
 import React from 'react';
+import { motion } from 'motion/react';
 
 interface GlitchTextProps {
   text: string;
-  as?: 'h1' | 'h2' | 'h3' | 'p' | 'span';
   className?: string;
+  as?: 'h1' | 'h2' | 'h3' | 'p' | 'span';
 }
 
-export const GlitchText: React.FC<GlitchTextProps> = ({ text, as = 'span', className = '' }) => {
+/**
+ * GlitchText 渲染 Aether Link 主题的故障文字效果。
+ *
+ * 在主体文本背后叠加两层错位影子（粉色 / 青色），通过 motion 让两层
+ * 沿微小幅度反相抖动，营造模拟 CRT 信号干扰的故障美感。
+ *
+ * @param text 主体文本
+ * @param className 容器类名（用于尺寸与字体）
+ * @param as 主体语义标签，默认 h1
+ */
+export const GlitchText: React.FC<GlitchTextProps> = ({
+  text,
+  className = '',
+  as = 'h1',
+}) => {
   const Tag = as;
-  
+
   return (
-    <Tag className={`relative inline-block group hover:text-neon-pink transition-colors duration-300 ${className}`}>
-      <span className="relative z-10">{text}</span>
-      <span className="absolute top-0 left-0 -z-10 w-full h-full text-neon-cyan opacity-0 group-hover:opacity-80 animate-glitch translate-x-[2px]">
+    <div className={`relative inline-block ${className}`}>
+      <Tag className="relative z-10">{text}</Tag>
+      <motion.span
+        className="absolute top-0 left-0 -z-10 text-game-pink opacity-70"
+        animate={{
+          x: [0, -2, 2, -1, 0],
+          y: [0, 1, -1, 2, 0],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 0.2,
+          ease: 'linear',
+        }}
+        aria-hidden="true"
+      >
         {text}
-      </span>
-      <span className="absolute top-0 left-0 -z-10 w-full h-full text-neon-pink opacity-0 group-hover:opacity-80 animate-glitch -translate-x-[2px] delay-75">
+      </motion.span>
+      <motion.span
+        className="absolute top-0 left-0 -z-10 text-game-teal opacity-70"
+        animate={{
+          x: [0, 2, -2, 1, 0],
+          y: [0, -1, 1, -2, 0],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 0.2,
+          delay: 0.1,
+          ease: 'linear',
+        }}
+        aria-hidden="true"
+      >
         {text}
-      </span>
-    </Tag>
+      </motion.span>
+    </div>
   );
 };
+
+export default GlitchText;

@@ -24,9 +24,16 @@
               pixelbig: ['"VT323"', '"Press Start 2P"', "monospace"],
             },
             colors: {
-              // 暗黑半色调胶贴风调色板：参考图是「品红粉舞台 + 紫罗兰角色 + 像素青 + 亮黄 COMBO」。
-              // 整体保持暗底沉浸感，accent 高饱和但相比初版略收一档；ink 作三段层次中最深的一层
-              // 给硬阴影 / 边框 / sticker 衬底用，避免纯黑死板。
+              // Aether Link 主题调色板：青色（teal）为视觉主标识，紫罗兰
+              // 与品红粉作辅色，深蓝紫为底，银紫为中性灰。
+              game: {
+                purple: "#a855f7",
+                teal: "#2dd4bf",
+                pink: "#f472b6",
+                dark: "#0f172a",
+                silver: "#94a3b8",
+              },
+              // 游戏内部专属调色板（BeatSaberGame 视觉语言保持原貌）。
               neon: {
                 pink: "#ff5ec7",
                 cyan: "#3ec9f5",
@@ -42,12 +49,6 @@
               "pulse-fast": "pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite",
               glitch: "glitch 1s linear infinite",
               scanline: "scanline 8s linear infinite",
-              "pixel-drift": "pixel-drift 12s linear infinite",
-              "halftone-drift": "halftone-drift 24s linear infinite",
-              "stripe-drift": "stripe-drift 18s linear infinite",
-              "pattern-drift": "pattern-drift 60s linear infinite",
-              "hud-blink": "hud-blink 1.7s steps(2, end) infinite",
-              "sticker-wiggle": "sticker-wiggle 5s steps(8, end) infinite",
             },
             keyframes: {
               glitch: {
@@ -59,69 +60,77 @@
                 "0%": { transform: "translateY(-100%)" },
                 "100%": { transform: "translateY(100%)" },
               },
-              "pixel-drift": {
-                "0%": { transform: "translate3d(0,0,0)" },
-                "100%": { transform: "translate3d(-48px,48px,0)" },
-              },
-              "halftone-drift": {
-                "0%": { backgroundPosition: "0 0, 0 0" },
-                "100%": { backgroundPosition: "120px 80px, -80px 60px" },
-              },
-              "stripe-drift": {
-                "0%": { backgroundPosition: "0 0" },
-                "100%": { backgroundPosition: "120px 0" },
-              },
-              "pattern-drift": {
-                "0%": { backgroundPosition: "0 0" },
-                "100%": { backgroundPosition: "320px 320px" },
-              },
-              "hud-blink": {
-                "0%, 75%": { opacity: "1" },
-                "76%, 100%": { opacity: "0.28" },
-              },
-              "sticker-wiggle": {
-                "0%, 100%": { transform: "rotate(-2deg)" },
-                "50%": { transform: "rotate(2deg)" },
-              },
             },
           },
         },
       };
     </script>
     <style>
-      /* Webkit 滚动条样式 */
+      /* === Webkit 滚动条样式：对齐 game-dark 底色与 game-purple 主调 === */
       ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #06021a;
+        background: #0f172a;
       }
       ::-webkit-scrollbar-thumb {
-        background: #2a1f55;
-        border: 1px solid #9b7bff;
+        background: #1e293b;
+        border: 1px solid #a855f7;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #9b7bff;
+        background: #a855f7;
       }
       body {
-        background-color: #0a0420;
-        color: #e8e0ff;
+        background-color: #0f172a;
+        color: #ffffff;
         overflow-x: hidden;
       }
       body::selection {
-        background: #ff5ec7;
-        color: #0a0420;
+        background: #2dd4bf;
+        color: #0f172a;
       }
-      /* 文字主标题硬色差：相比初版 18px 大半径多重 glow，这里只用 1px 实色双向错位 +
-         一抹 6px 微 glow——暗底上仍醒目，但长时间看不再炫光眼累。 */
+
+      /* === Aether Link 工具类 === */
+
+      /* CRT 扫描线浮层：固定铺满视口，用 4px 深条纹模拟显像管。
+         opacity 控制在 0.15 防止长时间观看眼累。 */
+      .scanline {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          to bottom,
+          rgba(18, 16, 16, 0) 50%,
+          rgba(0, 0, 0, 0.25) 50%
+        );
+        background-size: 100% 4px;
+        z-index: 100;
+        pointer-events: none;
+        opacity: 0.15;
+      }
+
+      /* 像素硬阴影卡片：Aether 标志性视觉，2px 银边 + 4px 紫罗兰偏移阴影。 */
+      .pixel-card {
+        position: relative;
+        border: 2px solid #94a3b8;
+        background: #0f172a;
+        padding: 1.5rem;
+        box-shadow: 4px 4px 0 0 #a855f7;
+      }
+
+      /* === 以下为 BeatSaberGame 内部视觉语言保留 token === */
+
+      /* 主标题硬色差文字阴影。 */
       .text-level {
         text-shadow:
           1px 0 rgba(255, 94, 199, 0.85),
           -1px 0 rgba(62, 201, 245, 0.85),
           0 0 6px rgba(155, 123, 255, 0.35);
       }
-      /* 银狼像素游戏机外框：用 SVG 描出像素切角与扫描带感。 */
+
+      /* 像素切角外框。 */
       .pixel-frame {
         clip-path: polygon(
           0 12px, 12px 0, calc(100% - 12px) 0, 100% 12px,
@@ -129,6 +138,7 @@
           12px 100%, 0 calc(100% - 12px)
         );
       }
+
       @keyframes aha-flicker {
         0%, 92%, 100% { opacity: 0.9; }
         93% { opacity: 0.4; }
@@ -137,7 +147,7 @@
       .animate-aha-flicker {
         animation: aha-flicker 4.2s steps(8, end) infinite;
       }
-      /* LV.999 全连特效：从极小快速爆出，轻微回弹后落定。 */
+
       @keyframes lv999-pop {
         0%   { transform: scale(0.35) rotate(-6deg); opacity: 0; filter: blur(8px); }
         25%  { transform: scale(1.25) rotate(3deg);  opacity: 1; filter: blur(0);   }
@@ -146,7 +156,7 @@
         100% { transform: scale(1) rotate(0deg);     opacity: 1; filter: blur(0);   }
       }
       .animate-lv999-pop { animation: lv999-pop 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
-      /* LV.999 同步抖动的故障描边——每帧 step 跳变制造像素位移。 */
+
       @keyframes lv999-glitch {
         0%, 100% { transform: translate(0, 0); }
         20%      { transform: translate(2px, -1px); }
@@ -155,7 +165,7 @@
         80%      { transform: translate(-2px, -2px); }
       }
       .animate-lv999-glitch { animation: lv999-glitch 0.18s steps(4, end) infinite; }
-      /* 横向扫描线快速划过 LV.999 文本，模拟 CRT 扫描频闪。 */
+
       @keyframes lv999-sweep {
         0%   { transform: translateY(-120%); opacity: 0; }
         20%  { opacity: 1; }
@@ -163,99 +173,7 @@
       }
       .animate-lv999-sweep { animation: lv999-sweep 1.6s linear infinite; }
 
-      /* === 像素点阵 / 半色调 (halftone) ===
-         深底配色：品红粉 + 像素青双层错位，呼应参考图大量出现的半色调网点；
-         比原始版略降一档不透明度（0.18→0.15、0.12→0.10），减少视网膜刺眼感。 */
-      .halftone-dots {
-        background-image:
-          radial-gradient(rgba(255, 94, 199, 0.15) 1.5px, transparent 1.6px),
-          radial-gradient(rgba(62, 201, 245, 0.10) 1px, transparent 1.2px);
-        background-size: 14px 14px, 22px 22px;
-        background-position: 0 0, 7px 11px;
-      }
-      .halftone-dots-dense {
-        background-image:
-          radial-gradient(rgba(255, 255, 255, 0.16) 1.2px, transparent 1.4px),
-          radial-gradient(rgba(155, 123, 255, 0.18) 1px, transparent 1.2px);
-        background-size: 8px 8px, 14px 14px;
-        background-position: 0 0, 4px 4px;
-      }
-
-      /* === 斜条纹底纹（参考图角色身后的紫色对角线） === */
-      .diagonal-stripes {
-        background-image: repeating-linear-gradient(
-          115deg,
-          rgba(155, 123, 255, 0.07) 0 4px,
-          transparent 4px 14px
-        );
-      }
-      .diagonal-stripes-strong {
-        background-image: repeating-linear-gradient(
-          115deg,
-          rgba(255, 94, 199, 0.18) 0 3px,
-          transparent 3px 10px
-        );
-      }
-
-      /* === Miku 风格 wallpaper：葱 / 音符 / 星 / 双马尾剪影 / 39·01 像素徽标 === */
-      /* 设计原则：保留紫色主调，元素用青/粉/紫/黄四色错落；200×200 格子兼顾
-         密度与留白，避免重复感太强又能形成"图案密度"的视觉节奏。 */
-      .bb-wallpaper {
-        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200' shape-rendering='crispEdges'><g fill='%2366e0ff' fill-opacity='0.22'><rect x='28' y='32' width='3' height='14'/><polygon points='25,32 29.5,24 34,32'/></g><g fill='%2366e0ff' fill-opacity='0.18' transform='translate(155 150) rotate(18)'><rect x='0' y='0' width='3' height='12'/><polygon points='-3,0 1.5,-7 6,0'/></g><g fill='%23ff4fd8' fill-opacity='0.22'><ellipse cx='160' cy='52' rx='4' ry='3'/><rect x='162.5' y='38' width='1.4' height='14'/><path d='M163.9 38 q 6 4 0 8' fill='none' stroke='%23ff4fd8' stroke-width='1.2' stroke-opacity='0.22'/></g><g fill='%23ff4fd8' fill-opacity='0.20'><ellipse cx='52' cy='148' rx='3.5' ry='2.6'/><rect x='54' y='136' width='1.2' height='12'/></g><g fill='%23f8ff72' fill-opacity='0.22'><polygon points='100,88 102.4,95 110,95 103.8,99.5 106.2,107 100,102.5 93.8,107 96.2,99.5 90,95 97.6,95'/><polygon points='32,176 33.4,180 38,180 34.3,182.6 35.7,187 32,184.4 28.3,187 29.7,182.6 26,180 30.6,180'/><polygon points='178,108 179.2,111 183,111 180,113 181.2,116.5 178,114.5 174.8,116.5 176,113 173,111 176.8,111'/></g><g fill='%239b7bff' fill-opacity='0.24'><rect x='14' y='100' width='4' height='1'/><rect x='14' y='106' width='4' height='1'/><rect x='14' y='100' width='1' height='7'/><rect x='17' y='100' width='1' height='7'/><rect x='22' y='100' width='1' height='7'/><rect x='21' y='100' width='1' height='1'/><rect x='19' y='106' width='5' height='1'/></g><g fill='%239b7bff' fill-opacity='0.22'><rect x='118' y='40' width='4' height='1'/><rect x='118' y='43' width='3' height='1'/><rect x='118' y='46' width='4' height='1'/><rect x='121' y='40' width='1' height='7'/><rect x='124' y='40' width='4' height='1'/><rect x='124' y='40' width='1' height='3'/><rect x='127' y='40' width='1' height='7'/><rect x='124' y='43' width='4' height='1'/><rect x='124' y='46' width='4' height='1'/></g><g stroke='%2366e0ff' stroke-width='1.1' stroke-opacity='0.18' fill='none'><path d='M68 60 q -3 9 -1 17 q 1 5 -2 9'/><path d='M82 60 q 3 9 1 17 q -1 5 2 9'/></g><g fill='%23ff4fd8' fill-opacity='0.18'><path d='M186 178 l3 -3 l3 3 q 0 3 -3 5 q -3 -2 -3 -5 z'/></g></svg>");
-        background-size: 200px 200px;
-      }
-
-      /* === 像素硬阴影（无 blur） ===
-         衬底 ink (#06021a) 比纯黑略带紫，深底上看仍是"近黑"但少一分死板。 */
-      .pixel-shadow-pink   { box-shadow: 4px 4px 0 0 #ff5ec7, 6px 6px 0 0 #06021a; }
-      .pixel-shadow-cyan   { box-shadow: 4px 4px 0 0 #3ec9f5, 6px 6px 0 0 #06021a; }
-      .pixel-shadow-purple { box-shadow: 4px 4px 0 0 #9b7bff, 6px 6px 0 0 #06021a; }
-      .pixel-shadow-yellow { box-shadow: 4px 4px 0 0 #ffe65a, 6px 6px 0 0 #06021a; }
-      .pixel-shadow-tight  { box-shadow: 2px 2px 0 0 #06021a, 4px 4px 0 0 #9b7bff; }
-
-      /* === 色差错位描边（chromatic aberration）—— 给图片/剪影用 === */
-      .chrome-edge {
-        filter:
-          drop-shadow(2px 0 0 #ff5ec7)
-          drop-shadow(-2px 0 0 #3ec9f5)
-          drop-shadow(0 0 1px rgba(6,2,26,0.85));
-      }
-      .chrome-edge-soft {
-        filter:
-          drop-shadow(1px 0 0 rgba(255,94,199,0.85))
-          drop-shadow(-1px 0 0 rgba(62,201,245,0.85));
-      }
-
-      /* === 像素胶贴徽章（参考图 COMBO 贴纸） ===
-         默认 = 亮黄底 + ink 描边 + 品红粉错位阴影，呼应参考图右上 "027 COMBO"。 */
-      .sticker-chip {
-        font-family: '"Press Start 2P"', monospace;
-        display: inline-block;
-        padding: 6px 10px;
-        border: 2px solid #06021a;
-        background: #ffe65a;
-        color: #06021a;
-        box-shadow: 3px 3px 0 0 #06021a, 5px 5px 0 0 #ff5ec7;
-        text-shadow: none;
-        letter-spacing: 0.08em;
-        line-height: 1;
-        image-rendering: pixelated;
-      }
-      .sticker-chip-pink   { background: #ff5ec7; color: #06021a; box-shadow: 3px 3px 0 0 #06021a, 5px 5px 0 0 #3ec9f5; }
-      .sticker-chip-cyan   { background: #3ec9f5; color: #06021a; box-shadow: 3px 3px 0 0 #06021a, 5px 5px 0 0 #ff5ec7; }
-      .sticker-chip-purple { background: #9b7bff; color: #06021a; box-shadow: 3px 3px 0 0 #06021a, 5px 5px 0 0 #ffe65a; }
-      .sticker-chip-dark   { background: #180b34; color: #3ec9f5; border-color: #3ec9f5; box-shadow: 3px 3px 0 0 #06021a, 5px 5px 0 0 #9b7bff; }
-
-      /* === 像素切角（已有 .pixel-frame，再补一个更小切角的） === */
-      .pixel-clip-sm {
-        clip-path: polygon(
-          0 6px, 6px 0, calc(100% - 6px) 0, 100% 6px,
-          100% calc(100% - 6px), calc(100% - 6px) 100%,
-          6px 100%, 0 calc(100% - 6px)
-        );
-      }
-
-      /* === 像素字 (utility) === */
+      /* 像素字 utility：image-rendering 强化点阵感，BeatSaber HUD 使用。 */
       .font-pixel { font-family: '"Press Start 2P"', monospace; image-rendering: pixelated; }
       .font-pixelbig { font-family: '"VT323"', '"Press Start 2P"', monospace; }
     </style>
