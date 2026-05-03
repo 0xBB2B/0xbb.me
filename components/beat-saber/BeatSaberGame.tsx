@@ -204,21 +204,30 @@ export const BeatSaberGame: React.FC = () => {
     camera.position.set(0, 1.6, 4.6);
     camera.lookAt(0, 1.2, -8);
 
-    // 双手光剑——固定在视图底部，按方向键时高亮挥动。
+    // 双手光剑——挂在隐形的"肩膀 pivot"下。挥砍时旋转的是 pivot，
+    // 不是剑本身：剑柄会以肩膀为圆心公转，模拟人体从肩膀甩动手臂的运动学，
+    // 而不是绕剑柄原地拧动。saber 在 pivot 局部坐标里偏移到原剑柄世界
+    // 位置，默认静止姿态与改动前完全一致。
+    const leftShoulder = new THREE.Group();
+    leftShoulder.position.set(-0.3, 1.45, 4.2);
     const leftSaber = createSaber('L');
-    leftSaber.position.set(-0.55, 0.95, 3.4);
-    leftSaber.rotation.set(-0.2, 0.05, 0.18);
-    scene.add(leftSaber);
+    leftSaber.position.set(-0.25, -0.5, -0.8);
+    leftSaber.rotation.set(-0.18, 0.05, 0.18);
+    leftShoulder.add(leftSaber);
+    scene.add(leftShoulder);
 
+    const rightShoulder = new THREE.Group();
+    rightShoulder.position.set(0.3, 1.45, 4.2);
     const rightSaber = createSaber('R');
-    rightSaber.position.set(0.55, 0.95, 3.4);
-    rightSaber.rotation.set(-0.2, -0.05, -0.18);
-    scene.add(rightSaber);
+    rightSaber.position.set(0.25, -0.5, -0.8);
+    rightSaber.rotation.set(-0.18, -0.05, -0.18);
+    rightShoulder.add(rightSaber);
+    scene.add(rightShoulder);
 
     rendererRef.current = renderer;
     sceneRef.current = scene;
     cameraRef.current = camera;
-    sabersRef.current = { L: leftSaber, R: rightSaber };
+    sabersRef.current = { L: leftShoulder, R: rightShoulder };
 
     const handleResize = () => {
       const w = container.clientWidth;
@@ -556,14 +565,15 @@ export const BeatSaberGame: React.FC = () => {
     /**
      * updateSabers 平滑光剑挥砍弧线、回弹到默认姿态。
      *
-     * 几何上：剑身沿 -Z 方向延伸，pivot 落在剑柄前侧。挥砍方向必须围绕
-     * 与剑身垂直的轴旋转，剑尖才会真正划过空间：
-     *   - 上下挥（swingY） → 绕 X 轴
-     *   - 左右挥（swingX） → 绕 Y 轴
-     * 绕 Z 轴只是"剑身打转"，剑尖基本不动，所以这里只用作静态保留倾角。
+     * sabersRef 存放的是"肩膀 pivot"，光剑作为子节点偏挂在剑柄位置。
+     * 挥砍时旋转 pivot，剑柄+剑尖整体绕肩膀公转：
+     *   - 上下挥（swingY） → 绕 pivot X 轴：手臂从下抬到上 / 从上劈到下。
+     *   - 左右挥（swingX） → 绕 pivot Y 轴：手臂从内甩到外 / 从外收到内。
+     * 这模拟人挥剑时以肩膀为圆心带动整条手臂，而不是仅在腕部转动剑柄。
      *
      * phase 走三角形脉冲：前 30% 蓄力上升至顶点，后 70% 回拉。顶点处
-     * 角度可达 1.6 rad，配合沿挥砍方向的位移与缩放，形成明显的剑尖轨迹。
+     * 角度可达 1.6 rad（约 92°），配合 pivot 沿 -Z 方向的轻微前送
+     * 与等比放大，形成"出剑—收手"的冲刺感剑光轨迹。
      */
     const updateSabers = (dt: number) => {
       const sabers = sabersRef.current;
@@ -571,15 +581,12 @@ export const BeatSaberGame: React.FC = () => {
         return;
       }
       (['L', 'R'] as Hand[]).forEach((hand) => {
-        const group = sabers[hand];
+        const pivot = sabers[hand];
         const flash = saberFlashRef.current[hand];
-        const baseX = hand === 'L' ? -0.55 : 0.55;
-        const baseY = 0.95;
-        const baseZ = 3.4;
-        // 静态保留倾角：仅用于"持剑姿态"，不参与挥砍。
-        const baseRotZ = hand === 'L' ? 0.18 : -0.18;
-        const baseRotX = -0.18;
-        const baseRotY = hand === 'L' ? 0.05 : -0.05;
+        // 肩膀 pivot 默认锚点：左右肩对称，比剑柄略高、略向相机靠拢。
+        const baseX = hand === 'L' ? -0.3 : 0.3;
+        const baseY = 1.45;
+        const baseZ = 4.2;
         const baseScale = 1;
 
         if (flash.remainingMs > 0) {
@@ -591,26 +598,27 @@ export const BeatSaberGame: React.FC = () => {
             : Math.max(0, 1 - (progress - 0.3) / 0.7);
 
           const arc = 1.6 * phase;
-          // 上下挥 → 绕 X 轴：swingY 正表示向上挥，剑尖应抬升 → rotation.x 取正。
-          group.rotation.x = baseRotX + flash.swingY * arc;
-          // 左右挥 → 绕 Y 轴：swingX 正表示向右挥，剑尖应朝 +X → rotation.y 取负。
-          group.rotation.y = baseRotY - flash.swingX * arc;
-          group.rotation.z = baseRotZ;
-          // 沿挥砍方向位移，强化剑尖轨迹的位移感。
-          group.position.x = baseX + flash.swingX * 0.55 * phase;
-          group.position.y = baseY + flash.swingY * 0.5 * phase;
-          group.position.z = baseZ - 0.35 * phase;
-          const pulse = 1 + 0.35 * phase;
-          group.scale.set(pulse, pulse, pulse);
+          // 上挥（swingY=+1）→ pivot 绕 X 轴正向转：剑柄连同剑尖向上划弧。
+          pivot.rotation.x = flash.swingY * arc;
+          // 右挥（swingX=+1）→ pivot 绕 Y 轴负向转：剑柄连同剑尖向 +X 划弧。
+          pivot.rotation.y = -flash.swingX * arc;
+          pivot.rotation.z = 0;
+          // 肩膀整体略向前送，强化"冲刺"动量；不再叠加 X/Y 位移，
+          // 因为绕肩旋转已自动让剑柄沿挥砍方向画弧。
+          pivot.position.x = baseX;
+          pivot.position.y = baseY;
+          pivot.position.z = baseZ - 0.35 * phase;
+          const pulse = 1 + 0.18 * phase;
+          pivot.scale.set(pulse, pulse, pulse);
         } else {
-          group.rotation.x += (baseRotX - group.rotation.x) * 0.2;
-          group.rotation.y += (baseRotY - group.rotation.y) * 0.2;
-          group.rotation.z += (baseRotZ - group.rotation.z) * 0.2;
-          group.position.x += (baseX - group.position.x) * 0.2;
-          group.position.y += (baseY - group.position.y) * 0.2;
-          group.position.z += (baseZ - group.position.z) * 0.2;
-          const s = group.scale.x + (baseScale - group.scale.x) * 0.22;
-          group.scale.set(s, s, s);
+          pivot.rotation.x += (0 - pivot.rotation.x) * 0.2;
+          pivot.rotation.y += (0 - pivot.rotation.y) * 0.2;
+          pivot.rotation.z += (0 - pivot.rotation.z) * 0.2;
+          pivot.position.x += (baseX - pivot.position.x) * 0.2;
+          pivot.position.y += (baseY - pivot.position.y) * 0.2;
+          pivot.position.z += (baseZ - pivot.position.z) * 0.2;
+          const s = pivot.scale.x + (baseScale - pivot.scale.x) * 0.22;
+          pivot.scale.set(s, s, s);
         }
       });
     };
