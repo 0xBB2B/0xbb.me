@@ -5,19 +5,17 @@ import {
   Briefcase,
   ChevronDown,
   Code2,
-  ExternalLink,
   Gamepad2,
   Layers,
   Mail,
   Sparkles,
 } from 'lucide-react';
 import { GlitchText } from './components/GlitchText.tsx';
-import { ProjectCard } from './components/ProjectCard.tsx';
 import { AetherBackground } from './components/aether/AetherBackground.tsx';
 import { Terminal } from './components/aether/Terminal.tsx';
 import { StatusCard } from './components/aether/StatusCard.tsx';
 import { BeatSaberPlaceholder } from './components/beat-saber/BeatSaberPlaceholder.tsx';
-import { PROFILE, PROJECTS, SKILLS, SOCIAL_LINKS } from './constants';
+import { PROFILE, SKILLS, SOCIAL_LINKS } from './constants';
 import { useMediaQuery } from './hooks/useMediaQuery';
 
 // 桌面端才动态 import BeatSaberGame：把 three.js（约 600KB）从移动端
@@ -25,7 +23,7 @@ import { useMediaQuery } from './hooks/useMediaQuery';
 const BeatSaberGame = lazy(() => import('./components/beat-saber/BeatSaberGame.tsx'));
 
 // 顶部导航锚点；与下方各 section 的 id 对齐。
-const NAV_ITEMS = ['HOME', 'STATS', 'LEVELS', 'SKILLS', 'DEPLOYED'] as const;
+const NAV_ITEMS = ['HOME', 'STATS', 'LEVELS', 'SKILLS'] as const;
 
 // SOCIAL_LINKS 名称到 lucide 图标的映射，让社交按钮拥有统一视觉语言。
 // 注：lucide-react v1 砍掉了所有品牌 logo（GitHub/LinkedIn 等），故此处使用
@@ -37,8 +35,6 @@ const SOCIAL_ICON: Record<string, React.ComponentType<{ size?: number; className
   Email: Mail,
   Juejin: BookOpen,
 };
-
-const FALLBACK_SOCIAL_ICON = ExternalLink;
 
 /**
  * 把 PROFILE.name 截短为顶部导航 logo 字串：超过 8 字符截断后补 _SYS 后缀。
@@ -59,7 +55,6 @@ function buildLogoText(name: string): string {
  *  - STATS：玩家档案 + 状态卡；
  *  - LEVELS：嵌入节奏光剑游戏；
  *  - SKILLS：能力树进度条；
- *  - DEPLOYED：真实部署项目列表；
  *  - FOOTER：GAME OVER 收束。
  */
 function App() {
@@ -209,7 +204,8 @@ function App() {
               </div>
               <div className="flex flex-wrap gap-4">
                 {SOCIAL_LINKS.map((link) => {
-                  const Icon = SOCIAL_ICON[link.name] ?? FALLBACK_SOCIAL_ICON;
+                  const Icon = SOCIAL_ICON[link.name];
+                  if (!Icon) return null;
                   return (
                     <a
                       key={link.name}
@@ -327,36 +323,6 @@ function App() {
             })}
           </div>
         </section>
-
-        {/* DEPLOYED：真实部署项目（保留 Aether 卡片骨架，移动到独立段） */}
-        {PROJECTS && PROJECTS.length > 0 && (
-          <section id="deployed" className="py-24 px-6 max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
-              <div>
-                <div className="inline-block px-3 py-1 bg-game-purple/20 border border-game-purple text-game-purple font-pixel text-[10px] mb-4">
-                  RECENT_QUESTS
-                </div>
-                <h2 className="font-cyber text-4xl md:text-5xl uppercase italic">
-                  DEPLOYED_PROJECTS
-                </h2>
-              </div>
-              <div className="text-right">
-                <span className="font-pixel text-[10px] text-game-silver block mb-2 opacity-50">
-                  TOTAL:
-                </span>
-                <span className="font-cyber text-2xl text-game-teal">
-                  {PROJECTS.length.toString().padStart(2, '0')}
-                </span>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {PROJECTS.map((project, i) => (
-                <ProjectCard key={project.id} project={project} index={i} />
-              ))}
-            </div>
-          </section>
-        )}
 
         <footer className="py-24 px-6 text-center border-t border-game-silver/10">
           <GlitchText
