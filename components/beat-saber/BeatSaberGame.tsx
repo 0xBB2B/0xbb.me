@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import React, { useEffect, useRef, useState } from 'react';
 import { ChiptuneEngine } from '../../game/chiptune';
-import { BGM_URL, createDemoChart } from '../../game/chart';
+import { BGM_URL, createDemoChart, type ChartTiming } from '../../game/chart';
+import { analyzeAudioBuffer } from '../../game/audioAnalysis';
 import { findHitTarget } from '../../game/judge';
 import {
   accuracy,
@@ -138,6 +139,10 @@ export const BeatSaberGame: React.FC = () => {
   const lastFrameMsRef = useRef<number>(0);
   // LV.999 全连特效起始时刻（rAF 时间），用来判断是否到达切换结算的窗口。
   const lv999StartedAtRef = useRef<number>(0);
+  // 浏览器侧 onset 分析结果，挂载阶段加载 BGM 后自动填充。
+  // null 表示尚未分析（START 前还在加载，或音频解码 / 分析失败）；
+  // 非空时 createDemoChart 会用动态 timing 替代 BGM_* 常量兜底。
+  const timingRef = useRef<ChartTiming | null>(null);
   // 谱面放在 ref 里，每次 START 会调 createDemoChart() 重抽方向，
   // 让玩家每局看到的方向序列都不一样。曲目时长 / 标题保持稳定。
   const chartRef = useRef<BeatChart>(createDemoChart());
@@ -232,13 +237,33 @@ export const BeatSaberGame: React.FC = () => {
   useEffect(() => {
     const engine = new ChiptuneEngine();
     engineRef.current = engine;
-    // 提前 fetch 并 decode 一次 BGM 音频文件，确保用户点 START 时不再有网络等待。
-    // decodeAudioData 在 AudioContext suspended 状态下也能工作；真正播放仍需
-    // resume() 解锁，所以预加载不会触发自动播放策略报错。
-    void engine.loadBgm(BGM_URL).catch((err) => {
-      // 加载失败时降级：不播 BGM，但游戏仍可用 SFX 节奏靠键位反馈。
-      console.error('failed to preload BGM', err);
-    });
+    // 提前 fetch / decode BGM 并跑 onset 分析：
+    //   - decodeAudioData 在 AudioContext suspended 状态下也能工作；
+    //   - 分析在 OfflineAudioContext 里跑，与播放上下文独立；
+    //   - 分析完成前 timingRef = null，createDemoChart 走 BGM_* 常量兜底，
+    //     游戏仍可在分析失败 / 慢网下退化为静态 timing。
+    void (async () => {
+      try {
+        await engine.loadBgm(BGM_URL);
+        const buffer = engine.getBgmBuffer();
+        if (!buffer) {
+          return;
+        }
+        const analysis = await analyzeAudioBuffer(buffer);
+        timingRef.current = {
+          bpm: analysis.bpm,
+          offsetMs: analysis.offsetMs,
+          durationMs: buffer.duration * 1000,
+        };
+        // eslint-disable-next-line no-console
+        console.info(
+          `[BGM] BPM=${analysis.bpm.toFixed(1)} offset=${analysis.offsetMs.toFixed(0)}ms `
+            + `duration=${(buffer.duration).toFixed(2)}s onsets=${analysis.onsetTimesMs.length}`,
+        );
+      } catch (err) {
+        console.error('failed to preload / analyze BGM', err);
+      }
+    })();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       const mapping = KEY_MAP[event.code];
@@ -663,8 +688,35 @@ export const BeatSaberGame: React.FC = () => {
       particlesRef.current = [];
     }
 
-    // 每局重新随机一份谱面，让方向序列每次都不一样。
-    chartRef.current = createDemoChart();
+    await engine.resume();
+    // 兜底：如果挂载阶段的预加载尚未完成（极端慢网），这里再 await 一次。
+    if (!engine.hasBgm()) {
+      try {
+        await engine.loadBgm(BGM_URL);
+      } catch (err) {
+        console.error('failed to load BGM at start', err);
+      }
+    }
+    // 若 BGM 已就绪但 onset 分析仍未完成（用户点 START 比分析快），同步补跑。
+    if (!timingRef.current) {
+      const buffer = engine.getBgmBuffer();
+      if (buffer) {
+        try {
+          const analysis = await analyzeAudioBuffer(buffer);
+          timingRef.current = {
+            bpm: analysis.bpm,
+            offsetMs: analysis.offsetMs,
+            durationMs: buffer.duration * 1000,
+          };
+        } catch (err) {
+          console.error('failed to analyze BGM at start', err);
+        }
+      }
+    }
+
+    // 用动态 timing（若有）构造谱面，timing 缺失则 createDemoChart 自动走
+    // BGM_* 常量兜底，让游戏在分析失败时仍可玩。
+    chartRef.current = createDemoChart(undefined, timingRef.current ?? undefined);
     notesRef.current = chartRef.current.notes.map((note) => ({
       note,
       mesh: null,
@@ -676,15 +728,6 @@ export const BeatSaberGame: React.FC = () => {
     statusRef.current = 'playing';
     setSnapshot({ ...buildInitialSnapshot(chartRef.current.durationMs), status: 'playing' });
 
-    await engine.resume();
-    // 兜底：如果挂载阶段的预加载尚未完成（极端慢网），这里再 await 一次。
-    if (!engine.hasBgm()) {
-      try {
-        await engine.loadBgm(BGM_URL);
-      } catch (err) {
-        console.error('failed to load BGM at start', err);
-      }
-    }
     engine.startBgm();
     startedAtRef.current = performance.now();
     hasStartedRef.current = true;

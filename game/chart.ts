@@ -43,13 +43,26 @@ function shuffle<T>(arr: ReadonlyArray<T>, rng: () => number): T[] {
 }
 
 /**
+ * ChartTiming 是 createDemoChart 的可选时间参数。
+ *
+ * 默认值取自 BGM_BPM / BGM_OFFSET_MS / BGM_DURATION_MS 常量，作为分析失败
+ * 或离线（unit test）场景下的兜底；运行时可由浏览器侧 analyzeAudioBuffer
+ * 动态推断后传入，让相位锚点跟着实际音频校准。
+ */
+export interface ChartTiming {
+  bpm: number;
+  offsetMs: number;
+  durationMs: number;
+}
+
+/**
  * createDemoChart 基于 BGM 的 BPM、时长、首拍偏移生成方块谱面。
  *
  * 拍点策略：
- *   - beatMs = 60_000 / BGM_BPM（117 BPM ≈ 513ms/拍），每拍出一个方块；
+ *   - beatMs = 60_000 / timing.bpm，每拍出一个方块；
  *   - introBeats = ⌈approachMs / beatMs⌉——保证首方块的 spawn 时刻
  *     (= time − approachMs) ≥ 0，让 approachMs 调整时无需手动配套；
- *   - 每个拍点的 time = BGM_OFFSET_MS + (introBeats + i) × beatMs，
+ *   - 每个拍点的 time = timing.offsetMs + (introBeats + i) × beatMs，
  *     以音乐首鼓点为相位锚点累加，方块切击时刻与音乐 onset 对齐；
  *   - 每个拍点的 (hand, cut) 从一个"包含全部 8 种组合的洗牌袋"中抽取，
  *     抽空再重洗——这样既保证序列随机不可预测，又保证每 8 个方块至少
@@ -58,9 +71,13 @@ function shuffle<T>(arr: ReadonlyArray<T>, rng: () => number): T[] {
  *     方块自然分布在屏幕两侧，符合 Beat Saber 的双轨道直觉。
  *
  * @param rng 随机源，默认使用 Math.random；测试时可传确定性 RNG。
+ * @param timing 可选的 BPM / offset / 总时长；默认走 BGM_* 常量兜底。
  */
-export function createDemoChart(rng: () => number = Math.random): BeatChart {
-  const beatMs = 60_000 / BGM_BPM;
+export function createDemoChart(
+  rng: () => number = Math.random,
+  timing: ChartTiming = { bpm: BGM_BPM, offsetMs: BGM_OFFSET_MS, durationMs: BGM_DURATION_MS },
+): BeatChart {
+  const beatMs = 60_000 / timing.bpm;
   const approachMs = 1600;
   const introBeats = Math.ceil(approachMs / beatMs);
 
@@ -74,8 +91,8 @@ export function createDemoChart(rng: () => number = Math.random): BeatChart {
 
   const notes: Note[] = [];
   for (let i = 0; ; i += 1) {
-    const time = BGM_OFFSET_MS + (introBeats + i) * beatMs;
-    if (time >= BGM_DURATION_MS) {
+    const time = timing.offsetMs + (introBeats + i) * beatMs;
+    if (time >= timing.durationMs) {
       break;
     }
     const slot = drawCombo();
@@ -87,8 +104,8 @@ export function createDemoChart(rng: () => number = Math.random): BeatChart {
 
   return {
     title: 'STAGE 01 // FUBUKI MIX',
-    bpm: BGM_BPM,
-    durationMs: BGM_DURATION_MS + 2_000,
+    bpm: timing.bpm,
+    durationMs: timing.durationMs + 2_000,
     approachMs,
     notes,
   };

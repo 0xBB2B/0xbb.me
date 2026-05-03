@@ -181,6 +181,14 @@ export class ChiptuneEngine {
   }
 
   /**
+   * getBgmBuffer 暴露已解码的 AudioBuffer，供节拍分析等下游消费者使用。
+   * 未加载时返回 null，调用方需先 await loadBgm。
+   */
+  getBgmBuffer(): AudioBuffer | null {
+    return this.bgmBuffer;
+  }
+
+  /**
    * playCutSfx 在当前时间播放一段切击音效。
    */
   playCutSfx(): void {
