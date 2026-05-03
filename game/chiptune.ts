@@ -54,44 +54,64 @@ const VOICES: Record<TrackName, VoiceDescriptor> = {
 /**
  * createSoundtrack 返回内置 demo BGM。
  *
- * 风格：紫粉电子游戏机感的 8-bit lo-fi，BPM 132，4 拍 × 8 小节循环 4 次，
- * 总时长约 58 秒。
+ * 风格：致敬《みくみくにしてあげる♪》（ika 作曲）的 8-bit 副歌改编版本。
+ * D 大调、BPM 145、4 拍 × 8 小节副歌循环 2 次，总时长约 26 秒。
+ *
+ * 仍延续"纯 Web Audio 实时合成、零外部音频资产"的策略——只重新编排音符，
+ * 不嵌入任何原曲采样，避免版权风险。
+ *
+ * 副歌 8 小节对应歌词分段：
+ *   bar 1: ミクミクにしてあげる
+ *   bar 2: 歌を歌わせてあげる
+ *   bar 3: ミクミクにしてやんよ
+ *   bar 4: 戸惑うくらいに
+ *   bar 5-8: 副歌完整再唱一遍 + 收束到主音 D
+ *
+ * 和弦进行（每小节一个）：D - A - G - A | D - F#m - G - A。
  */
 export function createSoundtrack(): SoundTrack {
   // 音名转 MIDI，再转频率。
   const n = (midi: number) => midiToFreq(midi);
 
-  // 一小节 16 步（16 分音符），共 8 小节循环。
-  // 主旋律——D 小调感的电子游戏机骨架。
+  // 一小节 16 步（16 分音符），共 8 小节副歌循环。
+  // 主旋律——D 大调，A5(MIDI 81) 上锚定的 "miku miku" 重复音 hook。
   const lead: StepEvent[] = [
-    // bar 1: D5 - F5 - A5 - F5 / D5 - F5 - A5 - C6
-    n(74), null, n(77), null, n(81), null, n(77), null, n(74), null, n(77), null, n(81), null, n(84), null,
-    // bar 2: A5 - F5 - D5 - F5 / E5 - C5 ...
-    n(81), null, n(77), null, n(74), null, n(77), null, n(76), null, n(72), null, n(74), null, null, null,
-    // bar 3: D5 - A5 - C6 - A5 / B5 - G5 - A5 - F5
-    n(74), null, n(81), null, n(84), null, n(81), null, n(83), null, n(79), null, n(81), null, n(77), null,
-    // bar 4: D5 long - F5 - A5
-    n(74), null, null, null, null, null, n(77), null, n(81), null, null, null, null, null, null, null,
-    // bar 5: F5 - A5 - D6 - A5
-    n(77), null, n(81), null, n(86), null, n(81), null, n(77), null, n(81), null, n(86), null, n(89), null,
-    // bar 6: A5 - F5 - D5 ramp
-    n(81), null, n(77), null, n(74), null, n(72), null, n(74), null, n(77), null, n(81), null, null, null,
-    // bar 7: build up
-    n(83), null, n(81), null, n(79), null, n(77), null, n(76), null, n(74), null, n(72), null, n(74), null,
-    // bar 8: resolve
-    n(74), null, null, null, n(77), null, null, null, n(81), null, null, null, n(74), null, null, null,
+    // bar 1: ミ-ク-ミ-ク-に-シ-テ-ア-ゲ-ル  A5×4 → D6 → C#6 → B5 → A5
+    n(81), null, n(81), null, n(81), null, n(81), null, n(86), null, n(85), null, n(83), null, n(81), null,
+    // bar 2: 歌-を-歌-わ-せ-て-あ-げ-る  B5-A5-G5-A5 → D6-C#6-B5-A5
+    n(83), null, n(81), null, n(79), null, n(81), null, n(86), null, n(85), null, n(83), null, n(81), null,
+    // bar 3: ミ-ク-ミ-ク-に-シ-テ-ヤン-ヨ  A5×4 → F#5-G5-A5-B5（向上推进）
+    n(81), null, n(81), null, n(81), null, n(81), null, n(78), null, n(79), null, n(81), null, n(83), null,
+    // bar 4: 戸-惑-う-く-ら-い-に  A5-G5-F#5-E5 → D5 长 → F#5-E5（终止式装饰）
+    n(81), null, n(79), null, n(78), null, n(76), null, n(74), null, null, null, n(78), null, n(76), null,
+    // bar 5: 副歌再唱第一句
+    n(81), null, n(81), null, n(81), null, n(81), null, n(86), null, n(85), null, n(83), null, n(81), null,
+    // bar 6: 第二句变奏，整体抬高，配合 F#m 色彩
+    n(83), null, n(81), null, n(83), null, n(85), null, n(88), null, n(86), null, n(85), null, n(83), null,
+    // bar 7: 第三句重复
+    n(81), null, n(81), null, n(81), null, n(81), null, n(78), null, n(79), null, n(81), null, n(83), null,
+    // bar 8: 收束到主音 D5
+    n(81), null, n(79), null, n(78), null, n(76), null, n(74), null, null, null, null, null, n(74), null,
   ];
 
-  // 低音——四分音符根音。
+  // 低音——每小节按"根-五-根-五"打四拍，跟随和弦行走。
   const bass: StepEvent[] = [
-    n(38), null, null, null, n(38), null, null, null, n(38), null, null, null, n(45), null, null, null,
-    n(43), null, null, null, n(43), null, null, null, n(40), null, null, null, n(40), null, null, null,
-    n(38), null, null, null, n(38), null, null, null, n(45), null, null, null, n(43), null, null, null,
-    n(38), null, null, null, n(38), null, null, null, n(38), null, null, null, n(38), null, null, null,
-    n(41), null, null, null, n(41), null, null, null, n(38), null, null, null, n(45), null, null, null,
-    n(43), null, null, null, n(43), null, null, null, n(40), null, null, null, n(38), null, null, null,
-    n(40), null, null, null, n(40), null, null, null, n(38), null, null, null, n(36), null, null, null,
-    n(38), null, null, null, n(38), null, null, null, n(38), null, null, null, n(38), null, null, null,
+    // bar 1 D: D2-A2-D2-A2
+    n(38), null, null, null, n(45), null, null, null, n(38), null, null, null, n(45), null, null, null,
+    // bar 2 A: A2-E3-A2-E3
+    n(45), null, null, null, n(52), null, null, null, n(45), null, null, null, n(52), null, null, null,
+    // bar 3 G: G2-D3-G2-D3
+    n(43), null, null, null, n(50), null, null, null, n(43), null, null, null, n(50), null, null, null,
+    // bar 4 A: A2-E3-A2-E3
+    n(45), null, null, null, n(52), null, null, null, n(45), null, null, null, n(52), null, null, null,
+    // bar 5 D
+    n(38), null, null, null, n(45), null, null, null, n(38), null, null, null, n(45), null, null, null,
+    // bar 6 F#m: F#2-C#3-F#2-C#3
+    n(42), null, null, null, n(49), null, null, null, n(42), null, null, null, n(49), null, null, null,
+    // bar 7 G
+    n(43), null, null, null, n(50), null, null, null, n(43), null, null, null, n(50), null, null, null,
+    // bar 8 A → 解决到 A，留给下一轮接回 D
+    n(45), null, null, null, n(52), null, null, null, n(45), null, null, null, n(45), null, null, null,
   ];
 
   // 踩镲——每个 8 分音符敲一次（用一个高频方波模拟）。
@@ -106,10 +126,10 @@ export function createSoundtrack(): SoundTrack {
   }
 
   return {
-    bpm: 132,
+    bpm: 145,
     stepsPerBar: 16,
     tracks: { lead, bass, hat },
-    // 循环 2 次约 30 秒，单局长度更易上手；想加长直接调大这个数。
+    // 8 小节 × 2 次 ≈ 26 秒，刚好对应副歌唱两遍的长度。
     loops: 2,
   };
 }

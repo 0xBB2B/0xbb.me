@@ -36,11 +36,11 @@ describe('chiptune track shape', () => {
 });
 
 describe('stepDurationMs', () => {
-  test('132bpm + 16 步小节单步约 113ms', () => {
+  test('145bpm + 16 步小节单步约 103ms（对齐《みくみくにしてあげる♪》原曲速度）', () => {
     const track = createSoundtrack();
     const stepMs = stepDurationMs(track);
-    // 60_000 / 132 / 4 ≈ 113.636
-    expect(stepMs).toBeCloseTo(113.636, 1);
+    // 60_000 / 145 / 4 ≈ 103.448
+    expect(stepMs).toBeCloseTo(103.448, 1);
   });
 
   test('单步乘以小节步数等于一小节四拍', () => {

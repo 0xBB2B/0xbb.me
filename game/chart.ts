@@ -69,7 +69,7 @@ export function createDemoChart(rng: () => number = Math.random): BeatChart {
   }
 
   return {
-    title: 'AHA! TIME // SILVER WOLF MIX',
+    title: 'MIKU MIKU NI SHITE AGERU // 8BIT MIX',
     bpm: track.bpm,
     durationMs: trackDurationMs(track) + 2000,
     approachMs,
