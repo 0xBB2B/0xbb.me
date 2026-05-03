@@ -3,13 +3,13 @@ import type { BeatChart, CutDirection, Hand, Lane, Note } from './types';
 /**
  * BGM 常量：所有谱面拍点都基于这三项推导。
  *
- * 数值来源——音频文件 public/music.ogg 是从原始素材中裁剪的 31.5s 片段，
- * 由项目侧的 ffmpeg + 振幅自相关分析（peak ≈ 117.2 BPM）确定，
- * 详见提交日志。
+ * 数值来源——音频文件 public/music.ogg 由资源提供方自行裁剪好直接放入仓库，
+ * 项目侧不再做二次截取；BPM 通过振幅自相关分析得出（peak ≈ 117.2 BPM，
+ * 145 BPM 的相关分数仅为 1/32），DURATION_MS 与 ogg 实际时长（32.11s）对齐。
  */
 export const BGM_URL = '/music.ogg';
 export const BGM_BPM = 117;
-export const BGM_DURATION_MS = 31_500;
+export const BGM_DURATION_MS = 32_100;
 
 // 全部 8 种 (hand, cut) 组合——对应键盘 8 个方向键。
 const ALL_COMBOS: ReadonlyArray<{ hand: Hand; cut: CutDirection }> = [
