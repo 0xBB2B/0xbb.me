@@ -58,9 +58,13 @@ describe('trackDurationMs', () => {
     expect(trackDurationMs(track)).toBeCloseTo(expected, 5);
   });
 
-  test('demo 曲目总时长应在合理范围内（20s ~ 90s）', () => {
+  test('demo 曲目单次播放总时长落在 28s ~ 32s（约 30 秒，单次不循环）', () => {
     const ms = trackDurationMs(createSoundtrack());
-    expect(ms).toBeGreaterThan(20_000);
-    expect(ms).toBeLessThan(90_000);
+    expect(ms).toBeGreaterThan(28_000);
+    expect(ms).toBeLessThan(32_000);
+  });
+
+  test('曲目仅播放 1 次，不循环', () => {
+    expect(createSoundtrack().loops).toBe(1);
   });
 });
