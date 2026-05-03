@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import React, { useEffect, useRef, useState } from 'react';
-import { ChiptuneEngine, createSoundtrack } from '../../game/chiptune';
-import { createDemoChart } from '../../game/chart';
+import { ChiptuneEngine } from '../../game/chiptune';
+import { BGM_URL, createDemoChart } from '../../game/chart';
 import { findHitTarget } from '../../game/judge';
 import {
   accuracy,
@@ -230,6 +230,13 @@ export const BeatSaberGame: React.FC = () => {
   useEffect(() => {
     const engine = new ChiptuneEngine();
     engineRef.current = engine;
+    // 提前 fetch 并 decode 一次 BGM 音频文件，确保用户点 START 时不再有网络等待。
+    // decodeAudioData 在 AudioContext suspended 状态下也能工作；真正播放仍需
+    // resume() 解锁，所以预加载不会触发自动播放策略报错。
+    void engine.loadBgm(BGM_URL).catch((err) => {
+      // 加载失败时降级：不播 BGM，但游戏仍可用 SFX 节奏靠键位反馈。
+      console.error('failed to preload BGM', err);
+    });
 
     const handleKeyDown = (event: KeyboardEvent) => {
       const mapping = KEY_MAP[event.code];
@@ -668,7 +675,15 @@ export const BeatSaberGame: React.FC = () => {
     setSnapshot({ ...buildInitialSnapshot(chartRef.current.durationMs), status: 'playing' });
 
     await engine.resume();
-    engine.startTrack(createSoundtrack());
+    // 兜底：如果挂载阶段的预加载尚未完成（极端慢网），这里再 await 一次。
+    if (!engine.hasBgm()) {
+      try {
+        await engine.loadBgm(BGM_URL);
+      } catch (err) {
+        console.error('failed to load BGM at start', err);
+      }
+    }
+    engine.startBgm();
     startedAtRef.current = performance.now();
     hasStartedRef.current = true;
   };

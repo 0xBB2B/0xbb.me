@@ -27,13 +27,13 @@
 
 ## 项目简介
 
-`0xbb.me` 是 **FUBUKI_BB** 的个人作品集站点。视觉灵感取自《崩坏：星穹铁道》「阿哈时刻 — 银狼 LV.999」官方短片：紫罗兰 / 品红粉 / 像素青三色配色、CRT 扫描线、像素故障字、终端 HUD。页面内嵌一款基于 three.js 的 **3D 双手节奏光剑** 小游戏，所有 BGM 与 SFX 由 Web Audio API 实时合成，零外部音频依赖。
+`0xbb.me` 是 **FUBUKI_BB** 的个人作品集站点。视觉灵感取自《崩坏：星穹铁道》「阿哈时刻 — 银狼 LV.999」官方短片：紫罗兰 / 品红粉 / 像素青三色配色、CRT 扫描线、像素故障字、终端 HUD。页面内嵌一款基于 three.js 的 **3D 双手节奏光剑** 小游戏，BGM 走 `public/music.ogg` 静态资源、切击 / 失误 SFX 仍由 Web Audio API 实时合成。
 
 ## 核心特性
 
 - **银狼紫粉视觉**：霓虹紫罗兰 + 品红粉 + 像素青配色，配合扫描线、动态像素网格、CRT 失真。
 - **3D 节奏光剑**：three.js 渲染的双轨光剑游戏，全键盘驱动，命中粒子 / LV.999 全连特效一应俱全。
-- **Web Audio Chiptune**：实时合成 8-bit BGM 与切击 / 失误 SFX，零音频资产、零版权风险。
+- **混合音频管线**：BGM 加载 `public/music.ogg` 经 Web Audio AudioBufferSource 播放并附 fade-in/out；切击 / 失误 SFX 仍用 OscillatorNode 实时合成（chiptune 风格）。
 - **纯函数判定核心**：判定窗口、连击、命中率、谱面生成全部由 `bun:test` 单测覆盖（PERFECT / GOOD / MISS）。
 - **响应式布局**：桌面端 / 移动端均已适配，移动端自动展示游戏占位卡片。
 - **bun 工作流**：依赖、脚本、测试、构建、CI 部署全程 bun。
@@ -77,13 +77,13 @@ bun test         # 运行游戏内核单元测试
 │   ├── types.ts                        # Note / BeatChart / Judgement 类型
 │   ├── judge.ts / judge.test.ts        # 切击判定与连击计算
 │   ├── scoring.ts / scoring.test.ts    # 分数 / 命中率 / 等级
-│   ├── chart.ts / chart.test.ts        # 基于 BGM 拍点的默认谱面
-│   └── chiptune.ts / chiptune.test.ts  # Web Audio 合成器与曲目数据
+│   ├── chart.ts / chart.test.ts        # 基于 BGM_BPM 与片段时长生成的默认谱面
+│   └── chiptune.ts                     # BGM 文件加载播放器 + 切击/失误 SFX 合成
 ├── hooks/
 │   └── useMediaQuery.ts                # 响应式断点 Hook
 ├── plugins/
 │   └── htmlPlugin.ts                   # 注入 metadata.json 到 index.html 的 Vite 插件
-├── public/                             # 静态资源（profile.png / robots.txt / sitemap.xml ...）
+├── public/                             # 静态资源（profile.png / music.ogg / robots.txt / sitemap.xml ...）
 ├── App.tsx                             # 主应用组件
 ├── data.ts                             # 个人资料 / 技能 / 项目数据
 ├── types.ts                            # 站点 TypeScript 类型
@@ -103,7 +103,7 @@ bun test         # 运行游戏内核单元测试
 | 构建 | Vite 6（自定义 `htmlPlugin` 注入 metadata） |
 | 样式 | Tailwind CSS（CDN）、Orbitron、JetBrains Mono |
 | 3D | three.js r184 |
-| 音频 | Web Audio API 实时合成 chiptune |
+| 音频 | Web Audio API：BGM 解码 `public/music.ogg`；SFX 实时合成 |
 | 测试 | `bun:test` |
 | 运行时 / 包管理 | bun |
 | 部署 | GitHub Actions → GitHub Pages |

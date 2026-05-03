@@ -1,5 +1,15 @@
 import type { BeatChart, CutDirection, Hand, Lane, Note } from './types';
-import { createSoundtrack, stepDurationMs, trackDurationMs } from './chiptune';
+
+/**
+ * BGM 常量：所有谱面拍点都基于这三项推导。
+ *
+ * 数值来源——音频文件 public/music.ogg 是从原始素材中裁剪的 31.5s 片段，
+ * 由项目侧的 ffmpeg + 振幅自相关分析（peak ≈ 117.2 BPM）确定，
+ * 详见提交日志。
+ */
+export const BGM_URL = '/music.ogg';
+export const BGM_BPM = 117;
+export const BGM_DURATION_MS = 31_500;
 
 // 全部 8 种 (hand, cut) 组合——对应键盘 8 个方向键。
 const ALL_COMBOS: ReadonlyArray<{ hand: Hand; cut: CutDirection }> = [
@@ -26,24 +36,24 @@ function shuffle<T>(arr: ReadonlyArray<T>, rng: () => number): T[] {
 }
 
 /**
- * createDemoChart 根据 ChiptuneEngine 的内置 BGM 生成方块谱面。
+ * createDemoChart 基于 BGM 的 BPM 与时长生成方块谱面。
  *
- * 谱面随机化策略：
+ * 拍点策略：
+ *   - 以 BPM 推算每拍毫秒数（117 BPM ≈ 513ms/拍），每拍出一个方块；
+ *   - 前 introBeats 拍不出方块，预留 READY? 暖场段；
  *   - 每个拍点的 (hand, cut) 从一个"包含全部 8 种组合的洗牌袋"中抽取，
- *     抽空再重洗——这样既保证序列随机不重复成预测式，又保证每 8 个
- *     方块至少覆盖完所有 8 种组合，玩家不会出现"某个键永远等不到方块"。
+ *     抽空再重洗——这样既保证序列随机不可预测，又保证每 8 个方块至少
+ *     覆盖完所有 8 种组合，玩家不会出现"某个键永远等不到方块"。
  *   - lane 仅根据 hand 二选一（左手 0 或 1、右手 2 或 3），让左右手的
  *     方块自然分布在屏幕两侧，符合 Beat Saber 的双轨道直觉。
  *
  * @param rng 随机源，默认使用 Math.random；测试时可传确定性 RNG。
  */
 export function createDemoChart(rng: () => number = Math.random): BeatChart {
-  const track = createSoundtrack();
-  const stepMs = stepDurationMs(track);
-  const totalSteps = track.tracks.lead.length * track.loops;
-  const noteStepInterval = 4;
+  const beatMs = 60_000 / BGM_BPM;
   const introBeats = 2;
   const approachMs = 1600;
+  const totalBeats = Math.floor(BGM_DURATION_MS / beatMs);
 
   let bag: { hand: Hand; cut: CutDirection }[] = [];
   const drawCombo = () => {
@@ -54,14 +64,14 @@ export function createDemoChart(rng: () => number = Math.random): BeatChart {
   };
 
   const notes: Note[] = [];
-  for (let step = introBeats * 4; step < totalSteps; step += noteStepInterval) {
+  for (let beat = introBeats; beat < totalBeats; beat += 1) {
     const slot = drawCombo();
     const lane: Lane = slot.hand === 'L'
       ? (rng() < 0.5 ? 0 : 1)
       : (rng() < 0.5 ? 2 : 3);
 
     notes.push({
-      time: step * stepMs,
+      time: beat * beatMs,
       lane,
       hand: slot.hand,
       cut: slot.cut,
@@ -69,9 +79,9 @@ export function createDemoChart(rng: () => number = Math.random): BeatChart {
   }
 
   return {
-    title: 'MIKU MIKU NI SHITE AGERU // 8BIT MIX',
-    bpm: track.bpm,
-    durationMs: trackDurationMs(track) + 2000,
+    title: 'STAGE 01 // FUBUKI MIX',
+    bpm: BGM_BPM,
+    durationMs: BGM_DURATION_MS + 2_000,
     approachMs,
     notes,
   };
@@ -79,6 +89,5 @@ export function createDemoChart(rng: () => number = Math.random): BeatChart {
 
 // 谱面起点之前留出的"空拍准备"段长度，UI 可用于显示 READY?。
 export function chartIntroMs(): number {
-  const track = createSoundtrack();
-  return stepDurationMs(track) * 4 * 2;
+  return (60_000 / BGM_BPM) * 2;
 }
