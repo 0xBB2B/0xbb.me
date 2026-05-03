@@ -25,20 +25,21 @@ function App() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-neon-bg text-gray-200 font-mono relative selection:bg-neon-pink selection:text-neon-bg pb-20 crt overflow-hidden">
-      {/* 背景四层叠加：基底渐变 → BB 像素壁纸 → 半色调圆点 → 斜条纹 → HUD 横线。 */}
+    <div className="min-h-screen bg-neon-bg text-gray-200 font-mono relative selection:bg-neon-pink selection:text-neon-bg pb-20 overflow-hidden">
+      {/* 背景四层叠加：深紫渐变 → BB 像素壁纸 → 半色调圆点 → 弱斜条纹（静态）→ HUD 横线。
+          相比初版刻意去掉了页面级 CRT 扫描与 stripe-drift 动画，让暗底也不刺眼。 */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* 1. 底色：紫罗兰渐层 + 角落光斑。 */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(155,123,255,0.34),transparent_28%),radial-gradient(circle_at_82%_22%,rgba(255,79,216,0.22),transparent_26%),linear-gradient(135deg,#06031a_0%,#1b0d3d_48%,#06031a_100%)]"></div>
-        {/* 2. BB 像素壁纸：低不透明度铺底，营造贴纸式 wallpaper。 */}
-        <div className="absolute inset-0 bb-wallpaper opacity-70 mix-blend-screen animate-pattern-drift"></div>
-        {/* 3. 半色调点阵：双层圆点，叠在壁纸之上做"印刷网点"质感。 */}
+        {/* 1. 底色：深紫罗兰渐变 + 品红粉 / 紫罗兰角落径向光斑（呼应参考图舞台粉）。 */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(155,123,255,0.32),transparent_30%),radial-gradient(circle_at_82%_18%,rgba(255,94,199,0.22),transparent_28%),radial-gradient(circle_at_50%_92%,rgba(122,77,255,0.20),transparent_45%),linear-gradient(160deg,#0a0420_0%,#180b34_55%,#0a0420_100%)]"></div>
+        {/* 2. BB 像素壁纸：mix-blend-screen 让浅紫/粉壁纸元素在深底上自然发亮。 */}
+        <div className="absolute inset-0 bb-wallpaper opacity-65 mix-blend-screen animate-pattern-drift"></div>
+        {/* 3. 半色调点阵：双层粉/青圆点，叠出印刷网点质感（已降一档不透明度）。 */}
         <div className="absolute inset-0 halftone-dots opacity-80 mix-blend-screen animate-halftone-drift"></div>
-        {/* 4. 紫色对角线条纹（参考图角色身后纹理）。 */}
-        <div className="absolute inset-0 diagonal-stripes opacity-90 mix-blend-screen animate-stripe-drift"></div>
-        {/* 5. HUD 横线。 */}
-        <div className="absolute left-0 right-0 top-20 h-px bg-gradient-to-r from-transparent via-neon-purple to-transparent opacity-80"></div>
-        <div className="absolute left-0 right-0 bottom-28 h-px bg-gradient-to-r from-transparent via-neon-pink to-transparent opacity-60"></div>
+        {/* 4. 紫色对角线条纹：静态低不透明度肌理（不带 stripe-drift 动画，避免眩晕）。 */}
+        <div className="absolute inset-0 diagonal-stripes opacity-85 mix-blend-screen"></div>
+        {/* 5. HUD 横线：紫罗兰 / 品红粉，深底上能凸显但不刺眼。 */}
+        <div className="absolute left-0 right-0 top-20 h-px bg-gradient-to-r from-transparent via-neon-purple/70 to-transparent"></div>
+        <div className="absolute left-0 right-0 bottom-28 h-px bg-gradient-to-r from-transparent via-neon-pink/55 to-transparent"></div>
       </div>
 
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl pt-12">
@@ -46,7 +47,7 @@ function App() {
         <header className="flex flex-col md:flex-row justify-between items-center border-b-2 border-neon-purple/50 pb-6 mb-12 relative">
            <div className="flex flex-col md:flex-row items-center gap-6 w-full md:w-auto text-center md:text-left">
              <div className="relative hidden md:block">
-               {/* 像素剪影头像：硬色差 drop-shadow + 黑色 2px 切角描边，告别柔光。 */}
+               {/* 像素剪影头像：硬色差 drop-shadow + 2px 切角描边。 */}
                <img
                  src={PROFILE.avatar}
                  alt={PROFILE.name}
@@ -87,8 +88,9 @@ function App() {
              ))}
            </div>
 
-           <div className="absolute -bottom-[2px] left-0 w-1/3 h-[2px] bg-neon-cyan shadow-[0_0_12px_#42f8ff]"></div>
-           <div className="absolute -bottom-[2px] right-0 w-1/5 h-[2px] bg-neon-pink shadow-[0_0_12px_#ff4fd8]"></div>
+           {/* 头部底部彩条：实色硬带 + 一抹微 glow，深底上仍是 HUD 收边但不眩光。 */}
+           <div className="absolute -bottom-[2px] left-0 w-1/3 h-[2px] bg-neon-cyan shadow-[0_0_6px_rgba(62,201,245,0.5)]"></div>
+           <div className="absolute -bottom-[2px] right-0 w-1/5 h-[2px] bg-neon-pink shadow-[0_0_6px_rgba(255,94,199,0.5)]"></div>
         </header>
 
         <div className="flex flex-col lg:flex-row gap-12">
@@ -99,10 +101,10 @@ function App() {
 
             <section className="space-y-4">
               <div className="flex items-center gap-2 mb-6">
-                 <div className="w-2 h-2 bg-neon-pink animate-pulse shadow-[0_0_10px_#ff4fd8]"></div>
+                 <div className="w-2 h-2 bg-neon-pink animate-pulse"></div>
                  <h2 className="text-2xl font-cyber font-bold text-white tracking-wide">USER_PROFILE</h2>
               </div>
-                <p className="whitespace-pre-line leading-relaxed text-gray-300 text-lg border-l-4 border-neon-pink/70 bg-neon-panel/35 px-4 py-5 shadow-[inset_0_0_30px_rgba(139,92,246,0.08)]">
+                <p className="whitespace-pre-line leading-relaxed text-gray-300 text-lg border-l-4 border-neon-pink/70 bg-neon-panel/40 px-4 py-5">
                   {PROFILE.bio}
                 </p>
 
@@ -119,7 +121,7 @@ function App() {
                   /// DUAL_SABER
                 </div>
               </div>
-              {/* 节奏光剑 3D 容器：硬切角 + 像素阴影框，告别柔光。 */}
+              {/* 节奏光剑 3D 容器：硬切角 + 紫罗兰像素阴影框。 */}
               <div className="relative group">
                 <div className="relative border-2 border-neon-purple bg-neon-bg pixel-clip-sm pixel-shadow-purple">
                   {isDesktop ? (
@@ -150,7 +152,7 @@ function App() {
                  <h2 className="text-xl font-cyber font-bold text-white tracking-wide">SKILL_MATRIX</h2>
                  <span className="ml-auto sticker-chip text-[8px]">MAX RANK</span>
               </div>
-              
+
               <div className="space-y-4 relative z-10">
                 {SKILLS.map((skill: any) => (
                   <div key={skill.name}>
@@ -186,7 +188,7 @@ function App() {
                  <div className="font-pixel text-[8px] text-gray-400 mb-2 tracking-widest">CURRENT LOCATION</div>
                  <div className="text-xl font-mono text-neon-cyan flex items-center justify-between">
                    <span>{PROFILE.location}</span>
-                   <span className="w-3 h-3 bg-green-500 shadow-[0_0_8px_#22c55e] animate-ping"></span>
+                   <span className="w-3 h-3 bg-green-500 shadow-[0_0_6px_#22c55e] animate-ping"></span>
                  </div>
               </div>
             </section>
@@ -204,7 +206,7 @@ function App() {
               </h2>
               <span className="sticker-chip sticker-chip-cyan text-[8px]">ARCADE</span>
            </div>
-           
+
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
              {PROJECTS.map(project => (
                <ProjectCard key={project.id} project={project} />
@@ -214,7 +216,7 @@ function App() {
         )}
 
         {/* Footer */}
-        <footer className="mt-10 border-t border-neon-purple/35 py-8 text-center text-xs text-gray-600 flex flex-col items-center gap-4">
+        <footer className="mt-10 border-t border-neon-purple/35 py-8 text-center text-xs text-gray-500 flex flex-col items-center gap-4">
            <p>{PROFILE.footer}</p>
            <p>{PROFILE.copyright.replace('2024', new Date().getFullYear().toString())}</p>
         </footer>

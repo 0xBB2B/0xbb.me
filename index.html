@@ -24,16 +24,18 @@
               pixelbig: ['"VT323"', '"Press Start 2P"', "monospace"],
             },
             colors: {
-              // 银狼 LV.999 「阿哈时刻」配色：紫罗兰 / 品红粉 / 像素青。
+              // 暗黑半色调胶贴风调色板：参考图是「品红粉舞台 + 紫罗兰角色 + 像素青 + 亮黄 COMBO」。
+              // 整体保持暗底沉浸感，accent 高饱和但相比初版略收一档；ink 作三段层次中最深的一层
+              // 给硬阴影 / 边框 / sticker 衬底用，避免纯黑死板。
               neon: {
-                pink: "#ff4fd8",
-                cyan: "#66e0ff",
+                pink: "#ff5ec7",
+                cyan: "#3ec9f5",
                 purple: "#9b7bff",
                 violet: "#7a4dff",
-                yellow: "#f8ff72",
-                bg: "#06031a",
-                panel: "#120a2a",
-                ink: "#15102a",
+                yellow: "#ffe65a",
+                bg: "#0a0420",
+                panel: "#180b34",
+                ink: "#06021a",
               },
             },
             animation: {
@@ -93,7 +95,7 @@
         height: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #050505;
+        background: #06021a;
       }
       ::-webkit-scrollbar-thumb {
         background: #2a1f55;
@@ -103,38 +105,21 @@
         background: #9b7bff;
       }
       body {
-        background-color: #06031a;
-        color: #e0e0e0;
+        background-color: #0a0420;
+        color: #e8e0ff;
         overflow-x: hidden;
       }
       body::selection {
-        background: #ff4fd8;
-        color: #06031a;
+        background: #ff5ec7;
+        color: #0a0420;
       }
-      .crt::before {
-        content: " ";
-        display: block;
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-        background: linear-gradient(
-            rgba(18, 16, 16, 0) 50%,
-            rgba(0, 0, 0, 0.25) 50%
-          ),
-          linear-gradient(
-            90deg,
-            rgba(255, 0, 0, 0.06),
-            rgba(0, 255, 0, 0.02),
-            rgba(0, 0, 255, 0.06)
-          );
-        z-index: 50;
-        background-size: 100% 2px, 3px 100%;
-        pointer-events: none;
-      }
+      /* 文字主标题硬色差：相比初版 18px 大半径多重 glow，这里只用 1px 实色双向错位 +
+         一抹 6px 微 glow——暗底上仍醒目，但长时间看不再炫光眼累。 */
       .text-level {
-        text-shadow: 0 0 18px rgba(102, 224, 255, 0.85), 2px 0 rgba(255, 79, 216, 0.85), -2px 0 rgba(155, 123, 255, 0.85);
+        text-shadow:
+          1px 0 rgba(255, 94, 199, 0.85),
+          -1px 0 rgba(62, 201, 245, 0.85),
+          0 0 6px rgba(155, 123, 255, 0.35);
       }
       /* 银狼像素游戏机外框：用 SVG 描出像素切角与扫描带感。 */
       .pixel-frame {
@@ -178,12 +163,13 @@
       }
       .animate-lv999-sweep { animation: lv999-sweep 1.6s linear infinite; }
 
-      /* === 像素点阵 / 半色调 (halftone) === */
-      /* 双层 radial-gradient 平铺出半色调圆点：一层亮一层暗，错位呼吸。 */
+      /* === 像素点阵 / 半色调 (halftone) ===
+         深底配色：品红粉 + 像素青双层错位，呼应参考图大量出现的半色调网点；
+         比原始版略降一档不透明度（0.18→0.15、0.12→0.10），减少视网膜刺眼感。 */
       .halftone-dots {
         background-image:
-          radial-gradient(rgba(255, 79, 216, 0.18) 1.5px, transparent 1.6px),
-          radial-gradient(rgba(102, 224, 255, 0.12) 1px, transparent 1.2px);
+          radial-gradient(rgba(255, 94, 199, 0.15) 1.5px, transparent 1.6px),
+          radial-gradient(rgba(62, 201, 245, 0.10) 1px, transparent 1.2px);
         background-size: 14px 14px, 22px 22px;
         background-position: 0 0, 7px 11px;
       }
@@ -199,14 +185,14 @@
       .diagonal-stripes {
         background-image: repeating-linear-gradient(
           115deg,
-          rgba(155, 123, 255, 0.08) 0 4px,
+          rgba(155, 123, 255, 0.07) 0 4px,
           transparent 4px 14px
         );
       }
       .diagonal-stripes-strong {
         background-image: repeating-linear-gradient(
           115deg,
-          rgba(255, 79, 216, 0.18) 0 3px,
+          rgba(255, 94, 199, 0.18) 0 3px,
           transparent 3px 10px
         );
       }
@@ -219,44 +205,46 @@
         background-size: 200px 200px;
       }
 
-      /* === 像素硬阴影（无 blur） === */
-      .pixel-shadow-pink   { box-shadow: 4px 4px 0 0 #ff4fd8, 6px 6px 0 0 rgba(0,0,0,0.6); }
-      .pixel-shadow-cyan   { box-shadow: 4px 4px 0 0 #66e0ff, 6px 6px 0 0 rgba(0,0,0,0.6); }
-      .pixel-shadow-purple { box-shadow: 4px 4px 0 0 #9b7bff, 6px 6px 0 0 rgba(0,0,0,0.6); }
-      .pixel-shadow-yellow { box-shadow: 4px 4px 0 0 #f8ff72, 6px 6px 0 0 rgba(0,0,0,0.6); }
-      .pixel-shadow-tight  { box-shadow: 2px 2px 0 0 #000, 4px 4px 0 0 #9b7bff; }
+      /* === 像素硬阴影（无 blur） ===
+         衬底 ink (#06021a) 比纯黑略带紫，深底上看仍是"近黑"但少一分死板。 */
+      .pixel-shadow-pink   { box-shadow: 4px 4px 0 0 #ff5ec7, 6px 6px 0 0 #06021a; }
+      .pixel-shadow-cyan   { box-shadow: 4px 4px 0 0 #3ec9f5, 6px 6px 0 0 #06021a; }
+      .pixel-shadow-purple { box-shadow: 4px 4px 0 0 #9b7bff, 6px 6px 0 0 #06021a; }
+      .pixel-shadow-yellow { box-shadow: 4px 4px 0 0 #ffe65a, 6px 6px 0 0 #06021a; }
+      .pixel-shadow-tight  { box-shadow: 2px 2px 0 0 #06021a, 4px 4px 0 0 #9b7bff; }
 
       /* === 色差错位描边（chromatic aberration）—— 给图片/剪影用 === */
       .chrome-edge {
         filter:
-          drop-shadow(2px 0 0 #ff4fd8)
-          drop-shadow(-2px 0 0 #66e0ff)
-          drop-shadow(0 0 1px rgba(0,0,0,0.8));
+          drop-shadow(2px 0 0 #ff5ec7)
+          drop-shadow(-2px 0 0 #3ec9f5)
+          drop-shadow(0 0 1px rgba(6,2,26,0.85));
       }
       .chrome-edge-soft {
         filter:
-          drop-shadow(1px 0 0 rgba(255,79,216,0.85))
-          drop-shadow(-1px 0 0 rgba(102,224,255,0.85));
+          drop-shadow(1px 0 0 rgba(255,94,199,0.85))
+          drop-shadow(-1px 0 0 rgba(62,201,245,0.85));
       }
 
-      /* === 像素胶贴徽章（参考图右下角 LV.999 贴纸） === */
+      /* === 像素胶贴徽章（参考图 COMBO 贴纸） ===
+         默认 = 亮黄底 + ink 描边 + 品红粉错位阴影，呼应参考图右上 "027 COMBO"。 */
       .sticker-chip {
         font-family: '"Press Start 2P"', monospace;
         display: inline-block;
         padding: 6px 10px;
-        border: 2px solid #06031a;
-        background: #f8ff72;
-        color: #06031a;
-        box-shadow: 3px 3px 0 0 #06031a, 5px 5px 0 0 #ff4fd8;
+        border: 2px solid #06021a;
+        background: #ffe65a;
+        color: #06021a;
+        box-shadow: 3px 3px 0 0 #06021a, 5px 5px 0 0 #ff5ec7;
         text-shadow: none;
         letter-spacing: 0.08em;
         line-height: 1;
         image-rendering: pixelated;
       }
-      .sticker-chip-pink   { background: #ff4fd8; color: #06031a; box-shadow: 3px 3px 0 0 #06031a, 5px 5px 0 0 #66e0ff; }
-      .sticker-chip-cyan   { background: #66e0ff; color: #06031a; box-shadow: 3px 3px 0 0 #06031a, 5px 5px 0 0 #ff4fd8; }
-      .sticker-chip-purple { background: #9b7bff; color: #06031a; box-shadow: 3px 3px 0 0 #06031a, 5px 5px 0 0 #f8ff72; }
-      .sticker-chip-dark   { background: #120a2a; color: #66e0ff; border-color: #66e0ff; box-shadow: 3px 3px 0 0 #06031a, 5px 5px 0 0 #9b7bff; }
+      .sticker-chip-pink   { background: #ff5ec7; color: #06021a; box-shadow: 3px 3px 0 0 #06021a, 5px 5px 0 0 #3ec9f5; }
+      .sticker-chip-cyan   { background: #3ec9f5; color: #06021a; box-shadow: 3px 3px 0 0 #06021a, 5px 5px 0 0 #ff5ec7; }
+      .sticker-chip-purple { background: #9b7bff; color: #06021a; box-shadow: 3px 3px 0 0 #06021a, 5px 5px 0 0 #ffe65a; }
+      .sticker-chip-dark   { background: #180b34; color: #3ec9f5; border-color: #3ec9f5; box-shadow: 3px 3px 0 0 #06021a, 5px 5px 0 0 #9b7bff; }
 
       /* === 像素切角（已有 .pixel-frame，再补一个更小切角的） === */
       .pixel-clip-sm {
