@@ -119,3 +119,69 @@ export function createDemoChart(
     notes,
   };
 }
+
+/**
+ * createOnsetChart 直接用 onset 时间列表作为方块拍点，避开均匀 BPM 假设。
+ *
+ * 适用场景：歌曲非严格匀速、BPM 有微小漂移、或要让方块严格跟实际鼓点。
+ * 上游通过 analyzeAudioBuffer 拿到 onsetTimesMs[]，过滤 + 强制最小间距后
+ * 直接当方块时间。
+ *
+ * 过滤规则（按顺序）：
+ *   1. 早于 approachMs 的 onset 丢弃——spawn 时刻 = time − approachMs 必须 ≥ 0；
+ *   2. 晚于等于 durationMs 的 onset 丢弃——避免方块落在 BGM 之外；
+ *   3. 距上一个保留 onset 间距 < minGapMs 的丢弃——防止过密玩家手忙。
+ *
+ * @param onsetTimesMs 升序的 onset 时间数组（毫秒）
+ * @param durationMs BGM 总时长（毫秒）
+ * @param rng 随机源，决定 (hand, cut, lane) 序列
+ * @param options 可选 approachMs / minGapMs 覆盖
+ */
+export function createOnsetChart(
+  onsetTimesMs: ReadonlyArray<number>,
+  durationMs: number,
+  rng: () => number = Math.random,
+  options: { approachMs?: number; minGapMs?: number } = {},
+): BeatChart {
+  const approachMs = options.approachMs ?? 1600;
+  const minGapMs = options.minGapMs ?? 250;
+
+  // 过滤：spawn ≥ 0、不超尾、强制最小间距
+  const kept: number[] = [];
+  for (const t of onsetTimesMs) {
+    if (t < approachMs) {
+      continue;
+    }
+    if (t >= durationMs) {
+      break;
+    }
+    if (kept.length > 0 && t - kept[kept.length - 1] < minGapMs) {
+      continue;
+    }
+    kept.push(t);
+  }
+
+  let bag: { hand: Hand; cut: CutDirection }[] = [];
+  const drawCombo = () => {
+    if (bag.length === 0) {
+      bag = shuffle(ALL_COMBOS, rng);
+    }
+    return bag.pop()!;
+  };
+
+  const notes: Note[] = kept.map((time) => {
+    const slot = drawCombo();
+    const lane: Lane = slot.hand === 'L'
+      ? (rng() < 0.5 ? 0 : 1)
+      : (rng() < 0.5 ? 2 : 3);
+    return { time, lane, hand: slot.hand, cut: slot.cut };
+  });
+
+  return {
+    title: 'STAGE 01 // FUBUKI MIX',
+    bpm: BGM_BPM, // 仅用于 HUD 显示，谱面本身不再依赖 BPM
+    durationMs: durationMs + 2_000,
+    approachMs,
+    notes,
+  };
+}
