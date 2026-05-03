@@ -13,10 +13,17 @@ export const BGM_DURATION_MS = 32_100;
 /**
  * BGM_OFFSET_MS：裁剪片段中第一个清晰鼓点距 t=0 的偏移。
  * 通过前 3 秒的 onset 峰值检测得出（首个明显峰值约在 256ms 处）。
- * 谱面所有拍点都以 BGM_OFFSET_MS 为相位锚点累加 beatMs，让方块
+ * 谱面所有拍点都以 BGM_OFFSET_MS 为相位锚点累加 stepMs，让方块
  * 切击时刻与音乐 onset 对齐。
  */
 export const BGM_OFFSET_MS = 256;
+
+/**
+ * BEAT_SUBDIVISIONS：一拍切成多少个方块拍点。
+ * 1 = 每拍 1 方块（4 分音符密度）；2 = 每半拍 1 方块（8 分音符密度）。
+ * 117 BPM 下 stepMs ≈ 256ms，刚好对应音频 onset 间距的最小节奏单元。
+ */
+export const BEAT_SUBDIVISIONS = 2;
 
 // 全部 8 种 (hand, cut) 组合——对应键盘 8 个方向键。
 const ALL_COMBOS: ReadonlyArray<{ hand: Hand; cut: CutDirection }> = [
@@ -59,10 +66,12 @@ export interface ChartTiming {
  * createDemoChart 基于 BGM 的 BPM、时长、首拍偏移生成方块谱面。
  *
  * 拍点策略：
- *   - beatMs = 60_000 / timing.bpm，每拍出一个方块；
- *   - introBeats = ⌈approachMs / beatMs⌉——保证首方块的 spawn 时刻
- *     (= time − approachMs) ≥ 0，让 approachMs 调整时无需手动配套；
- *   - 每个拍点的 time = timing.offsetMs + (introBeats + i) × beatMs，
+ *   - stepMs = (60_000 / timing.bpm) / BEAT_SUBDIVISIONS，每 step 出一个方块；
+ *     117 BPM × 2 细分 ≈ 256ms/step，对应 8 分音符密度；
+ *   - introSteps = ⌈approachMs / stepMs⌉——保证首方块的 spawn 时刻
+ *     (= time − approachMs) ≥ 0，让 approachMs 或 BEAT_SUBDIVISIONS 调整时
+ *     无需手动配套；
+ *   - 每个拍点的 time = timing.offsetMs + (introSteps + i) × stepMs，
  *     以音乐首鼓点为相位锚点累加，方块切击时刻与音乐 onset 对齐；
  *   - 每个拍点的 (hand, cut) 从一个"包含全部 8 种组合的洗牌袋"中抽取，
  *     抽空再重洗——这样既保证序列随机不可预测，又保证每 8 个方块至少
@@ -77,9 +86,9 @@ export function createDemoChart(
   rng: () => number = Math.random,
   timing: ChartTiming = { bpm: BGM_BPM, offsetMs: BGM_OFFSET_MS, durationMs: BGM_DURATION_MS },
 ): BeatChart {
-  const beatMs = 60_000 / timing.bpm;
+  const stepMs = 60_000 / timing.bpm / BEAT_SUBDIVISIONS;
   const approachMs = 1600;
-  const introBeats = Math.ceil(approachMs / beatMs);
+  const introSteps = Math.ceil(approachMs / stepMs);
 
   let bag: { hand: Hand; cut: CutDirection }[] = [];
   const drawCombo = () => {
@@ -91,7 +100,7 @@ export function createDemoChart(
 
   const notes: Note[] = [];
   for (let i = 0; ; i += 1) {
-    const time = timing.offsetMs + (introBeats + i) * beatMs;
+    const time = timing.offsetMs + (introSteps + i) * stepMs;
     if (time >= timing.durationMs) {
       break;
     }

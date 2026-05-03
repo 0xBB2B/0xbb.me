@@ -55,7 +55,7 @@ describe('createDemoChart', () => {
     expect(chart.approachMs).toBeGreaterThanOrEqual(800);
   });
 
-  test('首方块 spawn 时刻 ≥ 0：introBeats 必须够装下 approachMs', () => {
+  test('首方块 spawn 时刻 ≥ 0：introSteps 必须够装下 approachMs', () => {
     // 不变量：方块只能在 BGM 起播 (t=0) 之后 spawn，所以
     // notes[0].time − approachMs 必须 ≥ 0；否则方块到判定线时距离不足。
     const chart = createDemoChart(mulberry32(9));
