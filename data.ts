@@ -22,12 +22,11 @@ export const APP_DATA = {
   ],
   skills: [
     { name: "AI", level: 999, category: "Tools" },
+    { name: "Harness", level: 90, category: "Tools" },
+    { name: "Agents", level: 90, category: "Tools" },
+    { name: "Skills", level: 90, category: "Tools" },
     { name: "Go (Golang)", level: 90, category: "Backend" },
     { name: "Docker / K8s", level: 85, category: "DevOps" },
-    { name: "JavaScript / TS", level: 70, category: "Frontend" },
-    { name: "Vue / Nuxt", level: 70, category: "Frontend" },
-    { name: "React / Next.js", level: 70, category: "Frontend" },
-    { name: "Node.js", level: 70, category: "Backend" }
   ],
   projects: [
     {

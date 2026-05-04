@@ -59,10 +59,10 @@ export const StatusCard: React.FC = () => {
         {stats.map((skill) => {
           const Icon = CATEGORY_ICON[skill.category] ?? FALLBACK_ICON;
           const color = CATEGORY_COLOR[skill.category] ?? 'text-game-teal';
-          // level >= 999 时显示满槽与 MAX 标签；否则按百分比映射到 1000 总量。
+          // level >= 999 时显示满槽与 MAX 标签；否则按百分比映射到 100 总量。
           const isMax = skill.level >= 999;
           const fillPercent = isMax ? 100 : Math.min(skill.level, 100);
-          const valueText = isMax ? 'MAX' : `${skill.level * 10}/1000`;
+          const valueText = isMax ? 'MAX' : `${skill.level}/100`;
 
           return (
             <div key={skill.name}>
