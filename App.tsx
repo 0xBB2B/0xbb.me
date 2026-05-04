@@ -17,6 +17,7 @@ import { StatusCard } from './components/aether/StatusCard.tsx';
 import { BeatSaberPlaceholder } from './components/beat-saber/BeatSaberPlaceholder.tsx';
 import { PROFILE, SKILLS, SOCIAL_LINKS } from './constants';
 import { useMediaQuery } from './hooks/useMediaQuery';
+import { handleAnchorClick } from './lib/scrollToAnchor';
 
 // 桌面端才动态 import BeatSaberGame：把 three.js（约 600KB）从移动端
 // 首屏 bundle 中拆出来，移动端永远不下载也不渲染游戏组件。
@@ -90,6 +91,7 @@ function App() {
             <motion.a
               key={item}
               href={`#${item.toLowerCase()}`}
+              onClick={handleAnchorClick}
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
@@ -139,6 +141,7 @@ function App() {
           >
             <a
               href="#game"
+              onClick={handleAnchorClick}
               className="pixel-card bg-game-purple border-game-purple group hover:bg-game-teal hover:border-game-teal transition-all"
             >
               <span className="font-pixel text-xs flex items-center gap-2 group-hover:text-game-dark">
@@ -147,6 +150,7 @@ function App() {
             </a>
             <a
               href="#stats"
+              onClick={handleAnchorClick}
               className="pixel-card border-game-silver/50 hover:border-game-pink transition-all"
             >
               <span className="font-pixel text-xs text-game-silver hover:text-game-pink">
