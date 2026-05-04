@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Cpu, Shield, Sparkles, Swords, Zap } from 'lucide-react';
 import { PROFILE, SKILLS } from '../../constants';
+import { handleAnchorClick } from '../../lib/scrollToAnchor';
 
 // 将技能 category 映射到 lucide-react 图标，给 StatusCard 提供视觉锚点。
 // 与 Aether 原版 4 项游戏属性（Intelligence/Hacking/Defense/Attack）保持视觉量级一致。
@@ -90,6 +91,7 @@ export const StatusCard: React.FC = () => {
         <span className="text-game-silver opacity-50">#AETHER_LINK</span>
         <a
           href="#game"
+          onClick={handleAnchorClick}
           className="text-game-teal hover:text-game-pink transition-colors"
         >
           VIEW_DETAILS &gt;
