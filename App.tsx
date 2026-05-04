@@ -146,9 +146,7 @@ function App() {
               </span>
             </a>
             <a
-              href={SOCIAL_LINKS.find((l) => l.name === 'GitHub')?.url ?? '#'}
-              target="_blank"
-              rel="noopener noreferrer"
+              href="#stats"
               className="pixel-card border-game-silver/50 hover:border-game-pink transition-all"
             >
               <span className="font-pixel text-xs text-game-silver hover:text-game-pink">
