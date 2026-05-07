@@ -50,6 +50,26 @@ function shuffle<T>(arr: ReadonlyArray<T>, rng: () => number): T[] {
 }
 
 /**
+ * pickLane 在指定手的候选 lane 中挑一条，并强制与上一方块不同。
+ *
+ * 不变量"相邻方块不同 lane"用于防止后块沿同一 Z 轴轨道飞向前块所在位置，
+ * 造成视觉遮挡——玩家会看到两个方块叠在一起，来不及辨别后块的 cut 方向。
+ *
+ *   - 同手：候选只有 2 条 lane（左手 0/1、右手 2/3）。若上一块在其中之一，
+ *     剔除后唯一剩下的那条直接选中（不消耗 rng）；上一块在另一只手时
+ *     候选不受影响，照常 2 选 1。
+ *   - 不同手：候选 lane 范围与上一块不重叠，过滤等价于无操作，2 选 1。
+ *   - prevLane 为 null（首方块）：在候选 2 条之间正常 2 选 1。
+ */
+function pickLane(hand: Hand, prevLane: Lane | null, rng: () => number): Lane {
+  const candidates: Lane[] = hand === 'L' ? [0, 1] : [2, 3];
+  const filtered = prevLane === null
+    ? candidates
+    : candidates.filter((l) => l !== prevLane);
+  return filtered[Math.floor(rng() * filtered.length)];
+}
+
+/**
  * ChartTiming 是 createDemoChart 的可选时间参数。
  *
  * 默认值取自 BGM_BPM / BGM_OFFSET_MS / BGM_DURATION_MS 常量，作为分析失败
@@ -99,16 +119,16 @@ export function createDemoChart(
   };
 
   const notes: Note[] = [];
+  let prevLane: Lane | null = null;
   for (let i = 0; ; i += 1) {
     const time = timing.offsetMs + (introSteps + i) * stepMs;
     if (time >= timing.durationMs) {
       break;
     }
     const slot = drawCombo();
-    const lane: Lane = slot.hand === 'L'
-      ? (rng() < 0.5 ? 0 : 1)
-      : (rng() < 0.5 ? 2 : 3);
+    const lane = pickLane(slot.hand, prevLane, rng);
     notes.push({ time, lane, hand: slot.hand, cut: slot.cut });
+    prevLane = lane;
   }
 
   return {
@@ -169,11 +189,11 @@ export function createOnsetChart(
     return bag.pop()!;
   };
 
+  let prevLane: Lane | null = null;
   const notes: Note[] = kept.map((time) => {
     const slot = drawCombo();
-    const lane: Lane = slot.hand === 'L'
-      ? (rng() < 0.5 ? 0 : 1)
-      : (rng() < 0.5 ? 2 : 3);
+    const lane = pickLane(slot.hand, prevLane, rng);
+    prevLane = lane;
     return { time, lane, hand: slot.hand, cut: slot.cut };
   });
 
