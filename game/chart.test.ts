@@ -90,6 +90,16 @@ describe('createDemoChart', () => {
     const sigB = b.notes.map((n) => `${n.hand}${n.cut}${n.lane}`).join('|');
     expect(sigA).not.toBe(sigB);
   });
+
+  test('相邻方块的 lane 必须不同：避免后块沿同轨遮挡前块导致玩家来不及反应', () => {
+    // 多种子各跑一遍，确保不变量在不同 RNG 路径下都成立。
+    [1, 2, 3, 7, 42, 100, 200].forEach((seed) => {
+      const { notes } = createDemoChart(mulberry32(seed));
+      for (let i = 1; i < notes.length; i += 1) {
+        expect(notes[i].lane).not.toBe(notes[i - 1].lane);
+      }
+    });
+  });
 });
 
 describe('createOnsetChart', () => {
@@ -177,5 +187,15 @@ describe('createOnsetChart', () => {
     expect(chart.notes).toEqual([]);
     expect(chart.durationMs).toBeGreaterThan(0);
     expect(chart.approachMs).toBeGreaterThan(0);
+  });
+
+  test('相邻方块的 lane 必须不同：避免后块沿同轨遮挡前块导致玩家来不及反应', () => {
+    const onsets = buildOnsets(40);
+    [1, 2, 3, 7, 42, 100, 200].forEach((seed) => {
+      const { notes } = createOnsetChart(onsets, 15_000, mulberry32(seed));
+      for (let i = 1; i < notes.length; i += 1) {
+        expect(notes[i].lane).not.toBe(notes[i - 1].lane);
+      }
+    });
   });
 });
