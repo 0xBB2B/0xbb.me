@@ -2,13 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PROFILE } from '../../constants';
 
+interface TerminalProps {
+  /** Boot 退出动画完整结束后触发；用于父级解锁页面滚动并强制回到顶部。 */
+  onExitComplete?: () => void;
+}
+
 /**
  * Terminal 渲染 Aether Link 主题入站时的 boot 序列。
  *
  * 按 400ms 节奏逐行打印固定文案，全部打印完毕后停留 1s 自动淡出。
  * 文案借助 PROFILE.name 拼出当前用户身份，让序列与作品集主体保持一致。
+ *
+ * onExitComplete 在退出动画播放完毕、组件即将从 DOM 移除时触发，让父级能精确
+ * 衔接"解锁滚动 + scrollTo(0,0)"等首屏收尾动作。
  */
-export const Terminal: React.FC = () => {
+export const Terminal: React.FC<TerminalProps> = ({ onExitComplete }) => {
   const [lines, setLines] = useState<string[]>([]);
   const [complete, setComplete] = useState(false);
 
@@ -38,7 +46,7 @@ export const Terminal: React.FC = () => {
   }, []);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={onExitComplete}>
       {!complete && (
         <motion.div
           initial={{ opacity: 1 }}

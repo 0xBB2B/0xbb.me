@@ -54,7 +54,32 @@ function App() {
 
   useEffect(() => {
     setMounted(true);
+
+    // 关闭浏览器的滚动恢复：刷新时浏览器默认会把上一次的 scrollY 复位，
+    // 与"每次刷新都从 HERO 起跳"的入场叙事相冲突；改为手动控制。
+    const previousRestoration = window.history.scrollRestoration;
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+
+    return () => {
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = previousRestoration;
+      }
+    };
   }, []);
+
+  /**
+   * 在 Terminal 退出动画完整结束后调用。此时立刻：
+   *  1. 把 body 切到 .boot-complete，恢复纵向滚动；
+   *  2. 再次 scrollTo(0, 0) 兜底——虽然 boot 期间 body 锁滚动，但部分浏览器
+   *     在解锁瞬间可能根据缓存恢复 scrollY，二次清零确保视口在 HERO 顶部。
+   */
+  const handleBootExit = (): void => {
+    document.body.classList.add('boot-complete');
+    window.scrollTo(0, 0);
+  };
 
   if (!mounted) return null;
 
@@ -64,8 +89,8 @@ function App() {
       <div className="scanline" />
       <div className="fixed inset-0 pointer-events-none z-[150] shadow-[inset_0_0_100px_rgba(0,0,0,0.5)]" />
 
-      {/* Boot 启动终端：完成后自动淡出。 */}
-      <Terminal />
+      {/* Boot 启动终端：完成后自动淡出，淡出结束回调用于解锁滚动 + 顶部归位。 */}
+      <Terminal onExitComplete={handleBootExit} />
 
       {/* 浮动方块背景（青 / 紫两组 motion 动画）。 */}
       <AetherBackground />

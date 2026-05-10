@@ -84,6 +84,13 @@
       body {
         background-color: #0f172a;
         color: #ffffff;
+        /* Boot 启动序列期间锁住 body 滚动：避免动画播放时下层 main 仍可被
+           键盘 / 触摸板滚动累积位移，导致动画落幕后视口不在 HERO 顶部。
+           App 监听 Terminal 退出动画完成后会切到 .boot-complete 解锁。 */
+        overflow: hidden;
+      }
+      body.boot-complete {
+        overflow-y: auto;
         overflow-x: hidden;
       }
       body::selection {
