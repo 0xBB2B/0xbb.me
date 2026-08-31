@@ -40,12 +40,12 @@ export const APP_DATA = {
     },
     {
       id: "2",
-      title: "Lying Flat",
-      description: "Japan Leave Management System. Features employee management, leave tracking, automated calculation based on Japanese Labor Standards, and a cyberpunk dark mode.",
-      tech: ["React", "TypeScript", "Vite", "Tailwind CSS"],
+      title: "bb-spec",
+      description: "A spec-driven Claude Code pipeline that carries a fuzzy requirement all the way to reviewed, shipped code — every stage traceable, resumable, and adversarially verified.",
+      tech: ["Claude Code", "opencode", "Shell", "TypeScript"],
       status: "ONLINE",
-      repo: "https://github.com/0xBB2B/lying-flat",
-      link: "http://yorha.xyz/lying-flat"
+      repo: "https://github.com/0xBB2B/bb-spec",
+      link: "https://github.com/0xBB2B/bb-spec"
     },
     {
       id: "3",
