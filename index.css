@@ -153,6 +153,34 @@ body {
   transform: translate(3px, 3px);
 }
 
+.hud-dot {
+  position: relative;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+.hud-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  animation: hud-ripple 1.8s ease-out infinite;
+}
+@keyframes hud-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+
 .hud-bar {
   position: relative;
   height: 4px;
@@ -171,7 +199,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hud-scan {
+  .hud-scan,
+  .hud-dot::after {
     animation: none;
   }
 }
