@@ -5,7 +5,7 @@ export const APP_DATA = {
     status: "SYSTEM STATUS: ONLINE",
     location: "TOKYO,SHANGHAI",
     stats: {
-      contributions: "♾️",
+      contributions: "∞",
       uptime: "99.9%"
     },
     bio: "Hi, I'm BB — a Full-stack Engineer and System Architect.\nI don't just build systems — I design intelligent workflows.\nFrom scalable backend architectures to game SDK ecosystems and trading platforms, I leverage AI, custom Skills, and Agents to solve complex problems and accelerate development at scale.",
@@ -32,7 +32,7 @@ export const APP_DATA = {
     {
       id: "1",
       title: "0xbb.me",
-      description: "Silver Wolf-themed portfolio with a built-in 3D dual-hand rhythm-blade game (three.js + Web Audio). Aha! Time-inspired neon HUD, fully keyboard-driven.",
+      description: "Tactical-HUD portfolio with a standalone 3D dual-hand rhythm-blade game (three.js + Web Audio), fully keyboard-driven.",
       tech: ["React", "TypeScript", "Vite", "Tailwind CSS", "three.js", "Web Audio"],
       status: "ONLINE",
       repo: "https://github.com/0xBB2B/0xbb.me",

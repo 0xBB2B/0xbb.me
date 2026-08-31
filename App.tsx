@@ -1,354 +1,218 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
-import {
-  BookOpen,
-  Briefcase,
-  ChevronDown,
-  Code2,
-  Gamepad2,
-  Layers,
-  Mail,
-  Sparkles,
-} from 'lucide-react';
-import { GlitchText } from './components/GlitchText.tsx';
-import { AetherBackground } from './components/aether/AetherBackground.tsx';
-import { Terminal } from './components/aether/Terminal.tsx';
-import { StatusCard } from './components/aether/StatusCard.tsx';
-import { BeatSaberPlaceholder } from './components/beat-saber/BeatSaberPlaceholder.tsx';
-import { PROFILE, SKILLS, SOCIAL_LINKS } from './constants';
-import { useMediaQuery } from './hooks/useMediaQuery';
+import { PROFILE, PROJECTS, SKILLS, SOCIAL_LINKS } from './constants';
 import { handleAnchorClick } from './lib/scrollToAnchor';
 
-// 桌面端才动态 import BeatSaberGame：把 three.js（约 600KB）从移动端
-// 首屏 bundle 中拆出来，移动端永远不下载也不渲染游戏组件。
-const BeatSaberGame = lazy(() => import('./components/beat-saber/BeatSaberGame.tsx'));
+const GAME_URL = './game/';
+const MAX_LEVEL = 999;
+const NAV_ITEMS = ['STATS', 'SKILLS', 'PROJECTS'] as const;
 
-// 顶部导航锚点；与下方各 section 的 id 对齐。
-const NAV_ITEMS = ['HOME', 'STATS', 'GAME', 'SKILLS'] as const;
-
-// SOCIAL_LINKS 名称到 lucide 图标的映射，让社交按钮拥有统一视觉语言。
-// 注：lucide-react v1 砍掉了所有品牌 logo（GitHub/LinkedIn 等），故此处使用
-// 语义化通用图标——Code2 代表代码仓库、Briefcase 代表职业网络、BookOpen
-// 代表技术内容平台——与 Aether Link 主题的极简像素美学保持一致。
-const SOCIAL_ICON: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
-  GitHub: Code2,
-  LinkedIn: Briefcase,
-  Email: Mail,
-  Juejin: BookOpen,
+const splitName = (name: string): [string, string] => {
+  const i = name.indexOf('_');
+  return i < 0 ? [name, ''] : [name.slice(0, i), name.slice(i)];
 };
 
-/**
- * App 渲染 Aether Link 主题作品集主界面。
- *
- * 主要分段：
- *  - HERO：玩家入口；
- *  - STATS：玩家档案 + 状态卡；
- *  - LEVELS：嵌入节奏光剑游戏；
- *  - SKILLS：能力树进度条；
- *  - FOOTER：GAME OVER 收束。
- */
+const pad2 = (n: number): string => n.toString().padStart(2, '0');
+
+const [nameHead, nameTail] = splitName(PROFILE.name);
+const statusWord = PROFILE.status.split(':').pop()?.trim() ?? PROFILE.status;
+const onlineProjects = PROJECTS.filter((p) => p.status === 'ONLINE').length;
+
+const STAT_CELLS: { label: string; value: string; unit: string; href?: string }[] = [
+  ...SKILLS.slice(0, 2).map((s) => ({ label: s.name.toUpperCase(), value: String(s.level), unit: 'LV' })),
+  { label: 'PROJECTS', value: pad2(onlineProjects), unit: 'ONLINE' },
+  { label: 'RHYTHM BLADE', value: 'PLAY', unit: '→', href: GAME_URL },
+];
+
+const TelemetryRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div className="flex items-center justify-between gap-4 border-t border-hud-ice/10 py-2 tabular-nums">
+    <span>{label}</span>
+    <span className="text-hud-ice">{children}</span>
+  </div>
+);
+
+const SectionHead: React.FC<{ id: string; title: string; aside?: string }> = ({ id, title, aside }) => (
+  <div className="mb-5 flex items-end justify-between gap-4">
+    <div>
+      <div className="hud-eyebrow mb-1">// {id.toUpperCase()}</div>
+      <h2 className="font-display text-2xl font-bold leading-none">{title}</h2>
+    </div>
+    {aside && <span className="font-mono text-[11px] tracking-[0.18em] text-hud-dim">{aside}</span>}
+  </div>
+);
+
 function App() {
-  const [mounted, setMounted] = useState(false);
-  // lg 以上视为桌面端，匹配 BeatSaber 键盘玩法的最小可用尺寸。
-  const isDesktop = useMediaQuery('(min-width: 1024px)');
-
-  useEffect(() => {
-    setMounted(true);
-
-    // 关闭浏览器的滚动恢复：刷新时浏览器默认会把上一次的 scrollY 复位，
-    // 与"每次刷新都从 HERO 起跳"的入场叙事相冲突；改为手动控制。
-    const previousRestoration = window.history.scrollRestoration;
-    if ('scrollRestoration' in window.history) {
-      window.history.scrollRestoration = 'manual';
-    }
-    window.scrollTo(0, 0);
-
-    return () => {
-      if ('scrollRestoration' in window.history) {
-        window.history.scrollRestoration = previousRestoration;
-      }
-    };
-  }, []);
-
-  /**
-   * 在 Terminal 退出动画完整结束后调用。此时立刻：
-   *  1. 把 body 切到 .boot-complete，恢复纵向滚动；
-   *  2. 再次 scrollTo(0, 0) 兜底——虽然 boot 期间 body 锁滚动，但部分浏览器
-   *     在解锁瞬间可能根据缓存恢复 scrollY，二次清零确保视口在 HERO 顶部。
-   */
-  const handleBootExit = (): void => {
-    document.body.classList.add('boot-complete');
-    window.scrollTo(0, 0);
-  };
-
-  if (!mounted) return null;
-
   return (
-    <div className="relative min-h-screen selection:bg-game-teal selection:text-game-dark overflow-hidden">
-      {/* CRT 扫描线浮层 + 内阴影暗角 */}
-      <div className="scanline" />
-      <div className="fixed inset-0 pointer-events-none z-[150] shadow-[inset_0_0_100px_rgba(0,0,0,0.5)]" />
+    <div className="relative min-h-screen">
+      <div className="hud-grid" />
+      <div className="hud-scan" />
 
-      {/* Boot 启动终端：完成后自动淡出，淡出结束回调用于解锁滚动 + 顶部归位。 */}
-      <Terminal onExitComplete={handleBootExit} />
-
-      {/* 浮动方块背景（青 / 紫两组 motion 动画）。 */}
-      <AetherBackground />
-
-      {/* 背景装饰：径向辉光 + 1/4 网格竖线，给页面长滚动增加纵深感。 */}
-      <div className="fixed top-0 left-0 w-full h-full -z-20 opacity-20 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(168,85,247,0.1),transparent_70%)]" />
-        <div className="absolute h-full w-[1px] bg-game-silver/10 left-1/4" />
-        <div className="absolute h-full w-[1px] bg-game-silver/10 left-2/4" />
-        <div className="absolute h-full w-[1px] bg-game-silver/10 left-3/4" />
-      </div>
-
-      <nav className="fixed top-0 w-full z-50 p-6 flex justify-between items-center mix-blend-difference">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="font-pixel text-xs tracking-tighter text-game-teal"
-        >
-          {PROFILE.name.toUpperCase()}.SYS
-        </motion.div>
-        <div className="hidden md:flex gap-8 items-center">
-          {NAV_ITEMS.map((item, i) => (
-            <motion.a
-              key={item}
-              href={`#${item.toLowerCase()}`}
-              onClick={handleAnchorClick}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="font-cyber text-[10px] tracking-[0.2em] hover:text-game-teal transition-colors"
-            >
-              //{item}
-            </motion.a>
+      <nav className="hud-nav sticky top-0 z-20 bg-hud-bg/90 backdrop-blur">
+        <div>
+          <b>{PROFILE.name}</b>.SYS
+        </div>
+        <div className="hidden gap-6 md:flex">
+          <a href="#home" onClick={handleAnchorClick} className="text-hud-fg">
+            HOME
+          </a>
+          {NAV_ITEMS.map((item) => (
+            <a key={item} href={`#${item.toLowerCase()}`} onClick={handleAnchorClick}>
+              {item}
+            </a>
           ))}
+          <a href={GAME_URL} className="text-hud-ice">
+            GAME ↗
+          </a>
+        </div>
+        <div>
+          LINK <span className="text-hud-ok">●</span> {statusWord}
         </div>
       </nav>
 
       <main className="relative z-10">
-        {/* HERO */}
-        <section
-          id="home"
-          className="min-h-screen flex flex-col items-center justify-center pt-24 px-6 text-center"
-        >
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-            className="mb-6 relative"
-          >
-            <div className="absolute -inset-4 bg-game-purple/20 blur-3xl rounded-full" />
-            <Gamepad2 size={80} className="text-game-teal relative z-10" />
-          </motion.div>
-
-          <GlitchText
-            text={PROFILE.name}
-            className="text-4xl md:text-7xl font-cyber font-black mb-4"
-          />
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="font-mono text-game-silver text-sm md:text-lg max-w-2xl mx-auto uppercase tracking-wider mb-12"
-          >
-            {PROFILE.role}
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="flex flex-wrap justify-center gap-4"
-          >
-            <a
-              href="#game"
-              onClick={handleAnchorClick}
-              className="pixel-card bg-game-purple border-game-purple group hover:bg-game-teal hover:border-game-teal transition-all"
-            >
-              <span className="font-pixel text-xs flex items-center gap-2 group-hover:text-game-dark">
-                PRESS_START <Layers size={14} />
-              </span>
-            </a>
-            <a
-              href="#stats"
-              onClick={handleAnchorClick}
-              className="pixel-card border-game-silver/50 hover:border-game-pink transition-all"
-            >
-              <span className="font-pixel text-xs text-game-silver hover:text-game-pink">
-                JOIN_PARTY
-              </span>
-            </a>
-          </motion.div>
-
-          <motion.div
-            animate={{ y: [0, 10, 0] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="absolute bottom-10"
-          >
-            <ChevronDown size={32} className="text-game-silver opacity-20" />
-          </motion.div>
-        </section>
-
-        {/* STATS */}
-        <section
-          id="stats"
-          className="min-h-screen flex flex-col items-center justify-center py-24 px-6 bg-game-dark/50"
-        >
-          <div className="w-full max-w-6xl grid md:grid-cols-2 gap-16 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-            >
-              <div className="inline-block px-3 py-1 bg-game-teal/20 border border-game-teal text-game-teal font-pixel text-[10px] mb-6">
-                CHARACTER_DATA
-              </div>
-              <h2 className="font-cyber text-4xl md:text-5xl mb-8">PLAYER_PROFILE</h2>
-              <p className="font-mono text-game-silver leading-relaxed mb-4 whitespace-pre-line">
-                {PROFILE.bio}
-              </p>
-              <div className="flex items-center gap-3 text-xs font-mono text-game-silver mb-8">
-                <span className="font-pixel text-[10px] text-game-teal">LOC:</span>
-                <span>{PROFILE.location}</span>
-                <span className="w-2 h-2 bg-green-500 shadow-[0_0_6px_#22c55e] animate-pulse rounded-full" />
-              </div>
-              <div className="flex flex-wrap gap-4">
-                {SOCIAL_LINKS.map((link) => {
-                  const Icon = SOCIAL_ICON[link.name];
-                  if (!Icon) return null;
-                  return (
-                    <a
-                      key={link.name}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={link.name}
-                      className="text-game-silver hover:text-game-teal transition-colors"
-                    >
-                      <Icon size={24} />
-                    </a>
-                  );
-                })}
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="flex justify-center"
-            >
-              <StatusCard />
-            </motion.div>
-          </div>
-        </section>
-
-        {/* LEVELS：嵌入节奏光剑（替换 Aether 原版的 LEVEL_SELECT） */}
-        <section id="game" className="py-24 px-6 max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
-            <div>
-              <div className="inline-block px-3 py-1 bg-game-pink/20 border border-game-pink text-game-pink font-pixel text-[10px] mb-4">
-                BOSS_BATTLE
-              </div>
-              <h2 className="font-cyber text-4xl md:text-5xl uppercase italic">RHYTHM_BLADE</h2>
-              <p className="mt-3 font-mono text-game-silver text-sm uppercase tracking-widest">
-                Dual-saber arcade · three.js + Web Audio
-              </p>
+        <section id="home" className="mx-auto grid max-w-7xl gap-8 px-7 pb-10 pt-12 lg:grid-cols-[1.3fr_1fr]">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <div className="hud-eyebrow mb-3">PILOT PROFILE // {PROFILE.location.replace(',', ' · ')}</div>
+            <h1 className="font-display text-[clamp(40px,7vw,84px)] font-bold leading-[0.95] tracking-tight">
+              {nameHead}
+              <br />
+              <em className="not-italic text-hud-ice">{nameTail}</em>
+            </h1>
+            <p className="mt-4 font-display text-base tracking-wide">{PROFILE.role}</p>
+            <p className="mt-3 max-w-[52ch] whitespace-pre-line text-sm leading-relaxed text-[#9db1c3]">{PROFILE.bio}</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a className="hud-cta fill" href={GAME_URL}>
+                DEPLOY GAME
+              </a>
+              <a className="hud-cta" href="#stats" onClick={handleAnchorClick}>
+                VIEW STATS
+              </a>
             </div>
-            {isDesktop && (
-              <div className="text-right font-pixel text-[10px] text-game-silver">
-                <div>
-                  L <span className="text-game-purple">[WASD]</span>
-                </div>
-                <div className="mt-1">
-                  R <span className="text-game-teal">[IJKL]</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="pixel-card p-0 overflow-hidden"
-          >
-            {isDesktop ? (
-              <Suspense fallback={<BeatSaberPlaceholder />}>
-                <BeatSaberGame />
-              </Suspense>
-            ) : (
-              <BeatSaberPlaceholder />
-            )}
           </motion.div>
+
+          <motion.aside
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+            className="hud-frame self-start p-5 font-mono text-xs"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-display text-[11px] font-semibold tracking-[0.2em] text-hud-dim">TELEMETRY</h3>
+              <img src={PROFILE.avatar} alt={PROFILE.name} className="h-10 w-10 border border-hud-ice/40 object-cover" />
+            </div>
+            <TelemetryRow label="STATUS">
+              <span className="text-hud-ok">● {statusWord}</span>
+            </TelemetryRow>
+            <TelemetryRow label="UPTIME">{PROFILE.stats.uptime}</TelemetryRow>
+            <TelemetryRow label="CONTRIB">{PROFILE.stats.contributions}</TelemetryRow>
+            <TelemetryRow label="LOCATION">{PROFILE.location}</TelemetryRow>
+            <TelemetryRow label="LINKS">
+              <span className="flex gap-3">
+                {SOCIAL_LINKS.map((link) => (
+                  <a
+                    key={link.name}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={link.name}
+                    className="transition-colors hover:text-hud-fg"
+                  >
+                    {link.icon}
+                  </a>
+                ))}
+              </span>
+            </TelemetryRow>
+          </motion.aside>
         </section>
 
-        {/* SKILLS */}
-        <section id="skills" className="py-24 px-6 bg-game-dark">
-          <div className="max-w-4xl mx-auto text-center mb-16">
-            <h2 className="font-cyber text-4xl md:text-5xl mb-6 flex items-center justify-center gap-4">
-              <Sparkles className="text-game-teal" /> ABILITY_TREE
-            </h2>
-            <p className="text-game-silver font-mono text-sm uppercase tracking-[0.2em]">
-              Upgrading system core... [100%]
-            </p>
-          </div>
-
-          <div className="max-w-2xl mx-auto grid gap-12">
-            {SKILLS.map((skill, i) => {
-              const isMax = skill.level >= 999;
-              const fillPercent = isMax ? 100 : Math.min(skill.level, 100);
-              const valueText = isMax ? 'LV.999' : `${skill.level}%`;
+        <section id="stats" className="border-y border-hud-ice/10">
+          <div className="mx-auto grid max-w-7xl grid-cols-2 lg:grid-cols-4">
+            {STAT_CELLS.map((cell) => {
+              const Tag = cell.href ? 'a' : 'div';
               return (
-                <motion.div
-                  key={skill.name}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  className="flex items-center gap-8"
+                <Tag
+                  key={cell.label}
+                  href={cell.href}
+                  className="border-r border-hud-ice/10 px-7 py-5 last:border-r-0 [&:nth-child(2)]:border-r-0 [&:nth-child(-n+2)]:border-b lg:[&:nth-child(2)]:border-r lg:[&:nth-child(-n+2)]:border-b-0"
                 >
-                  <div className="w-12 h-12 shrink-0 border-2 border-game-silver/20 flex items-center justify-center font-cyber text-xs text-game-silver">
-                    {(i + 1).toString().padStart(2, '0')}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between mb-2">
-                      <span className="font-pixel text-xs tracking-tight">{skill.name}</span>
-                      <span
-                        className={`font-pixel text-xs ${isMax ? 'text-game-pink' : 'text-game-teal'}`}
-                      >
-                        {valueText}
-                      </span>
-                    </div>
-                    <div className="h-1 w-full bg-game-silver/10 rounded-full overflow-hidden">
-                      <motion.div
-                        className={`h-full ${isMax ? 'bg-game-pink' : 'bg-game-teal'}`}
-                        initial={{ width: 0 }}
-                        whileInView={{ width: `${fillPercent}%` }}
-                        transition={{ duration: 1.5, ease: 'circOut' }}
-                      />
-                    </div>
-                  </div>
-                </motion.div>
+                  <small className="block font-mono text-[11px] tracking-[0.18em] text-hud-dim">{cell.label}</small>
+                  <strong className="font-display text-3xl font-bold tabular-nums">
+                    {cell.value}
+                    <i className="ml-1 text-base not-italic text-hud-ice">{cell.unit}</i>
+                  </strong>
+                </Tag>
               );
             })}
           </div>
         </section>
 
-        <footer className="py-24 px-6 text-center border-t border-game-silver/10">
-          <GlitchText
-            text="GAME OVER"
-            className="text-6xl md:text-8xl font-cyber mb-8 opacity-20"
-          />
-          <p className="font-pixel text-[10px] text-game-silver mb-4 uppercase">
-            {PROFILE.footer}
-          </p>
-          <p className="font-mono text-[10px] text-game-silver/50">
+        <section id="skills" className="mx-auto max-w-7xl px-7 py-8">
+          <SectionHead id="skills" title="ABILITY MATRIX" aside={`${SKILLS.length} MODULES LOADED`} />
+          <div className="grid gap-x-7 gap-y-4 md:grid-cols-2 lg:grid-cols-3">
+            {SKILLS.map((skill) => {
+              const isMax = skill.level >= MAX_LEVEL;
+              const fillPercent = isMax ? 100 : Math.min(skill.level, 100);
+              return (
+                <div key={skill.name} className="font-mono text-xs">
+                  <div className="mb-1.5 flex justify-between">
+                    <span>{skill.name.toUpperCase()}</span>
+                    <b className={`font-medium ${isMax ? 'text-hud-warn' : 'text-hud-ice'}`}>
+                      {isMax ? `LV.${skill.level}` : skill.level}
+                    </b>
+                  </div>
+                  <div className={`hud-bar ${isMax ? 'max' : ''}`}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${fillPercent}%` }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 1, ease: 'easeOut' }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section id="projects" className="border-t border-hud-ice/10">
+          <div className="mx-auto max-w-7xl px-7 py-8">
+            <SectionHead id="projects" title="DEPLOYMENTS" aside={`${pad2(onlineProjects)} ONLINE`} />
+            <div className="grid border border-hud-ice/10 md:grid-cols-3">
+              {PROJECTS.map((project, i) => (
+                <article
+                  key={project.id}
+                  className="flex flex-col gap-2 border-b border-hud-ice/10 p-5 last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0"
+                >
+                  <div className="flex justify-between font-mono text-[11px] tracking-[0.18em] text-hud-dim">
+                    <span>PROJECT {pad2(i + 1)}</span>
+                    <span className={project.status === 'ONLINE' ? 'text-hud-ok' : 'text-hud-warn'}>● {project.status}</span>
+                  </div>
+                  <h3 className="font-display text-lg font-semibold">{project.title}</h3>
+                  <p className="text-sm leading-relaxed text-[#9db1c3]">{project.description}</p>
+                  <div className="mt-auto pt-2 font-mono text-[11px] text-hud-dim">{project.tech.join(' · ')}</div>
+                  <div className="flex gap-4 font-display text-[11px] font-semibold tracking-[0.14em] text-hud-ice">
+                    {project.link && (
+                      <a href={project.link} target="_blank" rel="noopener noreferrer" className="hover:text-hud-fg">
+                        LAUNCH ↗
+                      </a>
+                    )}
+                    {project.repo && (
+                      <a href={project.repo} target="_blank" rel="noopener noreferrer" className="hover:text-hud-fg">
+                        SOURCE ↗
+                      </a>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <footer className="flex flex-col justify-between gap-2 border-t border-hud-ice/10 px-7 py-5 font-mono text-[11px] tracking-[0.12em] text-hud-dim md:flex-row">
+          <span>{PROFILE.footer}</span>
+          <span>
             © {new Date().getFullYear()} {PROFILE.copyright}
-          </p>
+          </span>
         </footer>
       </main>
     </div>

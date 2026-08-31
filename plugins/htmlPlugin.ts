@@ -5,10 +5,14 @@ import { Plugin } from 'vite';
 export const htmlPlugin = (): Plugin => {
   return {
     name: 'html-transform',
-    transformIndexHtml(html) {
+    transformIndexHtml(html, ctx) {
       try {
         const metadata = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'metadata.json'), 'utf-8'));
-        const title = `${metadata.name} - ${metadata.author.role}`;
+        const isGamePage = ctx.path.startsWith('/game/');
+        const title = isGamePage
+          ? `RHYTHM_BLADE - ${metadata.name}`
+          : `${metadata.name} - ${metadata.author.role}`;
+        const pageUrl = isGamePage ? `${metadata.siteUrl}/game/` : metadata.siteUrl;
         const description = metadata.description;
         const keywords = metadata.keywords.join(', ');
         const image = metadata.image.startsWith('http') ? metadata.image : `${metadata.siteUrl}${metadata.image}`;
@@ -52,11 +56,11 @@ export const htmlPlugin = (): Plugin => {
             { tag: 'meta', attrs: { name: 'keywords', content: keywords } },
             { tag: 'meta', attrs: { name: 'author', content: metadata.author.name } },
             { tag: 'meta', attrs: { name: 'theme-color', content: metadata.themeColor } },
-            { tag: 'link', attrs: { rel: 'canonical', href: metadata.siteUrl } },
+            { tag: 'link', attrs: { rel: 'canonical', href: pageUrl } },
             
             // Open Graph
             { tag: 'meta', attrs: { property: 'og:type', content: 'website' } },
-            { tag: 'meta', attrs: { property: 'og:url', content: metadata.siteUrl } },
+            { tag: 'meta', attrs: { property: 'og:url', content: pageUrl } },
             { tag: 'meta', attrs: { property: 'og:title', content: title } },
             { tag: 'meta', attrs: { property: 'og:description', content: description } },
             { tag: 'meta', attrs: { property: 'og:image', content: image } },
@@ -65,7 +69,7 @@ export const htmlPlugin = (): Plugin => {
 
             // Twitter
             { tag: 'meta', attrs: { property: 'twitter:card', content: 'summary_large_image' } },
-            { tag: 'meta', attrs: { property: 'twitter:url', content: metadata.siteUrl } },
+            { tag: 'meta', attrs: { property: 'twitter:url', content: pageUrl } },
             { tag: 'meta', attrs: { property: 'twitter:title', content: title } },
             { tag: 'meta', attrs: { property: 'twitter:description', content: description } },
             { tag: 'meta', attrs: { property: 'twitter:image', content: image } },

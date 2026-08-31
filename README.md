@@ -10,7 +10,7 @@
                           // FUBUKI_BB · LV.999 PORTFOLIO
 ```
 
-### 银狼「阿哈时刻」赛博电玩风格个人作品集
+### Tactical HUD 风格个人作品集 · 独立 3D 节奏光剑页
 
 [**▶ 在线访问 0xbb.me**](https://0xbb.me)
 
@@ -27,15 +27,17 @@
 
 ## 项目简介
 
-`0xbb.me` 是 **FUBUKI_BB** 的个人作品集站点。视觉灵感取自《崩坏：星穹铁道》「阿哈时刻 — 银狼 LV.999」官方短片：紫罗兰 / 品红粉 / 像素青三色配色、CRT 扫描线、像素故障字、终端 HUD。页面内嵌一款基于 three.js 的 **3D 双手节奏光剑** 小游戏，BGM 走 `public/music.ogg` 静态资源、切击 / 失误 SFX 仍由 Web Audio API 实时合成。
+`0xbb.me` 是 **FUBUKI_BB** 的个人作品集站点。视觉走 **Tactical HUD**（军用抬头显示 / 驾驶舱遥测）路线：石墨黑底 `#0B0E12`、冰蓝 `#8FD3FF` 主色、琥珀 `#FFB454` 仅用于 LV.999 警示；48px 网格底纹、角括号取景框、四格 telemetry 数字条、缓慢扫描光带。首页 `/` 单屏紧凑呈现档案 / 状态 / 技能 / 项目；`/game/` 是独立页面，承载基于 three.js 的 **3D 双手节奏光剑** 小游戏（保留自有霓虹视觉），BGM 走 `public/music.ogg` 静态资源、切击 / 失误 SFX 由 Web Audio API 实时合成。
 
 ## 核心特性
 
-- **银狼紫粉视觉**：霓虹紫罗兰 + 品红粉 + 像素青配色，配合扫描线、动态像素网格、CRT 失真。
+- **Tactical HUD 视觉**：Chakra Petch 标题 + IBM Plex Mono 数据 + IBM Plex Sans 正文；冰蓝单主色、网格底纹、取景框角标、扫描光带。
+- **紧凑单屏首页**：HERO + telemetry 面板、四格统计条、技能矩阵、项目部署一屏到底，无入站动画阻塞。
+- **独立游戏页 `/game/`**：Vite 多页构建，three.js 只进游戏页 chunk，首页 bundle 零 3D 依赖。
 - **3D 节奏光剑**：three.js 渲染的双轨光剑游戏，全键盘驱动，命中粒子 / LV.999 全连特效一应俱全。
 - **混合音频管线**：BGM 加载 `public/music.ogg` 经 Web Audio AudioBufferSource 播放并附 fade-in/out；切击 / 失误 SFX 仍用 OscillatorNode 实时合成（chiptune 风格）。
 - **纯函数判定核心**：判定窗口、连击、命中率、谱面生成全部由 `bun:test` 单测覆盖（PERFECT / GOOD / MISS）。
-- **响应式布局**：桌面端 / 移动端均已适配，移动端自动展示游戏占位卡片。
+- **响应式布局**：桌面端 / 移动端均已适配，游戏页在移动端自动展示占位卡片。
 - **bun 工作流**：依赖、脚本、测试、构建、CI 部署全程 bun。
 
 ## 节奏光剑玩法
@@ -64,16 +66,13 @@ bun test         # 运行游戏内核单元测试
 ```text
 0xbb.me/
 ├── components/
-│   ├── beat-saber/
-│   │   ├── BeatSaberGame.tsx           # 3D 双手节奏光剑主组件
-│   │   ├── BeatSaberPlaceholder.tsx    # 移动端 / 不支持环境的占位
-│   │   ├── sceneAssets.ts              # three.js 场景资产工厂（方块 / 光剑 / 环境）
-│   │   └── sceneAssets.test.ts         # 飞行公式纯函数测试
-│   ├── CharacterVisual.tsx             # 角色视觉展示
-│   ├── CyberLogo.tsx                   # 站点 logo
-│   ├── GlitchText.tsx                  # 故障文字效果
-│   └── ProjectCard.tsx                 # 项目卡片
-├── game/                               # 与渲染无关的纯函数游戏内核
+│   └── beat-saber/
+│       ├── BeatSaberGame.tsx           # 3D 双手节奏光剑主组件
+│       ├── BeatSaberPlaceholder.tsx    # 移动端 / 不支持环境的占位
+│       ├── sceneAssets.ts              # three.js 场景资产工厂（方块 / 光剑 / 环境）
+│       └── sceneAssets.test.ts         # 飞行公式纯函数测试
+├── game/                               # 游戏页入口 + 与渲染无关的纯函数游戏内核
+│   ├── index.html / main.tsx           # /game/ 独立页面入口
 │   ├── types.ts                        # Note / BeatChart / Judgement 类型
 │   ├── judge.ts / judge.test.ts        # 切击判定与连击计算
 │   ├── scoring.ts / scoring.test.ts    # 分数 / 命中率 / 等级
@@ -81,14 +80,16 @@ bun test         # 运行游戏内核单元测试
 │   └── chiptune.ts                     # BGM 文件加载播放器 + 切击/失误 SFX 合成
 ├── hooks/
 │   └── useMediaQuery.ts                # 响应式断点 Hook
+├── lib/
+│   └── scrollToAnchor.ts               # 站内锚点平滑滚动（不污染 URL hash）
 ├── plugins/
-│   └── htmlPlugin.ts                   # 注入 metadata.json 到 index.html 的 Vite 插件
+│   └── htmlPlugin.ts                   # 按页面注入 metadata.json 到 <head> 的 Vite 插件
 ├── public/                             # 静态资源（profile.png / music.ogg / robots.txt / sitemap.xml ...）
-├── App.tsx                             # 主应用组件
+├── App.tsx                             # 首页组件
 ├── data.ts                             # 个人资料 / 技能 / 项目数据
 ├── types.ts                            # 站点 TypeScript 类型
-├── index.html                          # HTML 模板（Tailwind CDN + Orbitron / JetBrains Mono）
-├── index.tsx / index.css               # 应用入口
+├── index.html                          # 首页模板（Tailwind CDN + Chakra Petch / IBM Plex）
+├── index.tsx / index.css               # 首页入口 + HUD 主题样式（两页共用）
 ├── metadata.json                       # 站点元数据（被 htmlPlugin 注入到 <head>）
 ├── favicon.svg                         # 站点 favicon
 ├── vite.config.ts                      # Vite 配置
@@ -100,8 +101,8 @@ bun test         # 运行游戏内核单元测试
 | 层 | 技术 |
 | --- | --- |
 | UI 框架 | React 19 + TypeScript 5.8 |
-| 构建 | Vite 6（自定义 `htmlPlugin` 注入 metadata） |
-| 样式 | Tailwind CSS（CDN）、Orbitron、JetBrains Mono |
+| 构建 | Vite 6 多页（`/` + `/game/`），自定义 `htmlPlugin` 按页注入 metadata |
+| 样式 | Tailwind CSS（CDN）；首页 Chakra Petch / IBM Plex Mono / IBM Plex Sans，游戏页 Orbitron / JetBrains Mono / Press Start 2P |
 | 3D | three.js r184 |
 | 音频 | Web Audio API：BGM 解码 `public/music.ogg`；SFX 实时合成 |
 | 测试 | `bun:test` |
@@ -156,7 +157,7 @@ export const APP_DATA = {
 };
 ```
 
-站点 SEO / OG 元数据维护在 [`metadata.json`](./metadata.json)，构建时由 `plugins/htmlPlugin.ts` 注入到 `<head>`。
+站点 SEO / OG 元数据维护在 [`metadata.json`](./metadata.json)，构建时由 `plugins/htmlPlugin.ts` 注入到每个页面的 `<head>`（游戏页标题与 canonical 自动切换为 `/game/`）。
 
 ## 部署
 
@@ -164,4 +165,4 @@ export const APP_DATA = {
 
 ## 开源协议
 
-本项目采用 [MIT](./LICENSE) 协议。视觉灵感来自《崩坏：星穹铁道》银狼角色相关二创，仅作个人作品集展示用途，与米哈游 / HoYoverse 无任何官方关联。
+本项目采用 [MIT](./LICENSE) 协议。
