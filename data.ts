@@ -11,7 +11,7 @@ export const APP_DATA = {
     bio: "Hi, I'm BB — a Full-stack Engineer and System Architect.\nI don't just build systems — I design intelligent workflows.\nFrom scalable backend architectures to game SDK ecosystems and trading platforms, I leverage AI, custom Skills, and Agents to solve complex problems and accelerate development at scale.",
     avatar: "/profile.png",
     fullImage: "/profile-cyber.png",
-    footer: "SYSTEM_ID: 0xBBf // BUILT_WITH_REACT_+_THREE.JS_+_WEB_AUDIO",
+    footer: "SYSTEM_ID: 0xBBf",
     copyright: "FUBUKI_BB. ALL RIGHTS RESERVED."
   },
   socialLinks: [
