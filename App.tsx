@@ -9,13 +9,14 @@ const NAV_ITEMS = ['STATS', 'SKILLS', 'PROJECTS'] as const;
 
 const splitName = (name: string): [string, string] => {
   const i = name.indexOf('_');
-  return i < 0 ? [name, ''] : [name.slice(0, i), name.slice(i)];
+  return i < 0 ? [name, ''] : [name.slice(0, i), name.slice(i + 1)];
 };
 
 const pad2 = (n: number): string => n.toString().padStart(2, '0');
 
 const [nameHead, nameTail] = splitName(PROFILE.name);
 const statusWord = PROFILE.status.split(':').pop()?.trim() ?? PROFILE.status;
+const GITHUB_URL = SOCIAL_LINKS.find((l) => l.name === 'GitHub')?.url ?? '#';
 const onlineProjects = PROJECTS.filter((p) => p.status === 'ONLINE').length;
 
 const STAT_CELLS: { label: string; value: string; unit: string; href?: string }[] = [
@@ -65,7 +66,9 @@ function App() {
           </a>
         </div>
         <div>
-          LINK <span className="text-hud-ok">●</span> {statusWord}
+          <span className="inline-flex items-center gap-1.5">
+            LINK <span className="hud-dot text-hud-ok" /> {statusWord}
+          </span>
         </div>
       </nav>
 
@@ -84,7 +87,7 @@ function App() {
               <a className="hud-cta fill" href={GAME_URL}>
                 DEPLOY GAME
               </a>
-              <a className="hud-cta" href="#stats" onClick={handleAnchorClick}>
+              <a className="hud-cta" href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
                 VIEW STATS
               </a>
             </div>
@@ -101,7 +104,9 @@ function App() {
               <img src={PROFILE.avatar} alt={PROFILE.name} className="h-10 w-10 border border-hud-ice/40 object-cover" />
             </div>
             <TelemetryRow label="STATUS">
-              <span className="text-hud-ok">● {statusWord}</span>
+              <span className="inline-flex items-center gap-1.5 text-hud-ok">
+                <span className="hud-dot" /> {statusWord}
+              </span>
             </TelemetryRow>
             <TelemetryRow label="UPTIME">{PROFILE.stats.uptime}</TelemetryRow>
             <TelemetryRow label="CONTRIB">{PROFILE.stats.contributions}</TelemetryRow>
@@ -185,7 +190,11 @@ function App() {
                 >
                   <div className="flex justify-between font-mono text-[11px] tracking-[0.18em] text-hud-dim">
                     <span>PROJECT {pad2(i + 1)}</span>
-                    <span className={project.status === 'ONLINE' ? 'text-hud-ok' : 'text-hud-warn'}>● {project.status}</span>
+                    <span
+                      className={`inline-flex items-center gap-1.5 ${project.status === 'ONLINE' ? 'text-hud-ok' : 'text-hud-warn'}`}
+                    >
+                      <span className="hud-dot" /> {project.status}
+                    </span>
                   </div>
                   <h3 className="font-display text-lg font-semibold">{project.title}</h3>
                   <p className="text-sm leading-relaxed text-[#9db1c3]">{project.description}</p>

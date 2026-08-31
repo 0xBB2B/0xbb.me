@@ -11,7 +11,7 @@ export const APP_DATA = {
     bio: "Hi, I'm BB — a Full-stack Engineer and System Architect.\nI don't just build systems — I design intelligent workflows.\nFrom scalable backend architectures to game SDK ecosystems and trading platforms, I leverage AI, custom Skills, and Agents to solve complex problems and accelerate development at scale.",
     avatar: "/profile.png",
     fullImage: "/profile-cyber.png",
-    footer: "SYSTEM_ID: 0xBBf // BUILT_WITH_REACT_+_THREE.JS_+_WEB_AUDIO",
+    footer: "SYSTEM_ID: 0xBBf",
     copyright: "FUBUKI_BB. ALL RIGHTS RESERVED."
   },
   socialLinks: [
@@ -40,21 +40,21 @@ export const APP_DATA = {
     },
     {
       id: "2",
-      title: "Lying Flat",
-      description: "Japan Leave Management System. Features employee management, leave tracking, automated calculation based on Japanese Labor Standards, and a cyberpunk dark mode.",
-      tech: ["React", "TypeScript", "Vite", "Tailwind CSS"],
+      title: "bb-spec",
+      description: "A spec-driven Claude Code pipeline that carries a fuzzy requirement all the way to reviewed, shipped code — every stage traceable, resumable, and adversarially verified.",
+      tech: ["Claude Code", "opencode", "Shell", "TypeScript"],
       status: "ONLINE",
-      repo: "https://github.com/0xBB2B/lying-flat",
-      link: "http://yorha.xyz/lying-flat"
+      repo: "https://github.com/0xBB2B/bb-spec",
+      link: "https://github.com/0xBB2B/bb-spec"
     },
     {
       id: "3",
-      title: "RACI Task Master",
-      description: "RACI Matrix Task Master represents a modern approach to task management, specifically designed to clarify roles and responsibilities within teams.",
-      tech: ["React", "TypeScript", "Vite", "Tailwind CSS"],
+      title: "pi-subagent-cluster",
+      description: "A Pi extension that decomposes complex tasks into a task graph and runs them on isolated Pi worker subprocesses, with same-model reviewers driving automatic retry and worker-tier escalation.",
+      tech: ["Pi", "TypeScript"],
       status: "ONLINE",
-      repo: "https://github.com/0xBB2B/raci-matrix-task-master",
-      link: "http://yorha.xyz/raci-matrix-task-master"
+      repo: "https://github.com/0xBB2B/pi-subagent-cluster",
+      link: "https://pi.dev/packages/@0xbb2b/pi-subagent-cluster"
     }
   ],
 };
