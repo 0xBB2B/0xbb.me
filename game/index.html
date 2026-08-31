@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="English" />
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@100..800&family=Orbitron:wght@400..900&family=Press+Start+2P&family=VT323&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              mono: ['"JetBrains Mono"', "monospace"],
+              cyber: ['"Orbitron"', "sans-serif"],
+              pixel: ['"Press Start 2P"', '"VT323"', "monospace"],
+              pixelbig: ['"VT323"', '"Press Start 2P"', "monospace"],
+            },
+            colors: {
+              neon: {
+                pink: "#ff5ec7",
+                cyan: "#3ec9f5",
+                purple: "#9b7bff",
+                violet: "#7a4dff",
+                yellow: "#ffe65a",
+                bg: "#0a0420",
+                panel: "#180b34",
+                ink: "#06021a",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .text-level {
+        text-shadow:
+          1px 0 rgba(255, 94, 199, 0.85),
+          -1px 0 rgba(62, 201, 245, 0.85),
+          0 0 6px rgba(155, 123, 255, 0.35);
+      }
+
+      .pixel-frame {
+        clip-path: polygon(
+          0 12px, 12px 0, calc(100% - 12px) 0, 100% 12px,
+          100% calc(100% - 12px), calc(100% - 12px) 100%,
+          12px 100%, 0 calc(100% - 12px)
+        );
+      }
+
+      @keyframes aha-flicker {
+        0%, 92%, 100% { opacity: 0.9; }
+        93% { opacity: 0.4; }
+        95% { opacity: 0.85; }
+      }
+      .animate-aha-flicker {
+        animation: aha-flicker 4.2s steps(8, end) infinite;
+      }
+
+      @keyframes lv999-pop {
+        0%   { transform: scale(0.35) rotate(-6deg); opacity: 0; filter: blur(8px); }
+        25%  { transform: scale(1.25) rotate(3deg);  opacity: 1; filter: blur(0);   }
+        45%  { transform: scale(0.92) rotate(-1deg); opacity: 1; filter: blur(0);   }
+        65%  { transform: scale(1.08) rotate(0.5deg); opacity: 1; filter: blur(0);  }
+        100% { transform: scale(1) rotate(0deg);     opacity: 1; filter: blur(0);   }
+      }
+      .animate-lv999-pop { animation: lv999-pop 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+
+      @keyframes lv999-glitch {
+        0%, 100% { transform: translate(0, 0); }
+        20%      { transform: translate(2px, -1px); }
+        40%      { transform: translate(-3px, 2px); }
+        60%      { transform: translate(2px, 1px); }
+        80%      { transform: translate(-2px, -2px); }
+      }
+      .animate-lv999-glitch { animation: lv999-glitch 0.18s steps(4, end) infinite; }
+
+      @keyframes lv999-sweep {
+        0%   { transform: translateY(-120%); opacity: 0; }
+        20%  { opacity: 1; }
+        100% { transform: translateY(120%); opacity: 0; }
+      }
+      .animate-lv999-sweep { animation: lv999-sweep 1.6s linear infinite; }
+
+      .font-pixel { font-family: '"Press Start 2P"', monospace; image-rendering: pixelated; }
+      .font-pixelbig { font-family: '"VT323"', '"Press Start 2P"', monospace; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

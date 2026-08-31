@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&family=Orbitron:wght@400..900&family=Press+Start+2P&family=VT323&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <script>
@@ -18,182 +18,25 @@
         theme: {
           extend: {
             fontFamily: {
-              mono: ['"JetBrains Mono"', "monospace"],
-              cyber: ['"Orbitron"', "sans-serif"],
-              pixel: ['"Press Start 2P"', '"VT323"', "monospace"],
-              pixelbig: ['"VT323"', '"Press Start 2P"', "monospace"],
+              display: ['"Chakra Petch"', "sans-serif"],
+              mono: ['"IBM Plex Mono"', "monospace"],
+              sans: ['"IBM Plex Sans"', "system-ui", "sans-serif"],
             },
             colors: {
-              // Aether Link 主题调色板：青色（teal）为视觉主标识，紫罗兰
-              // 与品红粉作辅色，深蓝紫为底，银紫为中性灰。
-              game: {
-                purple: "#a855f7",
-                teal: "#2dd4bf",
-                pink: "#f472b6",
-                dark: "#0f172a",
-                silver: "#94a3b8",
-              },
-              // 游戏内部专属调色板（BeatSaberGame 视觉语言保持原貌）。
-              neon: {
-                pink: "#ff5ec7",
-                cyan: "#3ec9f5",
-                purple: "#9b7bff",
-                violet: "#7a4dff",
-                yellow: "#ffe65a",
-                bg: "#0a0420",
-                panel: "#180b34",
-                ink: "#06021a",
-              },
-            },
-            animation: {
-              "pulse-fast": "pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-              glitch: "glitch 1s linear infinite",
-              scanline: "scanline 8s linear infinite",
-            },
-            keyframes: {
-              glitch: {
-                "2%, 64%": { transform: "translate(3px,0) skew(0deg)" },
-                "4%, 60%": { transform: "translate(-3px,0) skew(0deg)" },
-                "62%": { transform: "translate(0,0) skew(7deg)" },
-              },
-              scanline: {
-                "0%": { transform: "translateY(-100%)" },
-                "100%": { transform: "translateY(100%)" },
+              hud: {
+                bg: "#0b0e12",
+                fg: "#d5e3ee",
+                dim: "#5d6f80",
+                ice: "#8fd3ff",
+                ice2: "#2e97d6",
+                warn: "#ffb454",
+                ok: "#6cf58f",
               },
             },
           },
         },
       };
     </script>
-    <style>
-      /* === Webkit 滚动条样式：对齐 game-dark 底色与 game-purple 主调 === */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #0f172a;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #1e293b;
-        border: 1px solid #a855f7;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #a855f7;
-      }
-      body {
-        background-color: #0f172a;
-        color: #ffffff;
-        /* Boot 启动序列期间锁住 body 滚动：避免动画播放时下层 main 仍可被
-           键盘 / 触摸板滚动累积位移，导致动画落幕后视口不在 HERO 顶部。
-           App 监听 Terminal 退出动画完成后会切到 .boot-complete 解锁。 */
-        overflow: hidden;
-      }
-      body.boot-complete {
-        overflow-y: auto;
-        overflow-x: hidden;
-      }
-      body::selection {
-        background: #2dd4bf;
-        color: #0f172a;
-      }
-
-      /* === Aether Link 工具类 === */
-
-      /* CRT 扫描线浮层：固定铺满视口，用 4px 深条纹模拟显像管。
-         opacity 控制在 0.15 防止长时间观看眼累。 */
-      .scanline {
-        position: fixed;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(
-          to bottom,
-          rgba(18, 16, 16, 0) 50%,
-          rgba(0, 0, 0, 0.25) 50%
-        );
-        background-size: 100% 4px;
-        z-index: 100;
-        pointer-events: none;
-        opacity: 0.15;
-      }
-
-      /* 像素硬阴影卡片：Aether 标志性视觉，2px 银边 + 4px 紫罗兰偏移阴影。 */
-      .pixel-card {
-        position: relative;
-        border: 2px solid #94a3b8;
-        background: #0f172a;
-        padding: 1.5rem;
-        box-shadow: 4px 4px 0 0 #a855f7;
-      }
-
-      /* === 以下为 BeatSaberGame 内部视觉语言保留 token === */
-
-      /* 主标题硬色差文字阴影。 */
-      .text-level {
-        text-shadow:
-          1px 0 rgba(255, 94, 199, 0.85),
-          -1px 0 rgba(62, 201, 245, 0.85),
-          0 0 6px rgba(155, 123, 255, 0.35);
-      }
-
-      /* 像素切角外框。 */
-      .pixel-frame {
-        clip-path: polygon(
-          0 12px, 12px 0, calc(100% - 12px) 0, 100% 12px,
-          100% calc(100% - 12px), calc(100% - 12px) 100%,
-          12px 100%, 0 calc(100% - 12px)
-        );
-      }
-
-      @keyframes aha-flicker {
-        0%, 92%, 100% { opacity: 0.9; }
-        93% { opacity: 0.4; }
-        95% { opacity: 0.85; }
-      }
-      .animate-aha-flicker {
-        animation: aha-flicker 4.2s steps(8, end) infinite;
-      }
-
-      @keyframes lv999-pop {
-        0%   { transform: scale(0.35) rotate(-6deg); opacity: 0; filter: blur(8px); }
-        25%  { transform: scale(1.25) rotate(3deg);  opacity: 1; filter: blur(0);   }
-        45%  { transform: scale(0.92) rotate(-1deg); opacity: 1; filter: blur(0);   }
-        65%  { transform: scale(1.08) rotate(0.5deg); opacity: 1; filter: blur(0);  }
-        100% { transform: scale(1) rotate(0deg);     opacity: 1; filter: blur(0);   }
-      }
-      .animate-lv999-pop { animation: lv999-pop 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
-
-      @keyframes lv999-glitch {
-        0%, 100% { transform: translate(0, 0); }
-        20%      { transform: translate(2px, -1px); }
-        40%      { transform: translate(-3px, 2px); }
-        60%      { transform: translate(2px, 1px); }
-        80%      { transform: translate(-2px, -2px); }
-      }
-      .animate-lv999-glitch { animation: lv999-glitch 0.18s steps(4, end) infinite; }
-
-      @keyframes lv999-sweep {
-        0%   { transform: translateY(-120%); opacity: 0; }
-        20%  { opacity: 1; }
-        100% { transform: translateY(120%); opacity: 0; }
-      }
-      .animate-lv999-sweep { animation: lv999-sweep 1.6s linear infinite; }
-
-      /* 像素字 utility：image-rendering 强化点阵感，BeatSaber HUD 使用。 */
-      .font-pixel { font-family: '"Press Start 2P"', monospace; image-rendering: pixelated; }
-      .font-pixelbig { font-family: '"VT323"', '"Press Start 2P"', monospace; }
-    </style>
-    <script type="importmap">
-      {
-        "imports": {
-          "react": "https://aistudiocdn.com/react@^19.2.0",
-          "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-          "react/": "https://aistudiocdn.com/react@^19.2.0/"
-        }
-      }
-    </script>
-    <link rel="stylesheet" href="/index.css" />
   </head>
   <body>
     <div id="root"></div>
