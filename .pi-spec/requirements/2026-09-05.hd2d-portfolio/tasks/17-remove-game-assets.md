@@ -30,6 +30,9 @@ note: ""
 ## 7. 协作关系
 T-16 已消除这些功能的生产调用者；音乐文件由 T-20 删除，不能越界修改。M1 图形使用独立 portfolio 几何，不受删除影响。
 ## 8. 验证方式
+- 测试写入授权：M3 获授权后，仅新增或修改 `/Users/bb/Projects/0xbb.me/components/beat-saber/assets-removal.test.ts`，并删除已明确淘汰的 `/Users/bb/Projects/0xbb.me/components/beat-saber/sceneAssets.test.ts`；测试阶段不得删除生产文件或修改任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./components/beat-saber/assets-removal.test.ts && bun run build`。
+- 公开文件交付目标：`components/beat-saber/sceneAssets.ts`、`game/chiptune.ts`、`components/beat-saber/sceneAssets.test.ts`（均相对 `/Users/bb/Projects/0xbb.me`）不存在；静态网页 `/` 与 `/game/` 不加载或运行这些旧功能。`public/music.ogg` 不属于本任务。
 - 两个生产文件与指定旧测试不存在，新删除结果测试明确断言这三个路径；构建正常。
 - 静态浏览器主页完整行走/交谈/速览可用，没有光剑模型、游戏音效或 BGM 请求；/game/ 不启动旧游戏。
 - 检查构建模块图无本任务两个旧模块，非仅源码关键词检查；若发现新调用者，停止交主 agent 归因而不扩大删除范围。

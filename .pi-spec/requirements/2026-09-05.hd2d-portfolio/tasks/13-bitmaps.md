@@ -6,11 +6,11 @@ files: [/Users/bb/Projects/0xbb.me/public/profile.png, /Users/bb/Projects/0xbb.m
 refs: [portfolio/site-entry/AC-5, portfolio/site-entry/AC-6]
 parallel: true
 verify: cd /Users/bb/Projects/0xbb.me && bun test ./public-assets.test.ts
-status: todo
+status: failed
 step: test
-agent: ""
+agent: wf_9d5062215c4b
 commit: ""
-note: "AI-004：profile-cyber.png 在本任务前已删除，属于初始快照，不恢复制造 Red；profile.png 尚存在。只验证和提交本任务明确路径，不涉及 music.ogg。"
+note: "Test FAIL/blocked：验证方式未内联目标路径、授权测试文件和独立命令，尚未运行测试。AI-004：profile-cyber.png 为既有删除，不恢复制造 Red；profile.png 尚存在；不涉及 music.ogg。"
 ---
 ## 1. 目标
 删除旧首页两张运行位图，确保样板不以文件改名或内嵌编码规避纯代码图形边界。
@@ -35,6 +35,10 @@ note: "AI-004：profile-cyber.png 在本任务前已删除，属于初始快照�
 ## 7. 协作关系
 资料和页面引用分别由 T-1、T-9、T-11 所有者消除。profile-cyber.png 在规划前已经处于未提交删除，先由主 agent 核实归属后纳入任务快照，不归咎于本任务、不恢复或覆盖用户改动。
 ## 8. 验证方式
-- 两个指定路径均不存在，无替代后缀或编码副本；原始 profile-full.png 不属于本任务，不得删除。
+- 测试写入授权：仅新增或修改 `/Users/bb/Projects/0xbb.me/public-assets.test.ts`；测试阶段不得删除、恢复或改写任何生产素材，不修改任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./public-assets.test.ts`。
+- 公开文件交付目标：`/Users/bb/Projects/0xbb.me/public/profile.png`、`/Users/bb/Projects/0xbb.me/public/profile-cyber.png` 均应不存在；对应网站图形引用 `/profile.png`、`/profile-cyber.png` 应由样板集成检查确认不再请求。
+- 初始事实（AI-004）：profile-cyber.png 在本任务前已删除，不得恢复它制造 Red；profile.png 尚存在，可据其尚未满足删除契约建立可信 Red。原始 profile-full.png 和 music.ogg 均不属于本任务，不得改动。
+- 两个明确目标均不存在，无替代后缀或编码副本；文件移除测试不以其它任务尚未完成的页面引用清理作为自身 Red，样板集成检查按下述阶段执行。
 - 本测试不放测试脚本、截图或位图夹具到 public；构建产物不得包含测试或非发布参考。
 - 样板组合后构建及浏览器检查对应头像/人物均代码化，不请求这两个 URL；完整内容格式检查和全部场景 AC-5/6 由 T-24 执行。

@@ -43,6 +43,9 @@ note: ""
 ## 7. 协作关系
 仅消费 getProfile/getCopy 和共享探索状态，不 import 图形运行时；由 App 在速览打开或图形故障时呈现。资料必须整份读取，不按已遇到 NPC 解锁，无新增依赖。
 ## 8. 验证方式
+- 测试写入授权：仅新增或修改 `/Users/bb/Projects/0xbb.me/components/portfolio/Overview.test.tsx`；不得修改生产文件或任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./components/portfolio/Overview.test.tsx`。
+- 公开验证入口：`components/portfolio/Overview.tsx` 的 Overview 输出及网页 `/` 的资料速览；资料输入来自公开 getProfile/getCopy，预期的四个联系目标已在业务规则内明确，打开与关闭的行为以下列场景为准。
 - 公开 React 输出入口分别渲染 en/zh、正常打开和故障资料：简介、6 技能准确等级、3 ONLINE 作品及访问/源码入口、4 个具名联系入口全部出现；不显示百分比、不缺资料、无位图图标。
 - ego-browser 在起点直接打开；中段打开后用键盘/触屏试走，关闭位置不变且需新输入；切换语言不关闭速览或重置位置。
 - 分别在无图形支持、必要场景和角色模块加载失败时直接阅读同一资料并点击作品/联系入口；核对导航目标，不将第三方可用性或系统邮件客户端配置作为本站通过条件。

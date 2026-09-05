@@ -40,6 +40,9 @@ note: ""
 ## 7. 协作关系
 依赖完整旅程和主页；Bun + react-dom/server 校验全量公开输出，ego-browser 校验真实事件与布局。失败返回主 agent 归因，不能在本任务修改其它任务文件或把当前问题追加为隐蔽修复。
 ## 8. 验证方式
+- 测试写入授权：M3 获授权后，仅新增或修改 `/Users/bb/Projects/0xbb.me/components/portfolio/reading-acceptance.test.tsx`；不得修改生产文件或任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./components/portfolio/reading-acceptance.test.tsx`。
+- 公开验证入口：已交付的 Hud、Dialogue、Overview、getProfile/getCopy 和三场景公开介绍输出，以及网页 `/`；输入 en/zh、各对话段落、故障及三种指定视口，仅按业务规则和本区的完整阅读场景验证。
 - 公开输出入口组合三个实际场景/全部页与 en/zh：界面词条、场景名、背景、六技能、三作品、四联系都完整，所有链接在两语言下一致；禁止以源码查找翻译字符串代替输出。
 - ego-browser 在 1440×900、390×844、844×390 分别双语逐页读完三个 NPC 和完整速览，滚动到底并激活翻页、关闭、语言；全部按钮在屏幕内可达，无整页横向溢出。
 - 在导师/策展人非首段切语言与改尺寸：人物位置、打开面板及语义段落保持；作品/源码链接分别对应实际项目。

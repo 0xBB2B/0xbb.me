@@ -60,6 +60,9 @@ bun.lock 为上述清单的 Bun 生成产物；现有非 motion 依赖的解析�
 ## 7. 协作关系
 新体验只使用已安装 React、Three.js、Vite 和 Bun；主 agent 执行前核对 motion 无有效消费者，不因盲目缩小依赖而删其它库。未使用的包名重命名与部署改造不属于本需求。
 ## 8. 验证方式
+- 测试写入授权：M3 获授权后，仅新增或修改 `/Users/bb/Projects/0xbb.me/dependencies.test.ts`；测试阶段不得修改生产清单、锁文件或任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./dependencies.test.ts && bun run build`。
+- 公开交付输入与目标：仓库根下 `package.json` 的依赖/脚本清单、`bun.lock` 的解析版本及冻结锁安装/静态构建结果；仅移除 motion 及其无人引用的专属记录，其它现有解析版本不变，不以实现猜测新增依赖目标。
 - 公开依赖清单与锁解析结果：motion 及无人使用的专属传递记录消失，React/Three/Vite/Bun 类型等现有解析版本不变，所有脚本名和功能不变。
 - 冻结锁安装验证成功、build 退出 0；若删除会损坏有效消费者或导致版本漂移，测试失败并报告主 agent，不升级兜底。
 - 仅静态服务操作新主页行走、交谈、切语言、速览，无后端、登录或存档服务要求；完整构建与类型检查在 T-24 复核。

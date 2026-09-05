@@ -30,6 +30,9 @@ note: ""
 ## 7. 协作关系
 T-16 消除了音频分析与谱面的生产消费者；T-20 负责类型与音乐尾项。无新增依赖，无其它源码修改。
 ## 8. 验证方式
+- 测试写入授权：M3 获授权后，仅新增或修改 `/Users/bb/Projects/0xbb.me/game/analysis-removal.test.ts`，并删除已淘汰的 `/Users/bb/Projects/0xbb.me/game/audioAnalysis.test.ts`、`/Users/bb/Projects/0xbb.me/game/chart.test.ts`；不得删除生产文件或修改任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./game/analysis-removal.test.ts && bun run build`。
+- 公开文件交付目标：仓库 `/Users/bb/Projects/0xbb.me` 下 `game/audioAnalysis.ts`、`game/chart.ts`、`game/audioAnalysis.test.ts`、`game/chart.test.ts` 均不存在；网页 `/`、`/game/` 不运行旧分析或谱面功能。
 - 四个指定旧文件均消失，删除测试在文件仍存在时必须失败；build 正常且结果不包含旧分析或谱面模块。
 - ego-browser 根页与 /game/ 不出现节奏游戏、谱面加载和音频分析请求；新主页行走、语言、NPC 和速览不受影响。
 - 如果任一文件有新的有效消费者，报告主 agent，不偷偷删除消费者或把分析逻辑复制到新文件。

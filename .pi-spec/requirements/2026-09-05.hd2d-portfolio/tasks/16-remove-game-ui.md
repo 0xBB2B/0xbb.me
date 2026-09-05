@@ -29,6 +29,9 @@ note: ""
 ## 7. 协作关系
 唯一挂载入口由 T-15 删除，本任务不得把旧场景/音频函数搬到新 portfolio。新 UI 已由 T-6/T-7/T-9 交付。
 ## 8. 验证方式
+- 测试写入授权：M3 获授权后，仅新增或修改 `/Users/bb/Projects/0xbb.me/components/beat-saber/ui-removal.test.ts`；测试阶段不得删除生产文件或修改任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./components/beat-saber/ui-removal.test.ts && bun run build`。
+- 公开文件交付目标：`/Users/bb/Projects/0xbb.me/components/beat-saber/BeatSaberGame.tsx` 与 `/Users/bb/Projects/0xbb.me/components/beat-saber/BeatSaberPlaceholder.tsx` 均应不存在；浏览器通过 `/`、`/game/` 检查游戏和设备占位已移除，不以实现关键词作为页面证据。
 - 两个指定组件消失且 build 成功；测试先对其存在报业务红灯，删除后通过。
 - 静态浏览器 / 与 /game/ 均不呈现旧组件及桌面专用游戏占位，不下载光剑主组件，不播放旧音频。
 - 在触屏视口进入新主页能移动及交谈，不因删除旧占位阻断探索；构建中无旧光剑 UI 产物。最终完整复核由 T-24 执行。

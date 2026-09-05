@@ -42,6 +42,9 @@ note: ""
 ## 7. 协作关系
 消费 runtime 的状态与释放接口、copy 的本地化说明，通知 App 呈现完整 Overview；同一探索状态由外部持有。资料层与速览不包在图形异步边界内，不增加测试依赖。
 ## 8. 验证方式
+- 测试写入授权：仅新增或修改 `/Users/bb/Projects/0xbb.me/components/portfolio/WorldViewport.test.tsx`；不得修改生产文件或任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./components/portfolio/WorldViewport.test.tsx`。
+- 公开验证入口：`components/portfolio/WorldViewport.tsx` 的 WorldViewport 组件输出与集成网页 `/`；测试输入为加载/就绪/故障、en/zh 及三种指定视口，故障预期为说明与可读资料，不以内部组件实现推断结果。
 - React 公开组件静态输出入口：加载中、就绪、故障及 en/zh 输入对应状态提示；无位图引用，无要求桌面才可使用的占位。
 - M1 组合后必须用 ego-browser：限速必要模块时先打开速览；分别禁用图形初始化、阻断实际场景模块响应、阻断实际角色模块响应，检查失败说明及完整资料和可用链接。不能用不存在的位图 URL 伪造故障覆盖。
 - 从道路中段和对话非首段分别在 1440×900、390×844、844×390 间调整尺寸；画面重适配，位置、面板、段落保持，关闭和语言入口可用。

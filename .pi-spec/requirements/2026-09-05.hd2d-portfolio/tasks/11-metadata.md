@@ -6,9 +6,9 @@ files: [/Users/bb/Projects/0xbb.me/metadata.json, /Users/bb/Projects/0xbb.me/plu
 refs: [portfolio/site-entry/AC-2, portfolio/site-entry/AC-6]
 parallel: true
 verify: cd /Users/bb/Projects/0xbb.me && bun test ./plugins/htmlPlugin.test.ts
-status: todo
+status: doing
 step: test
-agent: ""
+agent: wf_e71166872bcb
 commit: ""
 note: ""
 ---
@@ -59,6 +59,9 @@ metadata.json 完整成品：
 ## 7. 协作关系
 沿用现有 favicon.svg 作为纯矢量图形引用，测试须核验实际内容而不是假设扩展名足够；不修改 favicon 或新增图形依赖。T-10 负责模板，T-24 对完整构建验收。
 ## 8. 验证方式
+- 测试写入授权：仅新增或修改 `/Users/bb/Projects/0xbb.me/plugins/htmlPlugin.test.ts`；不得修改生产文件或任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./plugins/htmlPlugin.test.ts`。
+- 公开验证入口：`plugins/htmlPlugin.ts` 导出的 htmlPlugin 所提供的 HTML 转换钩子及其输出标签/JSON-LD；输入根页面、`/game/` 转换上下文及元数据读取失败，按下列预期观察页面身份和实际图形引用，不读取实现来决定预期。
 - 公开 Vite 插件 HTML 转换入口处理根页面：解析实际输出标签/JSON-LD，标题含 FUBUKI_BB，描述涵盖工程、AI 工作流和探索主页；网站身份无 CyberDeck/RHYTHM_BLADE，无虚构雇佣声明。
 - 输入 /game/ 转换上下文不产生游戏标题、游戏 canonical 或游戏引导；单主页 canonical 正确。
 - 展开所有输出 image 引用：实际 SVG 为纯矢量，无位图外链、内嵌 image 或编码位图；旧 profile.png 引用消失。

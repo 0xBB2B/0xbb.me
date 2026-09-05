@@ -30,6 +30,9 @@ note: ""
 ## 7. 协作关系
 T-16 移除玩法消费者；两个模块在本任务一起删除，不拆成假依赖链。新介绍体验没有战斗、计分、死亡或任务解锁。
 ## 8. 验证方式
+- 测试写入授权：M3 获授权后，仅新增或修改 `/Users/bb/Projects/0xbb.me/game/scoring-removal.test.ts`，并删除已淘汰的 `/Users/bb/Projects/0xbb.me/game/judge.test.ts`、`/Users/bb/Projects/0xbb.me/game/scoring.test.ts`；不得删除生产文件或修改任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./game/scoring-removal.test.ts && bun run build`。
+- 公开文件交付目标：仓库 `/Users/bb/Projects/0xbb.me` 下 `game/judge.ts`、`game/scoring.ts`、`game/judge.test.ts`、`game/scoring.test.ts` 均不存在；网页 `/`、`/game/` 不运行旧判定计分功能。
 - 四个指定旧文件均不存在，删除结果测试与 build 通过；构建模块图无旧判定计分模块。
 - 静态浏览器移动与 NPC 操作不显示连击、判定、得分、结算或战斗 UI；/game/ 不可启动旧游戏。
 - 全部新主页操作仍正常；发现活跃消费者则停止交主 agent，不扩大文件列表。

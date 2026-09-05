@@ -6,9 +6,9 @@ files: [/Users/bb/Projects/0xbb.me/portfolio/state.ts, /Users/bb/Projects/0xbb.m
 refs: [portfolio/player/AC-3, portfolio/player/AC-5, portfolio/player/AC-7]
 parallel: true
 verify: cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/state.test.ts ./portfolio/input.test.ts
-status: todo
+status: doing
 step: test
-agent: ""
+agent: wf_f2ebbd965458
 commit: ""
 note: ""
 ---
@@ -43,6 +43,9 @@ note: ""
 ## 7. 协作关系
 按已批准职责使用简单公开状态接口，不引入状态库；runtime 推进时间和道路/NPC 数据，Hud/Dialogue/Overview 发送用户意图。UI 与运行时不得另设独立探索状态。后续集成验证可读接口但不得改本任务文件。
 ## 8. 验证方式
+- 测试写入授权：仅新增或修改 `/Users/bb/Projects/0xbb.me/portfolio/state.test.ts`、`/Users/bb/Projects/0xbb.me/portfolio/input.test.ts`；不得修改生产文件或任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/state.test.ts ./portfolio/input.test.ts`。
+- 公开验证入口：`portfolio/state.ts` 的 createPortfolioState、updatePortfolio、subscribe，以及 `portfolio/input.ts` 的 bindInput、releaseInput；只根据业务规则与下列事件输入核对公开位置、朝向、阅读、语言及订阅结果，不断言内部实现算法。
 - 公开状态入口：给定中段和时间推进，分别输入 A/D/ArrowLeft/ArrowRight 的按下和释放，位置方向为左/右/左/右；释放后多次推进不再移动。
 - 公开输入绑定入口：事件目标派发 keyup、pointerup、pointercancel、blur、失去指针捕获与不可见事件；恢复焦点不续走，新方向输入可走；解绑后无事件影响。
 - 两端持续输入不越界，反向输入正常返回；道路长度以当前实际场景为准，M1 不制造未来道路。

@@ -6,9 +6,9 @@ files: [/Users/bb/Projects/0xbb.me/data.ts, /Users/bb/Projects/0xbb.me/portfolio
 refs: [portfolio/profile-overview/AC-1, portfolio/profile-overview/AC-2, portfolio/profile-overview/AC-3]
 parallel: true
 verify: cd /Users/bb/Projects/0xbb.me && bun test ./data.test.ts ./portfolio/copy.test.ts
-status: todo
+status: doing
 step: test
-agent: ""
+agent: wf_d4c5c5c95708
 commit: ""
 note: ""
 ---
@@ -50,6 +50,9 @@ note: ""
 ## 7. 协作关系
 不依赖 Three.js 或浏览器；供 town、后续场景与 React UI 消费。现有 Bun 测试即可，无新增依赖；T-8/T-25 验证浏览器阅读与导航，不将数据测试当作界面验收。
 ## 8. 验证方式
+- 测试写入授权：仅新增或修改 `/Users/bb/Projects/0xbb.me/data.test.ts`、`/Users/bb/Projects/0xbb.me/portfolio/copy.test.ts`；不得修改生产文件或任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./data.test.ts ./portfolio/copy.test.ts`。
+- 公开验证入口：`data.ts` 导出的 getProfile 与 `portfolio/copy.ts` 导出的 getCopy；输入 en、zh，预期个人事实、等级、作品与链接以本任务业务规则为准，不从实现猜测预期。
 - 公开 getProfile 入口分别输入 en、zh：逐项核对职业、两地点、四工作方向、六等级、三个 ONLINE 项目的介绍与六个链接、四个联系方式；双语事实一致且无新增雇佣成果。
 - 公开 getCopy 入口分别输入 en、zh：所有约定界面语义均有非空对应文本，不出现占位内容；技术与项目名无需翻译。
 - 不加载图形模块仍能取得全部资料；返回的图形引用不得含位图、旧光剑地址或旧游戏描述。

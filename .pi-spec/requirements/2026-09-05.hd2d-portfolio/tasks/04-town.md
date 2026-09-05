@@ -41,6 +41,9 @@ note: ""
 ## 7. 协作关系
 依赖 T-1 事实与 T-3 几何，输出给 world 的静态场景发现。场景只有城镇，不实现 workshop/gallery 空模块；不引用 world 形成循环。
 ## 8. 验证方式
+- 测试写入授权：仅新增或修改 `/Users/bb/Projects/0xbb.me/portfolio/scenes/town.test.ts`；不得修改生产文件或任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/scenes/town.test.ts`。
+- 公开验证入口：`portfolio/scenes/town.ts` 的 createTown 及其场景描述、双语介绍输出；集成后的网页入口为 `/`。预期为黄昏城镇、连通道路和迎宾者，不要求或预制另外两个场景。
 - 公开场景构造入口：得到正长度连通道路、分离的前中远景和暖色照明信息、迎宾者与至少两个可切换的中英介绍段落，资料与 getProfile 一致。
 - 无纹理或位图卡片；不存在城镇以外提前制作的场景内容。必要构造失败向调用方报错，不吞错为空白世界。
 - ego-browser 在组装主页中接近、停留、离开迎宾者：提示出现/消失、无自动对话；分别阅读中英背景，不虚构经历。

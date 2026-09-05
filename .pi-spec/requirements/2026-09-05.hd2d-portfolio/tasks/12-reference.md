@@ -6,9 +6,9 @@ files: [/Users/bb/Projects/0xbb.me/public/profile-full.png, /Users/bb/Projects/0
 refs: [portfolio/site-entry/AC-5]
 parallel: true
 verify: cd /Users/bb/Projects/0xbb.me && bun test ./design-reference/reference.test.ts
-status: todo
+status: doing
 step: test
-agent: ""
+agent: wf_dd5536b4712c
 commit: ""
 note: ""
 ---
@@ -30,6 +30,9 @@ note: ""
 ## 7. 协作关系
 T-3 只读取设计参考，不能作为成品素材；Vite 默认不会复制仓库根下未引用的 design-reference。禁止为迁移改变 Vite publicDir 或引入复制插件。
 ## 8. 验证方式
+- 测试写入授权：仅新增或修改 `/Users/bb/Projects/0xbb.me/design-reference/reference.test.ts`；测试阶段不得移动、改写或删除原图，不修改任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./design-reference/reference.test.ts`。
+- 公开文件交付目标：源 `/Users/bb/Projects/0xbb.me/public/profile-full.png` 迁至 `/Users/bb/Projects/0xbb.me/design-reference/profile-full.png`。允许读取源图作为 Given 输入，记录执行前 SHA-256、1696×2528、RGB PNG 以验证字节保真；不得重新编码、覆盖不同目标或创建运行位图。
 - 文件迁移公开结果：原 public 路径不在，目标原图存在；与执行前原图 SHA-256、尺寸、RGB 格式完全一致，不以重新编码替代无损迁移。
 - 若目标已有不同文件或源缺失，停止报告，不覆盖、不造图；测试应明确失败而非跳过。
 - M1 build 完成后检查真实构建内容无该图摘要/位图内容与引用，浏览器角色和头像不请求原图；全量 AC-5 由 T-24 覆盖。

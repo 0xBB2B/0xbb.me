@@ -6,9 +6,9 @@ files: [/Users/bb/Projects/0xbb.me/portfolio/geometry.ts, /Users/bb/Projects/0xb
 refs: [portfolio/player/AC-1, portfolio/player/AC-2, portfolio/site-entry/AC-5]
 parallel: true
 verify: cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/geometry.test.ts ./portfolio/character.test.ts
-status: todo
+status: doing
 step: test
-agent: ""
+agent: wf_4bd9ad9fc500
 commit: ""
 note: "设计参考可从 public/profile-full.png 或 T-12 迁移后的 design-reference/profile-full.png 读取；不作为运行素材。"
 ---
@@ -42,6 +42,9 @@ note: "设计参考可从 public/profile-full.png 或 T-12 迁移后的 design-r
 ## 7. 协作关系
 使用现有 Three.js；runtime 持有主人公并按状态推进动画，场景可调用几何能力构造 NPC。原始设定图只供观察，可在 T-12 迁移前后读取，不导入应用。不开新引擎，不复制许可不明图形。
 ## 8. 验证方式
+- 测试写入授权：仅新增或修改 `/Users/bb/Projects/0xbb.me/portfolio/geometry.test.ts`、`/Users/bb/Projects/0xbb.me/portfolio/character.test.ts`；不得修改生产文件、图像或任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/geometry.test.ts ./portfolio/character.test.ts`。
+- 公开验证入口：`portfolio/geometry.ts` 的 createPixelForm、disposeGeometry，及 `portfolio/character.ts` 的 createCharacter、animateCharacter。设计参考输入为 `public/profile-full.png` 或迁移后的 `design-reference/profile-full.png`，仅可读取，不作为测试生成的运行素材；按业务规则检查可渲染外形、材质及动画结果。
 - 调用公开构造接口得到可渲染几何：观察几何外形、材质及纹理资源，银白马尾、蓝眼、黑白服饰、完整腿脚存在，无矩形图卡或位图纹理。
 - 给公开动画接口输入待机、右行、停止、左行及一完整周期时间：朝向正确，左右腿交替变化，停止迈步且脚底锚点稳定；重复创建/释放不留自身资源。
 - M1 联调后 ego-browser 录制同一角色四状态并交用户确认辨识度、步态；几何测试不能替代视觉确认。

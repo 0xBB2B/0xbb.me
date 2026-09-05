@@ -42,6 +42,9 @@ note: ""
 ## 7. 协作关系
 读取 T-2 状态，发送方向/交谈/翻页/语言/速览事件；使用 T-1 copy，台词由当前场景提供，不在 UI 写 NPC 事实。角色头像与图标仅 CSS/SVG；完整 skill/project 台词由 T-14 注入，不用占位内容。
 ## 8. 验证方式
+- 测试写入授权：仅新增或修改 `/Users/bb/Projects/0xbb.me/components/portfolio/Hud.test.tsx`、`/Users/bb/Projects/0xbb.me/components/portfolio/Dialogue.test.tsx`；不得修改生产文件或任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./components/portfolio/Hud.test.tsx ./components/portfolio/Dialogue.test.tsx`。
+- 公开验证入口：`components/portfolio/Hud.tsx` 的 Hud、`components/portfolio/Dialogue.tsx` 的 Dialogue，以及共享探索状态的公开事件入口；集成网页为 `/`。通过交谈范围、语言、页码和真实输入验证按钮及介绍结果，不读取内部算法作为预期。
 - 公开组件静态输出：范围内外、打开/关闭、首段/后续/末段与两语言组合；提示、文本、页码、按钮、访问与源码目标对应当前角色，无空白介绍或位图。
 - 公开事件与状态入口：E 和交谈按钮产生相同当前 NPC 对话；翻页、提前关闭、再次交谈可读全量；范围外输入无效；无 AI/战斗/解锁网络行为。
 - ego-browser 联调：桌面按说明使用 A/D、左右键及 E；390×844、844×390 触屏长按方向并松开/取消，点击交谈；阅读中不能行走，关闭需重新输入。

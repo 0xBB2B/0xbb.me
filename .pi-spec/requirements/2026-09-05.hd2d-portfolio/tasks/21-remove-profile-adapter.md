@@ -35,6 +35,9 @@ note: ""
 ## 7. 协作关系
 T-9、T-15 已消除原 App 与 GamePage 的旧常量消费；新界面直接使用 T-1 当前资料接口。本任务不修改 data.ts 或其它组件。
 ## 8. 验证方式
+- 测试写入授权：M3 获授权后，仅新增或修改 `/Users/bb/Projects/0xbb.me/profile-adapter-removal.test.ts`；测试阶段不得删除生产文件或修改任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./profile-adapter-removal.test.ts && bun run build`。
+- 公开文件交付目标：`/Users/bb/Projects/0xbb.me/constants.tsx`、`/Users/bb/Projects/0xbb.me/types.ts` 不存在；公开 Overview 输出和网页 `/` 的速览仍展示业务规则规定的六项等级、作品与联系方式，不读取旧适配实现来推断预期。
 - 两个指定文件消失且构建成功；公开 Overview 静态输出的 en/zh 六等级仍为 999/99/99/99/90/85，非百分比，完整作品和社交不丢失。
 - 浏览器根页速览无需解锁、技能与 NPC 事实一致；/game/ 和作品入口不启动游戏。
 - 活跃消费者不应存在；若发现则报告而不扩删或增加过渡适配。

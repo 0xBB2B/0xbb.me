@@ -42,6 +42,9 @@ note: ""
 ## 7. 协作关系
 依赖 state、character 与实际场景导出；异步发现仅匹配场景生产模块，不收集相邻测试。UI 不依赖图形加载完成才挂载。角色和场景模块加载失败均可传播至 WorldViewport；采用现有 Vite/Three.js，不新增引擎、存档或自动重试。
 ## 8. 验证方式
+- 测试写入授权：仅新增或修改 `/Users/bb/Projects/0xbb.me/portfolio/world.test.ts`、`/Users/bb/Projects/0xbb.me/portfolio/runtime.test.ts`；不得修改生产文件或任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/world.test.ts ./portfolio/runtime.test.ts`。
+- 公开验证入口：`portfolio/world.ts` 的 loadScenes、createWorld、updateWorld，以及 `portfolio/runtime.ts` 的 startRuntime 和对外 resize、dispose 生命周期能力。输入道路/NPC 描述、时间、尺寸及故障，观察公开场景、运行状态和回调，不以内部实现作为预期。
 - 公开世界入口以测试场景描述输入相邻道路：世界坐标和 NPC 范围正确，交界前后相机与环境连续；停留、反向各 3 次无位置重置。测试夹具不是发布场景。
 - 运行入口成功、场景模块失败、角色模块失败、上下文丢失：状态分别为就绪或故障；失效停止探索，dispose 后无继续帧或旧监听，重新启动从新状态起点。
 - 尺寸变化不重建探索状态；状态时间驱动人物而非独立副本；M1 场景发现仅取得 town。

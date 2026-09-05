@@ -42,6 +42,9 @@ note: ""
 ## 7. 协作关系
 复用 getProfile 与程序化几何，遵循 town 已建立的场景契约，由 world 静态发现，不修改已有生产文件或制造新的入口。若既定接口不足，返回主 agent，不跨任务偷改。无新增依赖或位图。
 ## 8. 验证方式
+- 测试写入授权：仅在 M2 获授权后新增或修改 `/Users/bb/Projects/0xbb.me/portfolio/scenes/workshop.test.ts`、`/Users/bb/Projects/0xbb.me/portfolio/scenes/gallery.test.ts`；不得修改生产文件或任务字段。
+- 独立验证命令：`cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/scenes/workshop.test.ts ./portfolio/scenes/gallery.test.ts && bun run build`。
+- 公开验证入口：`portfolio/scenes/workshop.ts` 的 createWorkshop、`portfolio/scenes/gallery.ts` 的 createGallery 及实际三场景网页 `/`；技能、项目与链接预期来自已确认的公开资料，不从布景实现猜测预期。
 - 公开场景构造入口：两段真实道路与相应 NPC，主题/排序分别为工坊技能、展街作品；材质、阴影及前中远景程序化，无位图；必要构造错误应传播。
 - 公开中英台词输出：六项技能名称与 getProfile 相同；三个项目分别具有访问与源码链接、ONLINE 和准确介绍，无新增履历。
 - build 后 ego-browser 从城镇走到终点、逐一阅读三 NPC；检查三个视觉主题、明暗面与落地阴影、可反向返回和两个交界连续性。两个交界各停留并往返 3 次，不跳网页/黑屏/瞬移/断路。
