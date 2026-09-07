@@ -194,10 +194,10 @@ for (const [index, viewport] of viewports.entries()) {
       expect(j.panel.language?.usable).toBe(true);
       expect(j.panel.close?.usable).toBe(true);
     });
-    test('player/AC-1, AC-11: geometry preview without images or claimed completed gait', () => {
+    test('player/AC-1, AC-11: geometry preview without images or stale incomplete-gait copy', () => {
       const { initial, traffic } = result.journeys[index];
       expect(initial.text).toMatch(/造型预览|appearance preview|character preview/i);
-      expect(initial.text).toMatch(/walking animation not yet complete|行走动画尚未完成/i);
+      expect(initial.text).not.toMatch(/walking animation not yet complete|行走动画尚未完成/i);
       expect(traffic.requests.filter(r => /player-redraw|\.(?:png|jpe?g)(?:[?#]|$)/i.test(r))).toEqual([]);
     });
   });

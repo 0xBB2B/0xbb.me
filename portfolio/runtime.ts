@@ -43,7 +43,7 @@ export function mountWorld(container: HTMLElement, session: Session, input: Town
     const seconds = Math.min((now - previous) / 1000, 0.05);
     previous = now;
     advance(session, input.direction(), seconds);
-    cameraX += (session.x - cameraX) * (1 - Math.exp(-seconds * 7));
+    if (!session.paused) cameraX += (session.x - cameraX) * (1 - Math.exp(-seconds * 7));
     camera.position.set(cameraX, targetHeight + 5, 20);
     camera.lookAt(cameraX, targetHeight, 0);
     character.update(session, camera);

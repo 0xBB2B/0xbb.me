@@ -36,6 +36,9 @@
 .language-button span { margin-right: 5px; }
 .overview-button { background: #fff0d4d9; box-shadow: 0 2px 0 #60422c20; white-space: nowrap; }
 .overview-button span { margin-left: 12px; }
+.overview-button:disabled { cursor: default; opacity: .5; }
+.talk-prompt { position: absolute; z-index: 3; left: 50%; bottom: 118px; transform: translateX(-50%); min-width: 112px; min-height: 48px; padding: 10px 18px; border: 1px solid #ffe0aeaa; background: #302f2bd9; color: #ffe9c5; box-shadow: 0 7px 28px #29242d55; }
+.talk-prompt kbd { margin-right: 8px; padding: 2px 6px; border: 1px solid #ffe0ae77; font: 11px "IBM Plex Mono", monospace; }
 .town-intro { position: absolute; z-index: 2; left: 40px; top: 132px; pointer-events: none; color: #423a35; }
 .eyebrow { font: 10px/1.5 "IBM Plex Mono", monospace; letter-spacing: 0.2em; text-transform: uppercase; }
 .town-intro h1 { margin: 15px 0; white-space: pre-line; font: 400 clamp(30px, 3.8vw, 54px)/1.12 Georgia, "Songti SC", serif; letter-spacing: -0.035em; }
@@ -51,36 +54,6 @@
 .place-label div { display: flex; flex-direction: column; gap: 4px; }
 .place-label b { font: 400 19px Georgia, "Songti SC", serif; }
 .place-label div > span { font: 9px "IBM Plex Mono", monospace; letter-spacing: 0.18em; opacity: 0.7; }
-.profile-overview {
-  border: 1px solid #e5c393;
-  background: #f5ecd9;
-  color: #393630;
-  width: min(780px, calc(100% - 32px));
-  max-height: calc(100svh - 40px);
-  padding: 0;
-  box-shadow: 0 20px 100px #24273266;
-  margin: auto;
-}
-.profile-overview::backdrop { background: #24283488; backdrop-filter: blur(5px); }
-.overview-toolbar { position: sticky; top: 0; display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-bottom: 1px solid #574d3526; background: #f5ecd9; z-index: 1; }
-.overview-toolbar > span { margin-right: auto; }
-.overview-toolbar button { background: #e6dac1; }
-.overview-content { padding: 32px 38px 40px; }
-.overview-content h2 { margin: 8px 0; font: 36px Georgia, serif; overflow-wrap: anywhere; }
-.profile-role { font-size: 15px; }
-.profile-location { margin-top: 7px; font: 11px "IBM Plex Mono", monospace; color: #756552; }
-.profile-bio { white-space: pre-line; margin: 25px 0; font-size: 14px; line-height: 1.85; }
-.overview-content h3 { font: 24px Georgia, "Songti SC", serif; margin: 28px 0 16px; }
-.skill-list { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; list-style: none; }
-.skill-list li { border: 1px solid #8b795a44; padding: 8px 11px; font-size: 12px; }
-.skill-list li span { color: #887045; margin-left: 7px; font: 10px monospace; }
-.overview-projects article { padding: 18px 0; border-top: 1px solid #8b795a44; }
-.overview-projects h4 { font-weight: 600; font-size: 16px; margin-bottom: 7px; }
-.overview-projects p { font-size: 13px; line-height: 1.7; }
-.overview-projects small { display: block; color: #756552; font-size: 10px; margin: 9px 0; }
-.overview-projects article > div, .social-links { display: flex; flex-wrap: wrap; gap: 18px; font-size: 12px; }
-.profile-overview a { text-underline-offset: 4px; }
-.profile-overview a:hover { color: #a26034; }
 @media (max-width: 1000px) {
   .header-note { display: none; }
 }
@@ -99,12 +72,6 @@
   .keyboard-help { display: none; }
   .place-label b { font-size: 17px; }
   .place-label { gap: 8px; }
-  .overview-toolbar { padding: 10px; gap: 6px; flex-wrap: wrap; }
-  .overview-toolbar > span { display: none; }
-  .overview-toolbar button { padding: 8px; font-size: 11px; }
-  .overview-toolbar .language-button { margin-right: auto; }
-  .overview-content { padding: 25px 20px; }
-  .overview-content h2 { font-size: 28px; }
 }
 @media (max-height: 500px) and (min-width: 601px) {
   .town-header { padding: 12px 22px; }
@@ -114,6 +81,5 @@
   .town-footer { bottom: max(14px, env(safe-area-inset-bottom)); left: 22px; right: 22px; }
   .direction-button { width: 50px; height: 48px; }
   .keyboard-help { display: none; }
-  .profile-overview { max-height: calc(100svh - 20px); }
 }
 @media (hover: none) { .keyboard-help { display: none; } }

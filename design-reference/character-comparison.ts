@@ -154,7 +154,7 @@ async function start() {
       status.textContent = `模型导出失败：${String(error)}`;
     }
   });
-  status.textContent = '已加载黑装人物 · 高 2.4 场景单位 · Minecraft 几何与顶点颜色 · 完整行走动画尚未完成';
+  status.textContent = '已加载黑装人物 · 高 2.4 场景单位 · Minecraft 几何与顶点颜色 · 可旋转查看与导出';
   window.addEventListener('beforeunload', () => {
     cancelAnimationFrame(frame);
     panels.forEach(panel => panel.dispose());

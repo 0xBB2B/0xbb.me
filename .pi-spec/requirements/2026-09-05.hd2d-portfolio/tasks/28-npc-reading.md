@@ -2,28 +2,28 @@
 id: T-28
 title: M1 NPC 与双语资料阅读
 depends_on: [T-27]
-files: [/Users/bb/Projects/0xbb.me/App.tsx, /Users/bb/Projects/0xbb.me/index.css, /Users/bb/Projects/0xbb.me/data.ts, /Users/bb/Projects/0xbb.me/portfolio/copy.ts, /Users/bb/Projects/0xbb.me/portfolio/state.ts, /Users/bb/Projects/0xbb.me/portfolio/input.ts, /Users/bb/Projects/0xbb.me/portfolio/scenes/town.ts, /Users/bb/Projects/0xbb.me/components/portfolio/Hud.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Dialogue.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Dialogue.css, /Users/bb/Projects/0xbb.me/components/portfolio/Overview.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Overview.css, /Users/bb/Projects/0xbb.me/tests/browser.ts, /Users/bb/Projects/0xbb.me/tests/portfolio-reading.test.ts]
-refs: [portfolio/npc-dialogue/AC-1, portfolio/npc-dialogue/AC-2, portfolio/npc-dialogue/AC-3, portfolio/npc-dialogue/AC-4, portfolio/npc-dialogue/AC-5, portfolio/bilingual/AC-1, portfolio/bilingual/AC-2, portfolio/bilingual/AC-3, portfolio/profile-overview/AC-1, portfolio/profile-overview/AC-2, portfolio/profile-overview/AC-3, portfolio/profile-overview/AC-4, portfolio/profile-overview/AC-5, portfolio/player/AC-6, portfolio/npc-dialogue/AC-6]
+files: [/Users/bb/Projects/0xbb.me/App.tsx, /Users/bb/Projects/0xbb.me/data.ts, /Users/bb/Projects/0xbb.me/portfolio/copy.ts, /Users/bb/Projects/0xbb.me/portfolio/state.ts, /Users/bb/Projects/0xbb.me/portfolio/input.ts, /Users/bb/Projects/0xbb.me/portfolio/runtime.ts, /Users/bb/Projects/0xbb.me/portfolio/scenes/town.ts, /Users/bb/Projects/0xbb.me/components/portfolio/WorldViewport.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/WorldViewport.css, /Users/bb/Projects/0xbb.me/components/portfolio/Hud.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Dialogue.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Dialogue.css, /Users/bb/Projects/0xbb.me/components/portfolio/Overview.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Overview.css, /Users/bb/Projects/0xbb.me/tests/portfolio-reading.test.ts, /Users/bb/Projects/0xbb.me/tests/character-toggle.test.ts, /Users/bb/Projects/0xbb.me/design-reference/character-comparison.html, /Users/bb/Projects/0xbb.me/design-reference/character-comparison.ts]
+refs: [portfolio/npc-dialogue/AC-1, portfolio/npc-dialogue/AC-2, portfolio/npc-dialogue/AC-3, portfolio/npc-dialogue/AC-4, portfolio/npc-dialogue/AC-5, portfolio/bilingual/AC-1, portfolio/bilingual/AC-2, portfolio/bilingual/AC-3, portfolio/profile-overview/AC-1, portfolio/profile-overview/AC-2, portfolio/profile-overview/AC-3, portfolio/profile-overview/AC-4, portfolio/profile-overview/AC-5, portfolio/player/AC-6, portfolio/npc-dialogue/AC-6, portfolio/player/AC-11]
 parallel: false
-verify: cd /Users/bb/Projects/0xbb.me && bun test ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts
-status: todo
-agent: ""
+verify: cd /Users/bb/Projects/0xbb.me && bun test ./tests/portfolio-reading.test.ts ./portfolio/character.test.ts ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit
+status: doing
+agent: 9993b20c-ba16-4aae-aba6-2a064016efbe
 commit: ""
-note: ""
+note: "9993b20c正常完成、有效PASS；本次只修测试准备，原重读第一页断言保留并增加真实提示前提，未改生产距离/速度。worker完整verify连续3次70/70，主agent另复验70 pass/2365断言及tsc通过，并实际查看棕绿NPC、中文第二页与语言保持。USER-038已确认NPC/阅读效果，允许保存当前实现；T-29须另行说明范围，不将本任务通过当整站验收。"
 ---
 ## 1. 目标
 在可玩城镇中加入一位迎宾NPC、主动对话、双语切换和无需行走的完整资料速览，人物统一Minecraft三维几何，普通UI可用矢量或几何。
 ## 2. 业务规则
-- npc-dialogue/C-1：当主人公进入 NPC 交谈范围时，系统应显示该 NPC 的交谈提示；离开范围时撤去提示，单纯靠近不得自动打开对话。
+- npc-dialogue/C-1：当主人公与 NPC 的横向距离不超过 1.8 场景单位时，系统应显示该 NPC 的交谈提示；离开范围时撤去提示，单纯靠近不得自动打开对话。
 - npc-dialogue/C-2：当交谈提示可见且访客按 E 或点击交谈按钮时，系统应打开对应 NPC 的介绍并暂停行走，桌面与触屏均可完成阅读。
 - npc-dialogue/C-3：系统应通过迎宾者介绍 FUBUKI_BB 的全栈工程、系统架构与 AI 工作流背景，通过工坊导师介绍 AI、Harness Engineering、Context Engineering、Prompt Engineering、Go、Docker / K8s 共 6 项技能，通过策展人介绍 0xbb.me、bb-spec、pi-subagent-cluster 共 3 个作品并提供相应作品与源码入口。
-- npc-dialogue/C-4：在介绍打开期间，系统应提供翻页和关闭操作，不要求读完才能继续探索；再次与该 NPC 交谈时仍能阅读完整介绍。
+- npc-dialogue/C-4：在介绍打开期间，系统应提供上一页、下一页、关闭按钮和 Esc 关闭，不要求读完才能继续探索；再次交谈从第一页开始。迎宾介绍按身份与地点、工程方向、AI 工作流分为三页；对话与资料速览不同时打开，阅读时语言和关闭入口可用。
 - npc-dialogue/C-5：如果没有 NPC 交谈提示，系统应忽略交谈输入，不打开远处 NPC 的介绍或空白对话；对话操作不能触发战斗、任务解锁或真实 AI 问答。
 ### npc-dialogue/AC-1 交谈提示不强制弹出 ← C-1
 - 触发: 操作 靠近一位 NPC，停留后不交谈并走开。
 - Given: 主人公尚在该 NPC 交谈范围外。
 - When: 访客走近、停留，再离开。
-- Then: 范围内显示提示但不自动弹出介绍，离开后提示消失。
+- Then: 横向距离≤1.8场景单位显示提示但不自动弹出介绍，距离>1.8时提示消失。
 ### npc-dialogue/AC-2 主动开启 ← C-2
 - 触发: 操作 在交谈提示出现后分别按 E 和点击交谈按钮。
 - Given: 主人公在 NPC 交谈范围内，对话尚未打开。
@@ -38,7 +38,7 @@ note: ""
 - 触发: 操作 翻页阅读、在未读完时关闭，随后再次交谈。
 - Given: 某位 NPC 的介绍已打开。
 - When: 访客翻页后关闭，重新与同一 NPC 交谈并阅读全部内容。
-- Then: 可以翻页、提前关闭并恢复探索；重读不因此前已经交谈而被禁止，也不要求完成任务。
+- Then: 可用上一页和下一页阅读；迎宾介绍依次为身份与地点、工程方向、AI工作流三页。可用关闭按钮或Esc提前关闭并恢复探索，重新交谈从第一页开始；阅读时语言与关闭入口可用，对话与速览不同时打开，不要求完成任务。
 ### npc-dialogue/AC-5 范围外交谈 ← C-5
 - 触发: 操作 在没有交谈提示的位置按 E 或尝试交谈操作。
 - Given: 主人公远离所有 NPC，未打开任何对话。
@@ -116,21 +116,43 @@ note: ""
 - Given: 对应场景及 NPC 已交付，人物图形正常加载。
 - When: 访客观察 NPC 的头部、躯干、四肢及身份配色。
 - Then: 所有 NPC 都有 Minecraft 方块三维形体，风格与主角一致且身份可区分；没有 SVG 或位图 NPC。
+- player/C-11：系统应仅显示黑装 Minecraft 主角，不提供人物造型切换按钮或白装对照入口；人物三个方向尺寸相对原 3 单位模型均为 80%，高度为 2.4 场景单位，头身比例和脚底原点不变。房屋、镜头、移动速度、语言与资料操作不因此改变，重复更新不得累积缩放，界面不得将已完成的行走动画标为未完成。
+### player/AC-11 单黑装与等比 80% 尺寸 ← C-11
+- 触发: 操作 打开主页，在相同视口观察人物与房屋，移动、打开资料、切换语言并关闭资料后继续移动。
+- Given: 黑装人物与城镇可正常显示，原尺寸基线为高 3 场景单位。
+- When: 访客核对人物整体尺寸、脚底位置以及主页和资料面板中的控制，持续移动并刷新。
+- Then: 只有黑装人物且没有造型切换或白装入口，人物等比缩至 80%、高 2.4 单位，脚底原点及头身比例保持；房屋、镜头、速度和语言/资料操作不变，持续更新不继续缩小，界面不再显示行走动画未完成的提示。
+
 ## 3. 涉及文件
-- files 中列明所有授权路径；不存在则新建，已存在则仅为本行为修改，明确淘汰项删除。测试只由测试角色修改，生产代码只在可信 Red 后实现。
+- files 中列明所有授权路径；不存在则新建，已存在则仅为本行为修改，明确淘汰项删除。worker先仅改授权测试建立真实Red，冻结断言后实现Green。
 ## 6. 函数清单
 - data/copy：中英事实、六技能等级、三个作品、四联系目标和界面词条，不编造履历。
 - state/input：靠近提示、主动交谈、翻页关闭重读、语言切换不重置位置、阅读暂停并释放输入。
 - town：迎宾NPC几何、位置及双语背景段落，不预制后两景。
-- App/Hud/Dialogue/Overview：唯一状态组合、纯矢量人物头像与代码化UI、长内容可读、所有链接与明确关闭入口。
+- App/Hud/Dialogue/Overview：唯一状态组合、Minecraft几何NPC与普通代码化UI，不新增人物SVG头像、长内容可读、所有链接与明确关闭入口。
 ## 7. 协作关系
 - USER-016/AI-008：完整行为竖切片，代码仍分层；全部串行，可按明确依赖复用已声明文件，不跨范围。不得执行后续未授权里程碑，不新增依赖，不操作git或自行派工；任务运行字段只由主agent写。
 ## 8. 验证方式
-- 仓库根：`/Users/bb/Projects/0xbb.me`；独立命令：`cd /Users/bb/Projects/0xbb.me && bun test ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts`。
-- 测试授权：仅新增或修改 tests/portfolio-reading.test.ts、tests/browser.ts；复跑已有tests/portfolio-playable.test.ts，不弱化其断言，不改生产代码。
+- USER-037/AI-032本轮优先：定位390×844返回NPC重读page=null。记录固定时长返回后的prompt、输入释放、打开操作和page，区分未进入范围与已有提示仍打不开。旧run7861d5ad有实际70/70→69/70证据，引用时注明来源，不伪称本次重现。
+- 允许在tests/portfolio-reading.test.ts修正准备行程：有限时长观察真实Talk/交谈提示、出现后释放方向，再确认提示并点击，超时明确失败并报告最后观测；finally保证键盘/触屏释放。不能无界等候、重复点击碰运气、扩大生产交谈距离或跳过原第一页断言。可以新增前提断言，不弱化既有验收。
+- 若提示确已出现仍打不开，先建立该生产缺陷的真实Red再修授权范围代码。若仅修准备脚本且生产无需变化，准确报告测试改动与原生产基线，不制造Red或虚报生产修复。完成后连续3次原样完整verify（每次全部测试与tsc退出0），任一次失败如实blocked，不重试抹去失败历史。
+- AI-030续修：现有实现来自失败运行，不得声称已获有效Red/Green。先检查全部授权代码/测试并运行基线；独立模型页HTML与TS仍有动画未完成提示，可在授权tests/portfolio-reading.test.ts新增真实页面断言建立Red，再完成对应修复。不人为破坏生产代码、不引用不可核验的历史Red；若其它现有行为已Green，如实作为基线证据。
+- 新运行必须验证整个T-28而非只修提示：NPC造型/1.8边界/主动交谈/三页重读/双语/互斥/Esc/阅读暂停及新输入恢复/全资料链接/三视口；保留已有有效断言，只有当前契约错误或实质不足的测试可在Red阶段明确纠正并说明，不能弱化测试。完成时通过structured_output提交且仅提交一个结构化对象，不能用聊天JSON代替；缺少证据按blocked如实报告。
+- 仓库根：`/Users/bb/Projects/0xbb.me`；独立命令：`cd /Users/bb/Projects/0xbb.me && bun test ./tests/portfolio-reading.test.ts ./portfolio/character.test.ts ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit`。
+- 测试授权：仅新增 tests/portfolio-reading.test.ts，并在Red阶段修改tests/character-toggle.test.ts中过时动画提示断言（新预期是不出现未完成提示，保留其余所有断言）；tests/browser.ts只读；复跑已有tests/portfolio-playable.test.ts，不弱化其断言，不改生产代码。
 - 通过真实主页 / 和既有Bun/ego-browser测试入口，先确认城镇可访问，再走近NPC、按E或点交谈；失败应来自缺少NPC提示/对话等目标行为，而非新内部模块的导入错误。
 - 靠近仅显示提示，走开撤去；范围外E无效；对话可翻页、提前关闭、重读。阅读中方向输入不得移动人物，关闭后必须新输入才续走。
 - 初始英文，切换中文覆盖提示、城镇名称、NPC和速览，保持位置/面板/语义段落；刷新回到英文起点，无存档。首次不走动即可打开速览。
 - 在两语言下逐项检查以下完整个人事实、等级及链接；仅站点自身作品介绍更新为HD-2D主页，不添加雇主或成果。NPC在M1只介绍背景，完整三NPC覆盖由T-30完成。
 - 真实点击网页链接核对导航目标；第三方实时故障和系统无邮件客户端不能误报本站目标错误。长正文可滚动，翻页、关闭和语言入口可触达。
 - 串行修改已有文件只为本行为，不另造探索状态或复制第二套个人资料；不增加后台、真实AI问答、音频、战斗、存档或依赖。
+
+- AI-029具体交付：一位棕绿衣装方块店主位于x=2的道路后侧，脚底贴地、不挡主角，身高与主角尺度协调，不添加姓名经历或背景故事；不修改已有房屋和主角，不复制主角换装分支。横向距离≤1.8（含边界）提示，>1.8撤销，初始x=-8无提示。
+- 迎宾内容恰为身份/地点、工程方向、AI工作流三页，全部基于data已有事实。第一页上一页不可用，末页下一页不可用；重读回第一页，E持续按住不反复打开/翻页。对话/速览互斥：已有阅读面板打开时忽略另一打开请求，保持当前页，先关闭后才能打开另一面板。
+- 读取现有session唯一位置源，通过state/运行时通知更新交谈范围UI，不用第二个位置状态或重建画布。runtime/WorldViewport只为通知连接，镜头、渲染参数、advance速度、character与GLB冻结。state新增字段不得破坏现有character测试。
+- 双语资料使用同一事实源和稳定键；项目/技术名称、等级、URL不随语言变化，中文不遗留英文描述段落。三个项目显式ONLINE，等级不转百分比；本站介绍写探索主页但不谎称M1/三景已交付。
+- 三视口1440×900、390×844、844×390实际执行靠近/离开、范围外E、E/触屏交谈、三页前后翻、非首页切语言、Esc/按钮关闭、重读、速览与所有链接。距边界断言使用公开会话接口或真实输入，不在页面添加测试钩子。
+- 阅读期间按方向不移动、关面板不因旧按住键/触摸继续移动、重新输入才恢复；blur/cancel释放不回归，位置/画布身份/段落与语言保持。验证实际位置或图像地标，不能仅用canvas存在证明暂停。
+- 删除主页与独立模型页“行走动画尚未完成”及英文同义提示，仅更新相关文案/孤立字段，不更改模型页导出行为。新提示如有应描述真实操作，不称整站已完成；测试先对当前错误提示产生真实Red。
+- 已有tests/browser.ts、portfolio-playable.test.ts、character.test.ts、character-design.test.ts只读；新增阅读测试先因当前无NPC/中文资料缺失等真实行为失败，不以新模块缺失/环境错误当Red。实际用ego-browser观察NPC及阅读页面，清理临时截图/日志。
+- 不新增依赖、不操作git/规范/任务/台账、不派工；不改图形故障全流程(T-29)、不做其它NPC/场景；必要写入范围不足则报告具体阻塞，不越权改文件。完成结构化证据必须覆盖当前任务全部可交付部分，三NPC/三景未完成明确注明。

@@ -138,6 +138,30 @@ function planter(parent: THREE.Object3D, x: number, z: number) {
   }
 }
 
+export function createGreeter() {
+  const greeter = new THREE.Group();
+  greeter.name = 'Town_Greeter_Minecraft';
+  greeter.position.set(2, 0.035, -0.72);
+  const add = (name: string, color: number, x: number, y: number, z: number, w: number, h: number, d: number) => {
+    const part = box(greeter, color, x, y, z, w, h, d);
+    part.name = name;
+    return part;
+  };
+  add('Left_leg', 0x493f32, -0.18, 0.42, 0, 0.28, 0.84, 0.32);
+  add('Right_leg', 0x493f32, 0.18, 0.42, 0, 0.28, 0.84, 0.32);
+  add('Torso', 0x66704d, 0, 1.19, 0, 0.76, 0.75, 0.38);
+  add('Apron', 0x8b6847, 0, 1.13, 0.205, 0.52, 0.58, 0.045);
+  add('Left_arm', 0x596142, -0.49, 1.2, 0, 0.22, 0.7, 0.27);
+  add('Right_arm', 0x596142, 0.49, 1.2, 0, 0.22, 0.7, 0.27);
+  add('Head', 0xc3916d, 0, 1.86, 0, 0.62, 0.62, 0.58);
+  add('Hair', 0x5a3d2c, 0, 2.14, -0.02, 0.67, 0.16, 0.62);
+  add('Cap', 0x526044, 0, 2.25, -0.01, 0.73, 0.12, 0.67);
+  add('Cap_brim', 0x46533b, 0, 2.2, 0.35, 0.5, 0.08, 0.18);
+  add('Left_eye', 0x25343a, -0.14, 1.91, 0.298, 0.07, 0.07, 0.025);
+  add('Right_eye', 0x25343a, 0.14, 1.91, 0.298, 0.07, 0.07, 0.025);
+  return greeter;
+}
+
 export function createTown() {
   const town = new THREE.Group();
   box(town, 0x969780, 4, -0.3, 4, 100, 0.5, 50);
@@ -181,6 +205,8 @@ export function createTown() {
 
   for (const [x, z, size] of [[-16, -3, 1.4], [-7, -7, 1], [1, -5, 0.85], [10, -8, 1.3], [18, -4, 1], [26, -3, 1.5], [-15, 5.5, 1.25], [8.5, 7.7, 0.35], [25, 6, 1.4]]) tree(town, x, z, size);
   for (const x of [-7.3, 2, 11.5, 18.4]) lamp(town, x, -1.6);
+  town.add(createGreeter());
+  contactShadow(town, 2, -0.72, 0.58, 0.3);
   for (const x of [-9, -1.5, 7.9, 16]) planter(town, x, -2.4);
   for (const x of [-2, 14.5]) {
     for (const leg of [-0.7, 0.7]) box(town, timber, x + leg, 0.27, -1.7, 0.12, 0.55, 0.55);

@@ -1,60 +1,59 @@
+export type Language = 'en' | 'zh';
+export type LocalizedText = Record<Language, string>;
+
 export const APP_DATA = {
   profile: {
-    name: "FUBUKI_BB",
-    role: "Full Stack Engineer & AI Explorer",
-    status: "SYSTEM STATUS: ONLINE",
-    location: "TOKYO,SHANGHAI",
-    stats: {
-      contributions: "∞",
-      uptime: "99.9%"
-    },
-    bio: "Hi, I'm BB — a Full-stack Engineer and System Architect.\nI don't just build systems — I design intelligent workflows.\nFrom scalable backend architectures to game SDK ecosystems and trading platforms, I leverage AI, custom Skills, and Agents to solve complex problems and accelerate development at scale.",
-    avatar: "/profile.png",
-    fullImage: "/profile-cyber.png",
-    footer: "SYSTEM_ID: 0xBBf",
-    copyright: "FUBUKI_BB. ALL RIGHTS RESERVED."
+    name: 'FUBUKI_BB',
+    roles: {
+      en: ['Full Stack Engineer', 'System Architect', 'AI Explorer'],
+      zh: ['全栈工程师', '系统架构师', 'AI 探索者'],
+    } satisfies Record<Language, string[]>,
+    location: ['Tokyo', 'Shanghai'],
+    directions: [
+      { id: 'ai-workflows', en: 'AI Workflows', zh: 'AI 工作流' },
+      { id: 'scalable-backends', en: 'Scalable Backends', zh: '可扩展后端' },
+      { id: 'game-sdk-ecosystems', en: 'Game SDK Ecosystems', zh: '游戏 SDK 生态' },
+      { id: 'trading-platforms', en: 'Trading Platforms', zh: '交易平台' },
+    ],
   },
   socialLinks: [
-    { name: "GitHub", url: "https://github.com/0xBB2b", icon: "GH" },
-    { name: "LinkedIn", url: "https://www.linkedin.com/in/0xbb2b", icon: "IN" },
-    { name: "Juejin", url: "https://juejin.cn/user/1037558235795032", icon: "JU" },
-    { name: "Email", url: "mailto:bb@yorha.xyz", icon: "@" }
+    { name: 'GitHub', url: 'https://github.com/0xBB2b' },
+    { name: 'LinkedIn', url: 'https://www.linkedin.com/in/0xbb2b' },
+    { name: 'Juejin', url: 'https://juejin.cn/user/1037558235795032' },
+    { name: 'Email', url: 'mailto:bb@yorha.xyz' },
   ],
   skills: [
-    { name: "AI", level: 999, category: "Tools" },
-    { name: "Harness Engineering", level: 99, category: "Tools" },
-    { name: "Context Engineering", level: 99, category: "Tools" },
-    { name: "Prompt Engineering", level: 99, category: "Tools" },
-    { name: "Go (Golang)", level: 90, category: "Backend" },
-    { name: "Docker / K8s", level: 85, category: "DevOps" },
+    { name: 'AI', level: 999 },
+    { name: 'Harness Engineering', level: 99 },
+    { name: 'Context Engineering', level: 99 },
+    { name: 'Prompt Engineering', level: 99 },
+    { name: 'Go (Golang)', level: 90 },
+    { name: 'Docker / K8s', level: 85 },
   ],
   projects: [
     {
-      id: "1",
-      title: "0xbb.me",
-      description: "Tactical-HUD portfolio with a standalone 3D dual-hand rhythm-blade game (three.js + Web Audio), fully keyboard-driven.",
-      tech: ["React", "TypeScript", "Vite", "Tailwind CSS", "three.js", "Web Audio"],
-      status: "ONLINE",
-      repo: "https://github.com/0xBB2B/0xbb.me",
-      link: "https://0xbb.me"
+      id: '0xbb.me', title: '0xbb.me', status: 'ONLINE',
+      description: {
+        en: 'An HD-2D exploration portfolio with a controllable character and a welcoming NPC introduction.',
+        zh: '一座可操控角色探索、可与迎宾 NPC 交谈的 HD-2D 个人主页。',
+      } satisfies LocalizedText,
+      repo: 'https://github.com/0xBB2B/0xbb.me', link: 'https://0xbb.me',
     },
     {
-      id: "2",
-      title: "bb-spec",
-      description: "A spec-driven Claude Code pipeline that carries a fuzzy requirement all the way to reviewed, shipped code — every stage traceable, resumable, and adversarially verified.",
-      tech: ["Claude Code", "opencode", "Shell", "TypeScript"],
-      status: "ONLINE",
-      repo: "https://github.com/0xBB2B/bb-spec",
-      link: "https://github.com/0xBB2B/bb-spec"
+      id: 'bb-spec', title: 'bb-spec', status: 'ONLINE',
+      description: {
+        en: 'A spec-driven process that moves fuzzy requirements to reviewed delivery with traceability, continuation and adversarial verification.',
+        zh: '将模糊需求推进到审查交付的规范驱动流程，支持追踪、续接与对抗性验证。',
+      } satisfies LocalizedText,
+      repo: 'https://github.com/0xBB2B/bb-spec', link: 'https://github.com/0xBB2B/bb-spec',
     },
     {
-      id: "3",
-      title: "pi-subagent-cluster",
-      description: "A Pi extension that decomposes complex tasks into a task graph and runs them on isolated Pi worker subprocesses, with same-model reviewers driving automatic retry and worker-tier escalation.",
-      tech: ["Pi", "TypeScript"],
-      status: "ONLINE",
-      repo: "https://github.com/0xBB2B/pi-subagent-cluster",
-      link: "https://pi.dev/packages/@0xbb2b/pi-subagent-cluster"
-    }
+      id: 'pi-subagent-cluster', title: 'pi-subagent-cluster', status: 'ONLINE',
+      description: {
+        en: 'Decomposes tasks into isolated worker processes, with review-driven retries and tiered escalation.',
+        zh: '分解任务并在隔离工作进程中执行，以审查驱动重试和层级升级。',
+      } satisfies LocalizedText,
+      repo: 'https://github.com/0xBB2B/pi-subagent-cluster', link: 'https://pi.dev/packages/@0xbb2b/pi-subagent-cluster',
+    },
   ],
 };
