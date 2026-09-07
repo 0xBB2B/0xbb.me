@@ -1,7 +1,7 @@
 ---
 name: hd2d-portfolio
 title: HD-2D 横版探索个人主页
-status: executing
+status: confirmed
 created: 2026-09-05
 ---
 
@@ -43,7 +43,7 @@ created: 2026-09-05
 | portfolio/bilingual | 新增 | 默认英文，中英切换覆盖界面与内容且不重置探索或对话位置。 |
 | portfolio/graphics-runtime | 新增 | 图形加载、故障阅读及可复测的桌面帧间隔门槛。 |
 | portfolio/npc-dialogue | 新增 | Minecraft NPC统一风格、靠近提示、主动交谈、翻页关闭和三段介绍。 |
-| portfolio/player | 新增 | 单黑装Minecraft主角、无舌与整体80%尺寸、现有移动控制，不含SVG人物或切换。 |
+| portfolio/player | 新增 | 单黑装Minecraft主角、自然闭嘴、80%尺寸与无挂件/挂链靴子，保留现有移动控制，不含SVG人物或切换。 |
 | portfolio/profile-overview | 新增 | 完整资料、技能、作品与社交外链的直接阅读入口。 |
 | portfolio/responsive-layout | 新增 | 三种视口下的可见操作、正文阅读与尺寸变化。 |
 | portfolio/site-entry | 新增 | 探索主页静态交付，所有成品图形纯矢量或几何，不使用位图及模型图片纹理。 |
@@ -60,6 +60,10 @@ created: 2026-09-05
 
 ### 已确定的规划边界
 
+- USER-029确认仅删除双靴蓝色挂件、挂链和挂件高光，保留鞋带、鞋扣、厚底、蓝色耳饰、闭嘴表情与80%尺寸。源模型和真实GLB同步，预览说明不得继续宣称带蓝饰；不改场景、镜头、输入或其他衣装。按AI-025增量规划T-36，T-35已完成记录不回写为新要求通过。本轮仅执行T-36，不推进其他任务。
+- T-36规划范围：design-reference/player-voxel-black.ts、player-voxel-black.glb、character-comparison.html和character-design.test.ts；如预览TS有挂件文字，核实后方可纳入。必须先用已有模型和真实GLB验证挂件仍存在而得到行为Red，再删除，重新导出并实际回读GLB。保护其余几何、2.4高度、脚底原点及三视口/移动回归；不改基础player-voxel.ts、浏览器helper或现有输入测试。沿用现有Bun/ego，不加依赖。
+- planner仅新增T-36并更新INDEX；进行中T-27的C-1/AC-1原文同步现行规范，已done的T-35按其提交保留验收历史，不修改其内容/状态/commit。新任务完整文件仍≤200行；允许覆盖本条明确列出的生产文件和测试范围，不受默认2文件限制。
+
 - USER-027/028授权T-35仅显示黑装Minecraft、自然闭嘴无舌、取消所有人物/白装切换入口，模型整体等比0.8（高3变2.4），脚底原点/头身比例保持。不改房屋、镜头或移动速度，不扩建场景或动画；T-34旧双模型结果不作为新要求通过。
 - 单模型页只查看/导出黑装；基础player-voxel.ts仍被黑装构造实际复用，不作为用户可选白装模型，不复制骨架或新增兼容选择。黑装源与GLB同步2.4单位，当前任务需真实Red→Green→自验收及主agent复验。
 
@@ -68,7 +72,7 @@ created: 2026-09-05
 
 
 
-- 当前黑装参考为 `design-reference/player-black-reference.png`，SHA-256为00684f82856442c65e9838a4623ea88273ec0c96bb055c107539aa01f2d705d5。主角采用银白高马尾、蓝眼、自然闭嘴表情、黑短外套/黑短上衣、腰部肤色、黑短裤、单侧袜及带蓝饰的厚底系带靴。
+- 当前黑装参考为 `design-reference/player-black-reference.png`，SHA-256为00684f82856442c65e9838a4623ea88273ec0c96bb055c107539aa01f2d705d5。主角采用银白高马尾、蓝眼、自然闭嘴表情、黑短外套/黑短上衣、腰部肤色、黑短裤、单侧袜及无挂件/挂链的厚底系带靴。
 - 独立预览入口 `/design-reference/character-comparison.html`；设计文件结构校验命令 `bun test ./design-reference/character-design.test.ts`，不能将其视为正式游戏TDD或完整视觉验收。T-35按USER-027/028将单黑装人物用于主页预览，用户选择方向后再推进正式动画；本次不把静态位移宣称为行走动画。
 
 - USER-016 授权按完整用户行为重新规划，AI-008 明确六个串行切片和浏览器 Red 入口；以下代码分层是实施组织，不再按每个内部模块拆独立任务。不为单测可导入而创建生产空实现。
