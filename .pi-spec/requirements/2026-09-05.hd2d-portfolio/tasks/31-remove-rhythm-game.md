@@ -7,7 +7,6 @@ refs: [portfolio/site-entry/AC-3, portfolio/site-entry/AC-4]
 parallel: false
 verify: cd /Users/bb/Projects/0xbb.me && bun test ./tests/legacy-removal.test.ts && bun run build
 status: todo
-step: test
 agent: ""
 commit: ""
 note: ""

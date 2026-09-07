@@ -1,19 +1,18 @@
 ---
 id: T-29
-title: M1 无位图静态样板与故障阅读
+title: M1 人物素材受控的静态样板与故障阅读
 depends_on: [T-28]
 files: [/Users/bb/Projects/0xbb.me/App.tsx, /Users/bb/Projects/0xbb.me/index.css, /Users/bb/Projects/0xbb.me/portfolio/runtime.ts, /Users/bb/Projects/0xbb.me/portfolio/world.ts, /Users/bb/Projects/0xbb.me/components/portfolio/WorldViewport.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/WorldViewport.css, /Users/bb/Projects/0xbb.me/components/portfolio/Overview.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Overview.css, /Users/bb/Projects/0xbb.me/components/portfolio/Dialogue.css, /Users/bb/Projects/0xbb.me/components/portfolio/Hud.tsx, /Users/bb/Projects/0xbb.me/portfolio/copy.ts, /Users/bb/Projects/0xbb.me/vite.config.ts, /Users/bb/Projects/0xbb.me/index.html, /Users/bb/Projects/0xbb.me/metadata.json, /Users/bb/Projects/0xbb.me/plugins/htmlPlugin.ts, /Users/bb/Projects/0xbb.me/public/profile-full.png, /Users/bb/Projects/0xbb.me/design-reference/profile-full.png, /Users/bb/Projects/0xbb.me/public/profile.png, /Users/bb/Projects/0xbb.me/public/profile-cyber.png, /Users/bb/Projects/0xbb.me/plugins/htmlPlugin.test.ts, /Users/bb/Projects/0xbb.me/public-assets.test.ts, /Users/bb/Projects/0xbb.me/design-reference/reference.test.ts, /Users/bb/Projects/0xbb.me/tests/browser.ts, /Users/bb/Projects/0xbb.me/tests/portfolio-delivery.test.ts]
 refs: [portfolio/graphics-runtime/AC-1, portfolio/graphics-runtime/AC-2, portfolio/graphics-runtime/AC-3, portfolio/bilingual/AC-4, portfolio/profile-overview/AC-6, portfolio/responsive-layout/AC-2, portfolio/responsive-layout/AC-3, portfolio/responsive-layout/AC-4, portfolio/site-entry/AC-1, portfolio/site-entry/AC-2, portfolio/site-entry/AC-3, portfolio/site-entry/AC-5, portfolio/site-entry/AC-6]
 parallel: false
 verify: cd /Users/bb/Projects/0xbb.me && bun run build && bun test ./plugins/htmlPlugin.test.ts ./public-assets.test.ts ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts ./tests/portfolio-delivery.test.ts
 status: todo
-step: test
 agent: ""
 commit: ""
 note: ""
 ---
 ## 1. 目标
-交付真实可运行的单城镇M1静态样板，完成双语故障阅读、三视口及无位图检查，停止等待用户视觉与手感确认。
+交付真实可运行的单城镇M1静态样板，完成双语故障阅读、三视口及矢量/几何图形内容检查，停止等待用户视觉与手感确认。
 ## 2. 业务规则
 - graphics-runtime/C-1：在图形尚未加载完成期间，系统应显示加载状态和可用的资料速览入口，不要求等待游戏就能阅读资料。
 - graphics-runtime/C-2：如果浏览器不能初始化图形或必要场景、角色资源加载报错，系统应展示明确的图形不可用说明和完整资料，不停留在只有加载提示或空白的页面。
@@ -66,8 +65,8 @@ note: ""
 - site-entry/C-1：当访客打开 / 时，系统应默认加载探索世界，显示个人身份和操作引导，并提供无需行走即可进入的资料速览入口。
 - site-entry/C-2：系统应使用包含 FUBUKI_BB 的个人主页标题及与工程、AI 工作流和探索个人主页相符的页面说明，不以节奏光剑游戏作为站点身份或介绍。
 - site-entry/C-3：系统应通过命令 bun run build 生成可静态托管的页面与资源；访客浏览主页、交谈、切换语言和打开速览不需要账号、服务端存档或独立后端应用。
-- site-entry/C-5：系统应仅用程序化图形或纯矢量 SVG 交付主人公、NPC、背景、道具、特效、头像、图标及交互 UI，动画由代码驱动；成品不得包含 PNG、JPEG/JPG、WebP、GIF、BMP、AVIF、TIFF 等位图素材或位图精灵表。正常屏幕栅格化不视为位图素材，设计参考及测试截图不得进入发布产物。
-- site-entry/C-6：如果本站图形以内联数据、矢量文件或外部链接形式呈现，系统仍应仅使用程序化或纯矢量内容，不得嵌入或引用位图，也不得通过 Base64、修改扩展名或 SVG 容器绕过限制。
+- site-entry/C-5：系统应以 Minecraft 方块三维几何呈现主人公与 NPC，人物不得使用 SVG 或图片纹理；背景、道具、特效、非人物图标及交互 UI 可使用纯矢量 SVG 或程序化几何。成品不得包含或加载 PNG、JPG 等位图素材，原始设计参考与验收截图仅为非发布材料。
+- site-entry/C-6：如果本站图形以矢量、三维模型、内联数据或外部资源呈现，系统不得包含 SVG 内嵌图像、Base64 位图、外链位图或改扩展名的位图；浏览器正常屏幕栅格化不视为使用位图素材。
 ### site-entry/AC-1 默认探索入口 ← C-1
 - 触发: 请求 GET / 并在浏览器打开该页面。
 - Given: 网站构建结果已由静态服务提供，图形条件正常。
@@ -83,16 +82,16 @@ note: ""
 - Given: 已安装项目约定依赖，构建环境可用。
 - When: 执行构建，再仅用静态服务访问主页、NPC 对话、语言切换和资料速览。
 - Then: 构建退出码为 0；上述功能无需独立后端应用、登录或服务端存档即可使用。
-### site-entry/AC-5 无位图的图形成品 ← C-5
+### site-entry/AC-5 矢量与几何图形成品 ← C-5
 - 触发: 命令 bun run build，并检查生成的图形产物和完整页面。
 - Given: 构建成功，桌面和触屏均可访问全部场景、NPC 与阅读界面。
 - When: 检查构建产物的实际图形格式，操作主人公、NPC、全部场景和交互 UI，查看头像、图标与页面图形引用。
-- Then: 所有成品图形为程序化图形或纯矢量 SVG，行走及交互动画正常；位图文件与位图精灵表数量为 0，原始设计参考和测试截图没有进入发布产物。
-### site-entry/AC-6 不以编码或容器嵌入位图 ← C-6
+- Then: 主人公与 NPC 为无图片纹理的 Minecraft 方块三维人物，没有 SVG 人物方案；其他图形可为纯 SVG 或几何。成品无 PNG/JPG，参考图及验收截图不在发布产物中，实际行走与交互动画正常。
+### site-entry/AC-6 图形容器不隐藏位图 ← C-6
 - 触发: 操作 在浏览器中访问所有场景和阅读界面，检查收到的图形响应、SVG 内容、样式图形引用及内联图形数据。
 - Given: 构建产物由静态服务提供，浏览器能记录本站资源请求和响应内容。
 - When: 核对图形内容而非仅文件后缀，展开矢量或内联图形数据，检查本站图形的外部引用。
-- Then: 不存在 Base64 位图、SVG 内嵌位图、被伪装格式的位图或外链位图；即使没有图片网络请求，内联内容也满足无位图要求。
+- Then: 图形内容不含 SVG 内嵌图像、Base64 位图、外链位图、伪装格式位图或模型图片纹理；网页不加载 PNG/JPG 等素材，不以没有图片请求替代对内联内容的检查。
 | 作品 | 介绍要点 | 访问入口 | 源码入口 |
 |---|---|---|---|
 | 0xbb.me | 可操控角色、NPC 介绍、三场景的 HD-2D 个人主页 | https://0xbb.me | https://github.com/0xBB2B/0xbb.me |
@@ -109,7 +108,7 @@ note: ""
 - files 中列明所有授权路径；不存在则新建，已存在则仅为本行为修改，明确淘汰项删除。测试只由测试角色修改，生产代码只在可信 Red 后实现。
 ## 6. 函数清单
 - runtime/WorldViewport/App：图形加载及失效反馈，资料不依赖图形成功；尺寸和语言切换不重建会话。
-- vite/index/metadata/htmlPlugin：根页静态构建，去掉旧HUD模板CDN及游戏构建/元数据分支，无位图引用。
+- vite/index/metadata/htmlPlugin：根页静态构建，去掉旧HUD模板CDN及游戏构建/元数据分支，图形引用遵守纯矢量或几何、不使用位图的边界。
 - 参考与素材：原profile-full.png逐字节迁至design-reference，删除旧运行头像位图，不新建图片素材。
 - 现有阅读组件与CSS：三种视口下长内容可读且必要操作可达；仅修正当前样板交付问题。
 ## 7. 协作关系
@@ -123,6 +122,6 @@ note: ""
 - 加载中就能打开资料；1440×900、390×844、844×390均能操控与阅读，旋转/调整尺寸不重置位置或对话段落，全部长文可达。
 - 原图迁移输入：public/profile-full.png → design-reference/profile-full.png，测试记录执行前SHA-256，目标须同字节、1696×2528 RGB PNG；不覆盖不同目标，参考图不入dist。
 - 删除公开目标：public/profile.png、public/profile-cyber.png，页面不请求/profile.png或/profile-cyber.png。profile-cyber.png已在实现前删除，不恢复制造Red；music.ogg是其它任务既有删除，本任务不改动或提交。
-- 检查真实构建文件魔数、网络响应、CSS/HTML/SVG引用及内联编码：不含或引用位图、精灵表、Base64位图或SVG包裹位图。测试截图仅在忽略的缓存作为验收证据，不作为成品。
+- 检查真实构建文件魔数、网络响应、CSS/HTML/SVG引用及内联编码：所有图形均为矢量或几何，不加载人物位图或模型图片纹理，不含Base64位图或SVG包裹位图。测试截图仅在忽略的缓存作为验收证据，不作为成品。
 - 检查静态根页身份FUBUKI_BB、canonical、说明及纯矢量图形引用，不能含旧游戏身份或虚构雇佣关系；不扩展额外SEO产品功能。
 - 复跑实际M1移动/对话/双语/速览/故障及三视口，录制待机、行走、转向并给用户看。完整三场景及发布验收尚未完成，不以M1证据报整站accepted，不进入T-30。

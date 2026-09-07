@@ -3,11 +3,10 @@ id: T-30
 title: M2 完整三场景旅程
 depends_on: [T-29]
 files: [/Users/bb/Projects/0xbb.me/portfolio/scenes/workshop.ts, /Users/bb/Projects/0xbb.me/portfolio/scenes/gallery.ts, /Users/bb/Projects/0xbb.me/portfolio/scenes/town.ts, /Users/bb/Projects/0xbb.me/portfolio/world.ts, /Users/bb/Projects/0xbb.me/portfolio/runtime.ts, /Users/bb/Projects/0xbb.me/portfolio/state.ts, /Users/bb/Projects/0xbb.me/portfolio/copy.ts, /Users/bb/Projects/0xbb.me/components/portfolio/Hud.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Dialogue.tsx, /Users/bb/Projects/0xbb.me/tests/browser.ts, /Users/bb/Projects/0xbb.me/tests/portfolio-journey.test.ts]
-refs: [portfolio/world/AC-1, portfolio/world/AC-2, portfolio/world/AC-3, portfolio/world/AC-4, portfolio/npc-dialogue/AC-3, portfolio/bilingual/AC-2]
+refs: [portfolio/world/AC-1, portfolio/world/AC-2, portfolio/world/AC-3, portfolio/world/AC-4, portfolio/npc-dialogue/AC-3, portfolio/bilingual/AC-2, portfolio/npc-dialogue/AC-6]
 parallel: false
 verify: cd /Users/bb/Projects/0xbb.me && bun run build && bun test ./tests/portfolio-journey.test.ts ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts ./tests/portfolio-delivery.test.ts
 status: todo
-step: test
 agent: ""
 commit: ""
 note: ""
@@ -63,6 +62,12 @@ note: ""
 | LinkedIn | https://www.linkedin.com/in/0xbb2b |
 | Juejin | https://juejin.cn/user/1037558235795032 |
 | Email | mailto:bb@yorha.xyz |
+- npc-dialogue/C-6：系统应将全部 NPC 以统一的 Minecraft 方块三维像素风格呈现，头部、躯干和四肢具有方块体积，以衣装色块和配饰区分身份，不使用 SVG 或位图人物。
+### npc-dialogue/AC-6 NPC 统一方块风格 ← C-6
+- 触发: 操作 访问已交付场景并逐一观察 NPC。
+- Given: 对应场景及 NPC 已交付，人物图形正常加载。
+- When: 访客观察 NPC 的头部、躯干、四肢及身份配色。
+- Then: 所有 NPC 都有 Minecraft 方块三维形体，风格与主角一致且身份可区分；没有 SVG 或位图 NPC。
 ## 3. 涉及文件
 - files 中列明所有授权路径；不存在则新建，已存在则仅为本行为修改，明确淘汰项删除。测试只由测试角色修改，生产代码只在可信 Red 后实现。
 ## 6. 函数清单
@@ -76,5 +81,5 @@ note: ""
 - 测试授权：仅在M2获授权后新增或修改tests/portfolio-journey.test.ts、tests/browser.ts；复跑已交付M1测试，不修改生产代码。
 - 真实入口是已有单城镇主页 /；保持页面可达，测试对目标三场景和后两个NPC行为断言失败才是Red，不导入尚不存在的workshop/gallery模块。
 - 从城镇走到终点并返回，各NPC完整读中英，技能和作品链接按业务规则；两个交界各停留并左右往返3次，无网页跳转、黑屏、瞬移或道路断口。
-- 观察暖光城镇、蓝色设备工坊、星夜展览三种立体环境、前中后景、接触阴影；无位图、不用测试夹具冒充发布场景。
+- 观察暖光城镇、蓝色设备工坊、星夜展览三种立体环境、前中后景、接触阴影；人物统一Minecraft三维几何，非人物图形可用纯SVG或几何，不用测试夹具冒充发布场景。
 - 保持触屏、输入释放、阅读暂停、双语语义段落和故障速览的既有契约；不自动进入此任务，须新授权。

@@ -2,20 +2,19 @@
 id: T-27
 title: M1 可操控黄昏城镇
 depends_on: []
-files: [/Users/bb/Projects/0xbb.me/App.tsx, /Users/bb/Projects/0xbb.me/index.css, /Users/bb/Projects/0xbb.me/portfolio/geometry.ts, /Users/bb/Projects/0xbb.me/portfolio/character.ts, /Users/bb/Projects/0xbb.me/portfolio/state.ts, /Users/bb/Projects/0xbb.me/portfolio/input.ts, /Users/bb/Projects/0xbb.me/portfolio/runtime.ts, /Users/bb/Projects/0xbb.me/portfolio/world.ts, /Users/bb/Projects/0xbb.me/portfolio/scenes/town.ts, /Users/bb/Projects/0xbb.me/components/portfolio/WorldViewport.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/WorldViewport.css, /Users/bb/Projects/0xbb.me/components/portfolio/Hud.tsx, /Users/bb/Projects/0xbb.me/tests/browser.ts, /Users/bb/Projects/0xbb.me/tests/portfolio-playable.test.ts]
+files: [/Users/bb/Projects/0xbb.me/App.tsx, /Users/bb/Projects/0xbb.me/index.css, /Users/bb/Projects/0xbb.me/portfolio/geometry.ts, /Users/bb/Projects/0xbb.me/portfolio/character.ts, /Users/bb/Projects/0xbb.me/portfolio/state.ts, /Users/bb/Projects/0xbb.me/portfolio/input.ts, /Users/bb/Projects/0xbb.me/portfolio/runtime.ts, /Users/bb/Projects/0xbb.me/portfolio/world.ts, /Users/bb/Projects/0xbb.me/portfolio/scenes/town.ts, /Users/bb/Projects/0xbb.me/components/portfolio/WorldViewport.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/WorldViewport.css, /Users/bb/Projects/0xbb.me/components/portfolio/Hud.tsx, /Users/bb/Projects/0xbb.me/tests/browser.ts, /Users/bb/Projects/0xbb.me/tests/portfolio-playable.test.ts, /Users/bb/Projects/0xbb.me/portfolio/character.test.ts]
 refs: [portfolio/player/AC-1, portfolio/player/AC-2, portfolio/player/AC-3, portfolio/player/AC-4, portfolio/player/AC-5, portfolio/player/AC-7, portfolio/world/AC-2, portfolio/responsive-layout/AC-1]
 parallel: false
-verify: cd /Users/bb/Projects/0xbb.me && bun test ./tests/portfolio-playable.test.ts
-status: todo
-step: test
+verify: cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/character.test.ts ./tests/portfolio-playable.test.ts
+status: doing
 agent: ""
 commit: ""
-note: ""
+note: "USER-027/028：主角仅黑装、无舌、整体80%，由T-35处理；本任务完整步态与M1验收仍未完成，不复用旧造型结果。"
 ---
 ## 1. 目标
-从现有主页直接替换成一个可真实行走的黄昏城镇样板：代码绘制的全身二维像素人物、立体道路布景、跟随镜头和键盘/触屏操作。
+从现有主页直接替换成一个可真实行走的黄昏城镇样板：符合确认稿的全身像素人物、立体道路布景、跟随镜头和键盘/触屏操作。
 ## 2. 业务规则
-- player/C-1：系统应展示具有银白马尾、蓝色眼睛和黑白服饰的全身像素主人公，双腿与双脚完整；角色外缘不带矩形立绘背景。
+- player/C-1：系统应默认显示最新黑装参考对应的 Minecraft 方块三维主角，具有银白高马尾、蓝眼、蓝色耳饰、自然闭嘴且无舌头的表情、黑色短外套与短上衣、腰部肤色色块、黑短裤与腰带、单侧长袜、带蓝色挂饰的厚底系带靴；身体部件、衣装色块和完整手脚可辨认，不能以 SVG 或位图人物替代。
 - player/C-2：当主人公在待机、向左行走和向右行走之间切换时，系统应展示对应状态与朝向，行走时可见双腿交替迈步，待机时停止迈步，不能以整幅立绘平移代替行走动画。
 - player/C-3：当桌面访客持续按住 A、D、左方向键或右方向键时，系统应分别向左、向右、向左或向右移动主人公，并允许停下或回头，不要求跳跃才能走完全程。
 - player/C-4：当触屏访客持续按住屏幕左行或右行按钮时，系统应向对应方向移动主人公，松手后停止。
@@ -23,9 +22,9 @@ note: ""
 - player/C-7：如果访客在道路起点向左或在终点向右持续操作，系统应将主人公限制在道路可行走范围内，不使其离开场景或落出道路。
 ### player/AC-1 角色设定可辨认 ← C-1
 - 触发: 操作 观察起点主人公的全身造型。
-- Given: 图形及角色资源加载成功。
-- When: 访客查看主人公及其周围背景。
-- Then: 可辨认银白马尾、蓝眼、黑白服饰、完整双腿和双脚；人物边缘外显示场景而非矩形立绘底色。
+- Given: 最新黑装人物参考已由用户指定，主页与角色模型加载成功。
+- When: 访客观察默认主角，并将头部、衣装与腿脚同参考对照。
+- Then: 默认是完整的 Minecraft 方块三维人物，可辨认银白高马尾、蓝眼、蓝色耳饰、自然闭嘴无舌头、黑短外套/短上衣、腰部肤色、短裤/腰带、单侧长袜及带蓝挂饰的系带厚底靴；不是 SVG、位图或带矩形背景的图卡。
 ### player/AC-2 待机行走转向 ← C-2
 - 触发: 操作 先不输入方向，再向右走、松开、向左走。
 - Given: 主人公位于道路中段且未打开阅读面板。
@@ -64,20 +63,29 @@ note: ""
 - When: 访客查看世界画面、语言入口和资料速览入口。
 - Then: 每种视口均能看到并使用对应入口，主人公可见，页面没有需要左右拖动才能消除的整页水平溢出。
 ## 3. 涉及文件
-- files 中列明所有授权路径；不存在则新建，已存在则仅为本行为修改，明确淘汰项删除。测试只由测试角色修改，生产代码只在可信 Red 后实现。
+- 修改 `App.tsx`、`index.css`：根主页组合及基础样式。
+- 新建 `portfolio/geometry.ts`、`portfolio/character.ts`：程序化像素人物及几何。
+- 新建 `portfolio/state.ts`、`portfolio/input.ts`：探索会话、键盘与触屏方向输入。
+- 新建 `portfolio/runtime.ts`、`portfolio/world.ts`、`portfolio/scenes/town.ts`：单城镇、真实渲染、镜头及生命周期。
+- 新建 `components/portfolio/WorldViewport.tsx`、`components/portfolio/WorldViewport.css`、`components/portfolio/Hud.tsx`：图形挂载、操作与身份入口。
+- 已有 `tests/browser.ts`、`tests/portfolio-playable.test.ts`：只读复现并验证，不允许实现角色改动。
+- 人物造型由T-35确定为无舌、等比缩小至80%的单黑装Minecraft；本任务后续完成该模型的真实步态。
+- 以上均相对 `/Users/bb/Projects/0xbb.me`；数据 `data.ts`、原始设定图、依赖、入口模板与元数据只读，不属于本任务的修改范围。
 ## 6. 函数清单
 - App：组合场景、身份与控件；index.css：新主页基础视觉。
 - state/input：唯一位置与朝向状态、键盘和触屏、松手/失焦停止及边界。
-- geometry/character：程序化二维像素形体、完整腿脚、马尾与分组步态，不做有厚重方块头的通用体素人。
+- geometry/character：基于Minecraft人物几何完成对应真实步态，不加载SVG或位图人物。
 - town/world/runtime：仅城镇的道路、建筑、远景、暖光阴影、镜头跟随和资源释放。
 - WorldViewport/Hud：挂载真实画布、显示身份与行走说明和触屏方向按钮。
 ## 7. 协作关系
 - USER-016/AI-008：完整行为竖切片，代码仍分层；全部串行，可按明确依赖复用已声明文件，不跨范围。不得执行后续未授权里程碑，不新增依赖，不操作git或自行派工；任务运行字段只由主agent写。
 ## 8. 验证方式
-- 仓库根：`/Users/bb/Projects/0xbb.me`；独立命令：`cd /Users/bb/Projects/0xbb.me && bun test ./tests/portfolio-playable.test.ts`。
-- 测试授权：仅新增或修改 tests/browser.ts、tests/portfolio-playable.test.ts（相对仓库根），不修改任何生产文件。
+- 人物方向已确定为Minecraft。T-35的单黑装造型预览不代表本任务完整步态通过；后续真实动作测试须基于现有模型与输入入口，不能恢复固定2.5头身或SVG几何表示测试。
+- 仓库根：`/Users/bb/Projects/0xbb.me`；独立命令：`cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/character.test.ts ./tests/portfolio-playable.test.ts`。
+- 本轮测试授权：仅新增 `portfolio/character.test.ts`，既有 `tests/browser.ts`、`tests/portfolio-playable.test.ts` 只读复跑，不修改生产文件。
+- 步态输入使用现有update：同一位置/相机，待机、左右facing及walking的一个stride周期；验证完整腿脚、左右交替与脚底稳定。画面最终在同视口拍待机、左行、右行，辨识特征及紧凑轮廓须实际查看。
 - 真实公开入口：http://127.0.0.1:3000/。先断言该地址响应且浏览器可打开，再按公开网页断言可玩画布、身份与控件；旧首页缺少可玩世界应导致实际业务断言失败，而非模块缺失、连接失败或零测试。
-- 通过已安装 ego-browser 的 nodejs 标准输入执行脚本；Bun 测试可使用内置子进程能力，tests/browser.ts 仅封装测试启动与结构化输出解析，不是生产测试替身。不得新装浏览器测试库。
+- 使用现有Bun/ego-browser真实页面测试及runBrowser helper，不引入新浏览器库；本地断言和真实画面/操作证据均须核验，不以DOM存在代替视觉验收。
 - 不导入任何尚不存在的生产模块，不创建生产空函数，也不要求事先确定内部接口。测试只依据本区的网页输入与观察结果。
 - 桌面打开后按住 A/D 和左右方向键，再释放；真实截图/录制核验人物向相应方向迈步、转身、镜头跟随及松手停止，不能把背景动画造成的任意像素变化当作行走证明。
 - 触屏390×844、844×390使用实际左右按钮；pointerup/cancel、失焦后返回不续走，两端限制与反向返回可用；记录1440×900画面并检查整页不横向溢出。

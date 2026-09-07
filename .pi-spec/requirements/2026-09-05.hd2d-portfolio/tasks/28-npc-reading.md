@@ -3,17 +3,16 @@ id: T-28
 title: M1 NPC 与双语资料阅读
 depends_on: [T-27]
 files: [/Users/bb/Projects/0xbb.me/App.tsx, /Users/bb/Projects/0xbb.me/index.css, /Users/bb/Projects/0xbb.me/data.ts, /Users/bb/Projects/0xbb.me/portfolio/copy.ts, /Users/bb/Projects/0xbb.me/portfolio/state.ts, /Users/bb/Projects/0xbb.me/portfolio/input.ts, /Users/bb/Projects/0xbb.me/portfolio/scenes/town.ts, /Users/bb/Projects/0xbb.me/components/portfolio/Hud.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Dialogue.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Dialogue.css, /Users/bb/Projects/0xbb.me/components/portfolio/Overview.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Overview.css, /Users/bb/Projects/0xbb.me/tests/browser.ts, /Users/bb/Projects/0xbb.me/tests/portfolio-reading.test.ts]
-refs: [portfolio/npc-dialogue/AC-1, portfolio/npc-dialogue/AC-2, portfolio/npc-dialogue/AC-3, portfolio/npc-dialogue/AC-4, portfolio/npc-dialogue/AC-5, portfolio/bilingual/AC-1, portfolio/bilingual/AC-2, portfolio/bilingual/AC-3, portfolio/profile-overview/AC-1, portfolio/profile-overview/AC-2, portfolio/profile-overview/AC-3, portfolio/profile-overview/AC-4, portfolio/profile-overview/AC-5, portfolio/player/AC-6]
+refs: [portfolio/npc-dialogue/AC-1, portfolio/npc-dialogue/AC-2, portfolio/npc-dialogue/AC-3, portfolio/npc-dialogue/AC-4, portfolio/npc-dialogue/AC-5, portfolio/bilingual/AC-1, portfolio/bilingual/AC-2, portfolio/bilingual/AC-3, portfolio/profile-overview/AC-1, portfolio/profile-overview/AC-2, portfolio/profile-overview/AC-3, portfolio/profile-overview/AC-4, portfolio/profile-overview/AC-5, portfolio/player/AC-6, portfolio/npc-dialogue/AC-6]
 parallel: false
 verify: cd /Users/bb/Projects/0xbb.me && bun test ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts
 status: todo
-step: test
 agent: ""
 commit: ""
 note: ""
 ---
 ## 1. 目标
-在可玩城镇中加入一位迎宾NPC、主动对话、双语切换和无需行走的完整资料速览，所有角色与界面均代码化。
+在可玩城镇中加入一位迎宾NPC、主动对话、双语切换和无需行走的完整资料速览，人物统一Minecraft三维几何，普通UI可用矢量或几何。
 ## 2. 业务规则
 - npc-dialogue/C-1：当主人公进入 NPC 交谈范围时，系统应显示该 NPC 的交谈提示；离开范围时撤去提示，单纯靠近不得自动打开对话。
 - npc-dialogue/C-2：当交谈提示可见且访客按 E 或点击交谈按钮时，系统应打开对应 NPC 的介绍并暂停行走，桌面与触屏均可完成阅读。
@@ -111,13 +110,19 @@ note: ""
 | LinkedIn | https://www.linkedin.com/in/0xbb2b |
 | Juejin | https://juejin.cn/user/1037558235795032 |
 | Email | mailto:bb@yorha.xyz |
+- npc-dialogue/C-6：系统应将全部 NPC 以统一的 Minecraft 方块三维像素风格呈现，头部、躯干和四肢具有方块体积，以衣装色块和配饰区分身份，不使用 SVG 或位图人物。
+### npc-dialogue/AC-6 NPC 统一方块风格 ← C-6
+- 触发: 操作 访问已交付场景并逐一观察 NPC。
+- Given: 对应场景及 NPC 已交付，人物图形正常加载。
+- When: 访客观察 NPC 的头部、躯干、四肢及身份配色。
+- Then: 所有 NPC 都有 Minecraft 方块三维形体，风格与主角一致且身份可区分；没有 SVG 或位图 NPC。
 ## 3. 涉及文件
 - files 中列明所有授权路径；不存在则新建，已存在则仅为本行为修改，明确淘汰项删除。测试只由测试角色修改，生产代码只在可信 Red 后实现。
 ## 6. 函数清单
 - data/copy：中英事实、六技能等级、三个作品、四联系目标和界面词条，不编造履历。
 - state/input：靠近提示、主动交谈、翻页关闭重读、语言切换不重置位置、阅读暂停并释放输入。
 - town：迎宾NPC几何、位置及双语背景段落，不预制后两景。
-- App/Hud/Dialogue/Overview：唯一状态组合、纯代码头像/UI、长内容可读、所有链接与明确关闭入口。
+- App/Hud/Dialogue/Overview：唯一状态组合、纯矢量人物头像与代码化UI、长内容可读、所有链接与明确关闭入口。
 ## 7. 协作关系
 - USER-016/AI-008：完整行为竖切片，代码仍分层；全部串行，可按明确依赖复用已声明文件，不跨范围。不得执行后续未授权里程碑，不新增依赖，不操作git或自行派工；任务运行字段只由主agent写。
 ## 8. 验证方式
