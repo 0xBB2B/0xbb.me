@@ -6,9 +6,9 @@ files: [/Users/bb/Projects/0xbb.me/App.tsx, /Users/bb/Projects/0xbb.me/data.ts, 
 refs: [portfolio/npc-dialogue/AC-1, portfolio/npc-dialogue/AC-2, portfolio/npc-dialogue/AC-3, portfolio/npc-dialogue/AC-4, portfolio/npc-dialogue/AC-5, portfolio/bilingual/AC-1, portfolio/bilingual/AC-2, portfolio/bilingual/AC-3, portfolio/profile-overview/AC-1, portfolio/profile-overview/AC-2, portfolio/profile-overview/AC-3, portfolio/profile-overview/AC-4, portfolio/profile-overview/AC-5, portfolio/player/AC-6, portfolio/npc-dialogue/AC-6, portfolio/player/AC-11]
 parallel: false
 verify: cd /Users/bb/Projects/0xbb.me && bun test ./tests/portfolio-reading.test.ts ./portfolio/character.test.ts ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit
-status: doing
+status: done
 agent: 9993b20c-ba16-4aae-aba6-2a064016efbe
-commit: ""
+commit: b0ea849f3d328dc6ede581e9517d656192c8eb2e
 note: "9993b20c正常完成、有效PASS；本次只修测试准备，原重读第一页断言保留并增加真实提示前提，未改生产距离/速度。worker完整verify连续3次70/70，主agent另复验70 pass/2365断言及tsc通过，并实际查看棕绿NPC、中文第二页与语言保持。USER-038已确认NPC/阅读效果，允许保存当前实现；T-29须另行说明范围，不将本任务通过当整站验收。"
 ---
 ## 1. 目标
