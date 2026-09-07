@@ -2,14 +2,14 @@
 id: T-27
 title: M1 可操控黄昏城镇
 depends_on: []
-files: [/Users/bb/Projects/0xbb.me/App.tsx, /Users/bb/Projects/0xbb.me/index.css, /Users/bb/Projects/0xbb.me/portfolio/geometry.ts, /Users/bb/Projects/0xbb.me/portfolio/character.ts, /Users/bb/Projects/0xbb.me/portfolio/state.ts, /Users/bb/Projects/0xbb.me/portfolio/input.ts, /Users/bb/Projects/0xbb.me/portfolio/runtime.ts, /Users/bb/Projects/0xbb.me/portfolio/world.ts, /Users/bb/Projects/0xbb.me/portfolio/scenes/town.ts, /Users/bb/Projects/0xbb.me/components/portfolio/WorldViewport.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/WorldViewport.css, /Users/bb/Projects/0xbb.me/components/portfolio/Hud.tsx, /Users/bb/Projects/0xbb.me/tests/browser.ts, /Users/bb/Projects/0xbb.me/tests/portfolio-playable.test.ts, /Users/bb/Projects/0xbb.me/portfolio/character.test.ts]
+files: [/Users/bb/Projects/0xbb.me/portfolio/character.ts, /Users/bb/Projects/0xbb.me/portfolio/character.test.ts]
 refs: [portfolio/player/AC-1, portfolio/player/AC-2, portfolio/player/AC-3, portfolio/player/AC-4, portfolio/player/AC-5, portfolio/player/AC-7, portfolio/world/AC-2, portfolio/responsive-layout/AC-1]
 parallel: false
-verify: cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/character.test.ts ./tests/portfolio-playable.test.ts
+verify: cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/character.test.ts ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit
 status: doing
-agent: ""
+agent: a8ceccac-3005-4050-a27f-865b6de32951
 commit: ""
-note: "USER-027/028：主角仅黑装、无舌、整体80%，由T-35处理；本任务完整步态与M1验收仍未完成，不复用旧造型结果。"
+note: "AI-028返修运行a8ceccac正常完成且red-green PASS；主agent独立verify为48 pass/2126断言及tsc通过，并查看实际待机/移动截图。接地已按真实石板顶面0.035修正并抵消模型俯仰；USER-031已确认修正后的落地观感和步态；提交前再次verify为48 pass/2126断言及tsc通过，不复用此前悬空版本PASS。"
 ---
 ## 1. 目标
 从现有主页直接替换成一个可真实行走的黄昏城镇样板：符合确认稿的全身像素人物、立体道路布景、跟随镜头和键盘/触屏操作。
@@ -63,32 +63,30 @@ note: "USER-027/028：主角仅黑装、无舌、整体80%，由T-35处理；本
 - When: 访客查看世界画面、语言入口和资料速览入口。
 - Then: 每种视口均能看到并使用对应入口，主人公可见，页面没有需要左右拖动才能消除的整页水平溢出。
 ## 3. 涉及文件
-- 修改 `App.tsx`、`index.css`：根主页组合及基础样式。
-- 新建 `portfolio/geometry.ts`、`portfolio/character.ts`：程序化像素人物及几何。
-- 新建 `portfolio/state.ts`、`portfolio/input.ts`：探索会话、键盘与触屏方向输入。
-- 新建 `portfolio/runtime.ts`、`portfolio/world.ts`、`portfolio/scenes/town.ts`：单城镇、真实渲染、镜头及生命周期。
-- 新建 `components/portfolio/WorldViewport.tsx`、`components/portfolio/WorldViewport.css`、`components/portfolio/Hud.tsx`：图形挂载、操作与身份入口。
-- 已有 `tests/browser.ts`、`tests/portfolio-playable.test.ts`：只读复现并验证，不允许实现角色改动。
-- 人物造型由T-35确定为无舌、等比缩小至80%的单黑装Minecraft；本任务后续完成该模型的真实步态。
-- 以上均相对 `/Users/bb/Projects/0xbb.me`；数据 `data.ts`、原始设定图、依赖、入口模板与元数据只读，不属于本任务的修改范围。
+- 修改portfolio/character.ts：对当前黑装运行实例加入真实腿臂步态、左右朝向和停止复位，保持静态外观与现有接口。
+- 新建portfolio/character.test.ts：通过现有createCharacter/update及真实几何检查动作，不依赖尚不存在模块；先Red后冻结测试再Green。
+- 只读App、Hud、WorldViewport、state/input/runtime、world/town、geometry和所有底模/GLB及已有测试。场景基础代码已经交付，不重做。
 ## 6. 函数清单
-- App：组合场景、身份与控件；index.css：新主页基础视觉。
-- state/input：唯一位置与朝向状态、键盘和触屏、松手/失焦停止及边界。
-- geometry/character：基于Minecraft人物几何完成对应真实步态，不加载SVG或位图人物。
-- town/world/runtime：仅城镇的道路、建筑、远景、暖光阴影、镜头跟随和资源释放。
-- WorldViewport/Hud：挂载真实画布、显示身份与行走说明和触屏方向按钮。
+- createCharacter：创建保持当前造型的角色实例，准备髋部/肩部动画转轴与初始姿态。
+- update：复用session的x/facing/walking/stride，按真实行走距离驱动交替步态和朝向，停下/暂停时复位且不漂移。
+- dispose：释放本实例几何及材质，无额外全局资源。
 ## 7. 协作关系
-- USER-016/AI-008：完整行为竖切片，代码仍分层；全部串行，可按明确依赖复用已声明文件，不跨范围。不得执行后续未授权里程碑，不新增依赖，不操作git或自行派工；任务运行字段只由主agent写。
+- USER-030与AI-027限定本轮；T-35/T-36已确认静态造型，禁止恢复舌头、挂件或造型切换。
+- App→WorldViewport→mountWorld→createCharacter.update；state.advance已有walking和stride，输入释放/暂停/边界不再累积stride。
+- 腿部当前Group原点在脚底，需在运行实例正确组织髋部转轴，不改静态构造/GLB；初始姿态和其它部件几何颜色应保持。不加依赖、不操作git/任务/台账、不派工。
+- 现有预览提示在本轮保持，待真实步态验证及用户视觉确认后处理，不提前宣称完整M1通过。
 ## 8. 验证方式
-- 人物方向已确定为Minecraft。T-35的单黑装造型预览不代表本任务完整步态通过；后续真实动作测试须基于现有模型与输入入口，不能恢复固定2.5头身或SVG几何表示测试。
-- 仓库根：`/Users/bb/Projects/0xbb.me`；独立命令：`cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/character.test.ts ./tests/portfolio-playable.test.ts`。
-- 本轮测试授权：仅新增 `portfolio/character.test.ts`，既有 `tests/browser.ts`、`tests/portfolio-playable.test.ts` 只读复跑，不修改生产文件。
-- 步态输入使用现有update：同一位置/相机，待机、左右facing及walking的一个stride周期；验证完整腿脚、左右交替与脚底稳定。画面最终在同视口拍待机、左行、右行，辨识特征及紧凑轮廓须实际查看。
-- 真实公开入口：http://127.0.0.1:3000/。先断言该地址响应且浏览器可打开，再按公开网页断言可玩画布、身份与控件；旧首页缺少可玩世界应导致实际业务断言失败，而非模块缺失、连接失败或零测试。
-- 使用现有Bun/ego-browser真实页面测试及runBrowser helper，不引入新浏览器库；本地断言和真实画面/操作证据均须核验，不以DOM存在代替视觉验收。
-- 不导入任何尚不存在的生产模块，不创建生产空函数，也不要求事先确定内部接口。测试只依据本区的网页输入与观察结果。
-- 桌面打开后按住 A/D 和左右方向键，再释放；真实截图/录制核验人物向相应方向迈步、转身、镜头跟随及松手停止，不能把背景动画造成的任意像素变化当作行走证明。
-- 触屏390×844、844×390使用实际左右按钮；pointerup/cancel、失焦后返回不续走，两端限制与反向返回可用；记录1440×900画面并检查整页不横向溢出。
-- 人物必须与设定的白发马尾、蓝眼、黑白衣装相符，腿脚完整、像素轮廓清楚；画面有建筑明暗面、道路接触阴影和前中后景。原图仅供只读参考，路径为public/profile-full.png或design-reference/profile-full.png。
-- 人工视觉核验不由DOM存在断言替代；Red阶段实际页面缺少目标行为足以失败，Green必须补真实按键/触屏及画面证据。world/AC-2本任务仅验证城镇，完整三景由T-30负责。
-- 本任务不制作工坊/展街或正式NPC介绍，不提前宣布M1完成；网页仍可取得现有个人事实，双语和完整阅读在T-28完成。数据结构本任务不修改。
+- AI-028返修测试授权：允许修改portfolio/character.test.ts中错误接地基线并增加实际路面断言；必须先在当前悬空实现上产生真实Red，随后冻结测试。保留有效交替步态、手臂、停止/暂停/转向断言，不因修接地放宽它们。
+- 用只读createTown实际石板几何推导路面高度（中心-0.015、厚0.1，顶面0.035），不得从character里的目标常量反推预期。待机左右两只鞋底应贴在路面而非仅全模型最低角一点接触；行走支撑脚接地、摆动脚允许抬起，不穿地，不明显整体跳动。考虑鞋底四角经真实相机/人物变换后的世界位置，纠正错误俯仰而非改镜头或底模。
+- 对三视口分别实看待机、右行两个相反相位、松手、左行两个相反相位、资料开关后的停止与恢复，给出实际观察证据，不以DOM画布存在替代。所有真实截图/录制验证后清理。
+- 测试写入仅portfolio/character.test.ts，原tests/browser.ts、tests/portfolio-playable.test.ts、tests/character-toggle.test.ts、design-reference/character-design.test.ts全部只读复跑。
+- Red命令：cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/character.test.ts；已有createCharacter和update可直接调用，失败应来自腿脚无周期运动或朝向不符，不得来自导入缺失/环境失败。
+- 使用真实Group/几何输出在同一位置及相机下测待机、左右facing、walking以及stride完整周期；至少两个相反相位显示双腿交替前后运动、手臂相反配合，不以整个人平移/根节点旋转或任意像素变化替代腿部动作。
+- 冻结当前静态造型基线：黑装闭嘴无挂件/挂链，鞋带/鞋扣/耳饰完整，静态高2.4单位，0.8缩放保持；停止后无累积变形。步态时举起的脚允许高于道路，但支撑脚贴地、不穿地，不靠明显抬升整个人避免穿地。
+- 验证左右行走朝向对应道路方向，保留角色辨识度；由运行时相机变换后的实际脚底检查地面关系，不能只检查未变换的局部y坐标。
+- 反复相位更新以及左右转向不累积缩放/位移误差；walking=false、paused=true及道路端点停止状态均停止迈步，重新输入后正常恢复。
+- 复用已有createSession/advance/input公开接口或真实浏览器输入验证A/D/箭头、触屏左右及释放/cancel/blur，关闭资料后须新输入恢复，两端可返回；不得以DOM控件存在当作移动停止证据。
+- 完整verify：cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/character.test.ts ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit。
+- 真实网页http://127.0.0.1:3000/，用已有ego-browser和helper；先确认HTTP与图形正常。1440×900、390×844、844×390分别操作左右行走、松手、资料开关；拍同视口待机/左右不同步态相位或录制并实际查看，不用静态截图声称完整步态。
+- 画面检查双腿交替、手臂配合、朝向、完整鞋脚、无明显穿地/跳动/滑行，房屋/镜头/速度不变；world/AC-2仍仅验城镇，三景由T-30处理。不得制作NPC/工坊/展街或修改数据/依赖/发布配置。
+- 若两文件范围不足以正确完成，报告具体技术阻塞，不越权改外部文件或弱化测试。临时日志/截图/视频验证后清理，最终structured_output提供真实命令与动作证据。
