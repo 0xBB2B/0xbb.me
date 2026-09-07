@@ -1,7 +1,7 @@
 ---
 name: hd2d-portfolio
 title: HD-2D 横版探索个人主页
-status: planned
+status: executing
 created: 2026-09-05
 ---
 

@@ -62,10 +62,6 @@ export function createBlackOutfitPlayerVoxel() {
         lace.rotation.z = direction * 0.42;
       }
     }
-    block(leg, 'Charm_chain', 0xaab9c2, side * 2.35, 4.0, 1.9, 0.15, 1.2, 0.15);
-    const charm = block(leg, 'Blue_boot_charm', 0x2286a9, side * 2.35, 3.05, 1.9, 0.65, 1.05, 0.5);
-    charm.rotation.z = side * 0.18;
-    block(leg, 'Charm_glint', 0x63dced, side * 2.35, 3.2, 2.17, 0.3, 0.55, 0.05);
   }
   // Scale once at construction, around the unchanged sole origin.
   model.scale.multiplyScalar(0.8);
