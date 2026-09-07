@@ -2,14 +2,14 @@
 id: T-30
 title: M2 完整三场景旅程
 depends_on: [T-29]
-files: [/Users/bb/Projects/0xbb.me/portfolio/scenes/workshop.ts, /Users/bb/Projects/0xbb.me/portfolio/scenes/gallery.ts, /Users/bb/Projects/0xbb.me/portfolio/scenes/town.ts, /Users/bb/Projects/0xbb.me/portfolio/world.ts, /Users/bb/Projects/0xbb.me/portfolio/runtime.ts, /Users/bb/Projects/0xbb.me/portfolio/state.ts, /Users/bb/Projects/0xbb.me/portfolio/copy.ts, /Users/bb/Projects/0xbb.me/components/portfolio/Hud.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Dialogue.tsx, /Users/bb/Projects/0xbb.me/tests/browser.ts, /Users/bb/Projects/0xbb.me/tests/portfolio-journey.test.ts]
+files: [/Users/bb/Projects/0xbb.me/portfolio/journey.ts, /Users/bb/Projects/0xbb.me/portfolio/scenes/workshop.ts, /Users/bb/Projects/0xbb.me/portfolio/scenes/gallery.ts, /Users/bb/Projects/0xbb.me/portfolio/scenes/town.ts, /Users/bb/Projects/0xbb.me/portfolio/world.ts, /Users/bb/Projects/0xbb.me/portfolio/runtime.ts, /Users/bb/Projects/0xbb.me/portfolio/state.ts, /Users/bb/Projects/0xbb.me/portfolio/copy.ts, /Users/bb/Projects/0xbb.me/data.ts, /Users/bb/Projects/0xbb.me/components/portfolio/Hud.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Dialogue.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Dialogue.css, /Users/bb/Projects/0xbb.me/components/portfolio/WorldViewport.css, /Users/bb/Projects/0xbb.me/tests/portfolio-journey.test.ts, /Users/bb/Projects/0xbb.me/tests/portfolio-reading.test.ts]
 refs: [portfolio/world/AC-1, portfolio/world/AC-2, portfolio/world/AC-3, portfolio/world/AC-4, portfolio/npc-dialogue/AC-3, portfolio/bilingual/AC-2, portfolio/npc-dialogue/AC-6]
 parallel: false
-verify: cd /Users/bb/Projects/0xbb.me && bun run build && bun test ./tests/portfolio-journey.test.ts ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts ./tests/portfolio-delivery.test.ts
+verify: cd /Users/bb/Projects/0xbb.me && bun run build && bun test ./tests/portfolio-journey.test.ts ./plugins/htmlPlugin.test.ts ./public-assets.test.ts ./design-reference/reference.test.ts ./portfolio/character.test.ts ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts ./tests/portfolio-delivery.test.ts && ./node_modules/.bin/tsc --noEmit
 status: todo
 agent: ""
 commit: ""
-note: ""
+note: "USER-041批准M2，AI-035采用单世界连续扩建/纯数据分区/明确NPC身份；主角与M1交互保持，不自动进入M3或发布。"
 ---
 ## 1. 目标
 在M1用户视觉确认和新授权后，扩建科技工坊和星夜展街，实现完整三段NPC介绍与两个连续交界。
@@ -69,17 +69,34 @@ note: ""
 - When: 访客观察 NPC 的头部、躯干、四肢及身份配色。
 - Then: 所有 NPC 都有 Minecraft 方块三维形体，风格与主角一致且身份可区分；没有 SVG 或位图 NPC。
 ## 3. 涉及文件
-- files 中列明所有授权路径；不存在则新建，已存在则仅为本行为修改，明确淘汰项删除。测试只由测试角色修改，生产代码只在可信 Red 后实现。
+- files 中列明所有授权路径；不存在则新建，已存在则仅为本行为修改，明确淘汰项删除。worker在授权测试中先建立真实Red，冻结预期后再实现Green；文件未改不必为了清单而修改。
 ## 6. 函数清单
 - workshop/gallery：独立程序化立体场景，导师与策展人、准确双语台词和项目链接。
-- world/runtime/state：三场景排序、道路连接、跟随镜头与环境连续混合，允许交界停留/反向。
-- Hud/Dialogue/copy：正确显示当前场景和当前NPC段落，不回退起点。
+- journey/world/runtime/state：纯数据旅程定义、三场景排序、道路连接、跟随镜头与环境连续混合，允许交界停留/反向。
+- Hud/Dialogue/copy：正确显示当前场景、当前NPC身份和段落/作品链接，不回退起点。data仅使本站作品说明准确反映本轮三景，其余资料事实冻结。
 ## 7. 协作关系
 - USER-016/AI-008：完整行为竖切片，代码仍分层；全部串行，可按明确依赖复用已声明文件，不跨范围。不得执行后续未授权里程碑，不新增依赖，不操作git或自行派工；任务运行字段只由主agent写。
 ## 8. 验证方式
-- 仓库根：`/Users/bb/Projects/0xbb.me`；独立命令：`cd /Users/bb/Projects/0xbb.me && bun run build && bun test ./tests/portfolio-journey.test.ts ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts ./tests/portfolio-delivery.test.ts`。
-- 测试授权：仅在M2获授权后新增或修改tests/portfolio-journey.test.ts、tests/browser.ts；复跑已交付M1测试，不修改生产代码。
+- 仓库根：`/Users/bb/Projects/0xbb.me`；独立命令：`cd /Users/bb/Projects/0xbb.me && bun run build && bun test ./tests/portfolio-journey.test.ts ./plugins/htmlPlugin.test.ts ./public-assets.test.ts ./design-reference/reference.test.ts ./portfolio/character.test.ts ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts ./tests/portfolio-delivery.test.ts && ./node_modules/.bin/tsc --noEmit`。
+- 测试授权：新增tests/portfolio-journey.test.ts；tests/portfolio-reading.test.ts仅允许为nearbyNpc从单NPC布尔值泛化为明确NPC身份迁移对应公开模型断言，保留全部浏览器行程与语义断言，不因M2删掉M1覆盖；此迁移只能在Red阶段进行。tests/browser.ts及其他所有已交付测试冻结，只读复跑。
 - 真实入口是已有单城镇主页 /；保持页面可达，测试对目标三场景和后两个NPC行为断言失败才是Red，不导入尚不存在的workshop/gallery模块。
 - 从城镇走到终点并返回，各NPC完整读中英，技能和作品链接按业务规则；两个交界各停留并左右往返3次，无网页跳转、黑屏、瞬移或道路断口。
 - 观察暖光城镇、蓝色设备工坊、星夜展览三种立体环境、前中后景、接触阴影；人物统一Minecraft三维几何，非人物图形可用纯SVG或几何，不用测试夹具冒充发布场景。
 - 保持触屏、输入释放、阅读暂停、双语语义段落和故障速览的既有契约；不自动进入此任务，须新授权。
+
+- USER-041/AI-035：保留起点-8、迎宾者x=2、当前城镇建筑与主角。扩展世界右端和两处交界；journey.ts集中定义分区/交界/NPC坐标/身份（纯数据，不import图形模块），所有运行、文案、几何使用同一事实源，不复制不一致的位置常量。
+- 工坊是蓝青设备、工作台、管线和立体结构，导师采用蓝灰衣装；展街是深蓝紫星夜、展台/框架与可见灯光层次，策展人采用紫灰衣装。NPC仍为无纹理方块几何且贴地、不挡路，不虚构姓名履历。环境变化必须来自真实几何/光照和连续混合，不能只换场景文字或给同一城镇套滤镜。
+- 世界坐标连续、沿道路同一高程0.035向右延伸，无断口/重叠闪烁；原城镇地面和远景范围过大时仅做衔接必需的边界处理，不挪动现有建筑/树木/迎宾者。不用透明盖片掩盖道路错位。
+- 复用单个canvas、renderer、camera和session；背景、雾、光照可随道路位置平滑变化，镜头原跟随方式与缩放不变，移动速度3.2不变。需要让新区域也有正确投影/落地关系，不能只让城镇有光照、后两景漆黑。
+- NPC提示保持≤1.8单位、范围外忽略E，明确当前NPC身份并在打开时锁定对话对象；旧单NPC字段如需泛化直接迁移，不保留旧新两套模式或兼容选择。原有GREETER_X等仍真实用于城镇的常量可保留，但不可仅为旧测试伪造旁路。
+- 延续既有三页阅读：迎宾原三页不变；导师按资料中六技能原顺序每页两项，展示原等级而非百分比；策展人按原作品顺序每页一项，显示名称/ONLINE/双语介绍及该项目访问和源码入口。上一/下一页边界禁用、Esc/按钮关闭、重读第一页保持，语言切换保持同一NPC同一页。
+- 不增加或杜撰个人能力/等级/履历/成果；新增NPC介绍由同一APP_DATA现有技能和项目生成。data.ts仅更新本站作品介绍为本轮实际完成的三景，不改其它事实/链接，不造第二套资料。Overview及故障阅读仍使用同一事实源。
+- 显示当前分区的中英名称及序号，Town原提示/标签在城镇保持；对话可滚动且新作品链接/翻页/关闭/语言三视口可达，不以删除文字来适配短屏。保留交谈范围提示和非强制弹窗，不新增任务/战斗/跳跃/传送。
+- 新测试Red先从现有单城镇主页断言缺少工坊/展街/导师/策展人或无法走完三景，不能import不存在的workshop/gallery/journey模块制造Red；可用现有公开createSession/advance/createWorld接口观察现有世界。新生产模块仅Green时创建。
+- 真实浏览器走完全程并沿原路返回，记录三个场景和三NPC的实际截图/主题，不注入window状态、不改人物速度、不传送角色。使用有界观察真实场景标签/Talk提示驱动旅程，不照搬固定1.2秒往返，finally释放键盘/触屏。新增长旅程测试可设置合理有界超时，不无限轮询或重跑碰运气。
+- 两处交界分别停留并往返3次；除DOM标签外检查实际画布连续帧、位置/相机无突变、无导航/无canvas重挂、道路衔接及灯光/远景渐变。只换文字、背景像素变化或只测状态函数不算完整视觉证据。
+- 1440×900、390×844、844×390均实际走到后两景、主动交谈、读完整双语、点项目链接并回头；可读到所有信息，目标URL不随语言变化。外站可用性不冒充本站承诺。
+- 保留整个M1回归，包括无挂件黑装2.4高、步态/接地、输入释放、阅读暂停、语言/页连续、旋转保持、真实WebGL失效可见单资料窗口及刷新英文起点。App/WorldViewport/输入/主角源码/GLB/元信息/构建配置/素材迁移均冻结；禁止新静态图形import污染资料路径。
+- 新旅程必须在实际静态构建中通过，不只开发服务器；新增测试可用原helper在独立静态预览端口测试并关闭自己启动的服务，不能关闭已有开发服务。测试魔数扫描/无位图保持，禁止任何新增图片纹理/SVG人物/依赖。
+- 对完整verify给出每个命令实际退出码；worker最终必须提交唯一structured_output，缺证据如实FAIL，不引用T-29通过结果当本轮三景通过。不写git/任务/规范/台账或派工；临时日志/截图/dist/自建服务验证后清理。
+- M2结束后停止等待用户三景效果确认，不执行T-31/T-32、不推送部署、不宣布整站accepted。若文件范围不足，报告具体技术需要，不越权改文件或删回归测试。
