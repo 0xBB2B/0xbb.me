@@ -7,8 +7,10 @@
   isolation: isolate;
   background: #d9af91;
 }
-.world-viewport { position: absolute; inset: 0; }
+.world-viewport, .world-placeholder { position: absolute; inset: 0; }
+.world-placeholder { background: linear-gradient(160deg, #d9af91, #8f7b72); }
 .world-viewport canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.graphics-status { position: absolute; z-index: 4; top: 84px; left: 38px; max-width: min(430px, calc(100% - 76px)); margin: 0; padding: 9px 12px; border: 1px solid #73594055; background: #fff0d4e8; font-size: 12px; line-height: 1.45; }
 .town-page::after {
   content: "";
   position: absolute;
@@ -63,6 +65,7 @@
   .brand-mark { width: 27px; height: 27px; font-size: 21px; }
   .town-header nav { width: 100%; justify-content: space-between; }
   .town-header button { min-height: 42px; }
+  .graphics-status { top: 126px; left: 18px; max-width: calc(100% - 36px); }
   .town-intro { top: 159px; left: 22px; }
   .town-intro h1 { font-size: 35px; }
   .intro-caption { font-size: 11px; max-width: 240px; }
@@ -75,6 +78,7 @@
 }
 @media (max-height: 500px) and (min-width: 601px) {
   .town-header { padding: 12px 22px; }
+  .graphics-status { top: 66px; left: 22px; }
   .town-intro { top: 80px; left: 24px; }
   .town-intro h1 { font-size: 28px; margin: 8px 0; }
   .intro-caption { display: none; }

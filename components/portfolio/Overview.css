@@ -7,11 +7,13 @@
   padding: 0;
   box-shadow: 0 20px 100px #24273266;
   margin: auto;
+  overflow: auto;
 }
 .profile-overview::backdrop { background: #24283488; backdrop-filter: blur(5px); }
 .overview-toolbar { position: sticky; top: 0; display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-bottom: 1px solid #574d3526; background: #f5ecd9; z-index: 1; }
 .overview-toolbar > span { margin-right: auto; }
 .overview-toolbar button { min-height: 42px; padding: 9px 15px; border: 1px solid #73594050; background: #e6dac1; font-size: 12px; }
+.overview-fault { margin: 18px 38px 0; padding: 10px 12px; border: 1px solid #9c5b4f66; background: #fff0d4; color: #6d3027; font-size: 12px; line-height: 1.45; }
 .overview-content { padding: 32px 38px 40px; }
 .overview-content h2 { margin: 8px 0; font: 36px Georgia, serif; overflow-wrap: anywhere; }
 .profile-role { font-size: 15px; }
@@ -33,6 +35,7 @@
   .overview-toolbar > span { display: none; }
   .overview-toolbar button { padding: 8px; font-size: 11px; }
   .overview-toolbar .language-button { margin-right: auto; }
+  .overview-fault { margin: 14px 20px 0; }
   .overview-content { padding: 25px 20px; }
   .overview-content h2 { font-size: 28px; }
 }

@@ -3,8 +3,10 @@ import { APP_DATA, type Language } from '../../data';
 import { UI_COPY } from '../../portfolio/copy';
 import './Overview.css';
 
-export function Overview({ open, language, onLanguage, onClose }: {
+export function Overview({ open, persistent = false, fault, language, onLanguage, onClose }: {
   open: boolean;
+  persistent?: boolean;
+  fault?: string;
   language: Language;
   onLanguage: () => void;
   onClose: () => void;
@@ -20,15 +22,16 @@ export function Overview({ open, language, onLanguage, onClose }: {
   }, [open]);
 
   return <dialog className="profile-overview" ref={ref} aria-label={text.overviewLabel}
-    onCancel={event => { event.preventDefault(); onClose(); }}
-    onClose={() => { if (open) onClose(); }}>
+    onCancel={event => { event.preventDefault(); if (!persistent) onClose(); }}
+    onClose={() => { if (open && !persistent) onClose(); }}>
     <div className="overview-toolbar">
       <span className="eyebrow">{text.overview}</span>
       <button className="language-button" aria-label={language === 'en' ? 'Language' : '语言'} onClick={onLanguage}>
         <span aria-hidden="true">◎</span> {language === 'en' ? 'EN / 中' : '中 / EN'}
       </button>
-      <button onClick={onClose} aria-label={text.closeOverview}>{text.closeOverview} <span aria-hidden="true">×</span></button>
+      {!persistent && <button onClick={onClose} aria-label={text.closeOverview}>{text.closeOverview} <span aria-hidden="true">×</span></button>}
     </div>
+    {fault && <p className="overview-fault" role="alert">{fault}</p>}
     <div className="overview-content">
       <p className="eyebrow">{text.profile}</p>
       <h2>FUBUKI_BB</h2>

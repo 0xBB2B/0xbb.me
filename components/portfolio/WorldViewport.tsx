@@ -4,16 +4,22 @@ import { mountWorld } from '../../portfolio/runtime';
 import type { Session } from '../../portfolio/state';
 import './WorldViewport.css';
 
-export function WorldViewport({ session, input }: {
-  session: Session; input: TownInput;
+export function WorldViewport({ session, input, onReady, onUnavailable }: {
+  session: Session;
+  input: TownInput;
+  onReady: () => void;
+  onUnavailable: () => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!container.current) return;
-    const world = mountWorld(container.current, session, input);
-    return () => {
-      world.dispose();
-    };
-  }, [session, input]);
+    try {
+      const world = mountWorld(container.current, session, input, onUnavailable);
+      onReady();
+      return () => { world.dispose(); };
+    } catch {
+      onUnavailable();
+    }
+  }, [session, input, onReady, onUnavailable]);
   return <div className="world-viewport" ref={container} />;
 }

@@ -1,88 +1,65 @@
-import fs from 'fs';
-import path from 'path';
-import { Plugin } from 'vite';
+import fs from 'node:fs';
+import path from 'node:path';
+import type { Plugin } from 'vite';
 
-export const htmlPlugin = (): Plugin => {
-  return {
-    name: 'html-transform',
-    transformIndexHtml(html, ctx) {
-      try {
-        const metadata = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'metadata.json'), 'utf-8'));
-        const isGamePage = ctx.path.startsWith('/game/');
-        const title = isGamePage
-          ? `RHYTHM_BLADE - ${metadata.name}`
-          : `${metadata.name} - ${metadata.author.role}`;
-        const pageUrl = isGamePage ? `${metadata.siteUrl}/game/` : metadata.siteUrl;
-        const description = metadata.description;
-        const keywords = metadata.keywords.join(', ');
-        const image = metadata.image.startsWith('http') ? metadata.image : `${metadata.siteUrl}${metadata.image}`;
-        
-        const personSchema = {
-          "@context": "https://schema.org",
-          "@type": "Person",
-          "name": metadata.author.name,
-          "url": metadata.siteUrl,
-          "image": image,
-          "sameAs": [metadata.social.github, metadata.social.linkedin],
-          "jobTitle": metadata.author.role,
-          "worksFor": {
-            "@type": "Organization",
-            "name": "Independent"
-          },
-          "email": metadata.author.email,
-          "knowsAbout": metadata.keywords,
-          "description": metadata.description
-        };
-
-        const websiteSchema = {
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          "name": "CyberDeck Portfolio",
-          "url": metadata.siteUrl,
-          "description": metadata.description,
-          "author": {
-            "@type": "Person",
-            "name": metadata.author.name
-          },
-          "inLanguage": metadata.locale
-        };
-
-        return {
-          html,
-          tags: [
-            { tag: 'title', children: title },
-            { tag: 'meta', attrs: { name: 'title', content: title } },
-            { tag: 'meta', attrs: { name: 'description', content: description } },
-            { tag: 'meta', attrs: { name: 'keywords', content: keywords } },
-            { tag: 'meta', attrs: { name: 'author', content: metadata.author.name } },
-            { tag: 'meta', attrs: { name: 'theme-color', content: metadata.themeColor } },
-            { tag: 'link', attrs: { rel: 'canonical', href: pageUrl } },
-            
-            // Open Graph
-            { tag: 'meta', attrs: { property: 'og:type', content: 'website' } },
-            { tag: 'meta', attrs: { property: 'og:url', content: pageUrl } },
-            { tag: 'meta', attrs: { property: 'og:title', content: title } },
-            { tag: 'meta', attrs: { property: 'og:description', content: description } },
-            { tag: 'meta', attrs: { property: 'og:image', content: image } },
-            { tag: 'meta', attrs: { property: 'og:site_name', content: 'CyberDeck Portfolio' } }, 
-            { tag: 'meta', attrs: { property: 'og:locale', content: metadata.locale } },
-
-            // Twitter
-            { tag: 'meta', attrs: { property: 'twitter:card', content: 'summary_large_image' } },
-            { tag: 'meta', attrs: { property: 'twitter:url', content: pageUrl } },
-            { tag: 'meta', attrs: { property: 'twitter:title', content: title } },
-            { tag: 'meta', attrs: { property: 'twitter:description', content: description } },
-            { tag: 'meta', attrs: { property: 'twitter:image', content: image } },
-
-            // JSON-LD
-            { tag: 'script', attrs: { type: 'application/ld+json' }, children: JSON.stringify(personSchema) },
-            { tag: 'script', attrs: { type: 'application/ld+json' }, children: JSON.stringify(websiteSchema) }
-          ]
-        };
-      } catch (e) {
-        console.error('Error injecting metadata:', e);
-        return html;
-      }
+export const htmlPlugin = (): Plugin => ({
+  name: 'html-transform',
+  transformIndexHtml(html) {
+    try {
+      const metadata = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'metadata.json'), 'utf8'));
+      const title = `${metadata.name} — Engineering, AI Workflows & Exploration`;
+      const pageUrl = metadata.siteUrl;
+      const image = new URL(metadata.image, `${metadata.siteUrl}/`).href;
+      const personSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'Person',
+        name: metadata.author.name,
+        url: pageUrl,
+        image,
+        sameAs: [metadata.social.github, metadata.social.linkedin],
+        jobTitle: metadata.author.role,
+        email: metadata.author.email,
+        knowsAbout: metadata.keywords,
+        description: metadata.description,
+      };
+      const websiteSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: `${metadata.name} Portfolio`,
+        url: pageUrl,
+        description: metadata.description,
+        author: { '@type': 'Person', name: metadata.author.name },
+        inLanguage: metadata.locale,
+      };
+      return {
+        html,
+        tags: [
+          { tag: 'title', children: title },
+          { tag: 'meta', attrs: { name: 'title', content: title } },
+          { tag: 'meta', attrs: { name: 'description', content: metadata.description } },
+          { tag: 'meta', attrs: { name: 'keywords', content: metadata.keywords.join(', ') } },
+          { tag: 'meta', attrs: { name: 'author', content: metadata.author.name } },
+          { tag: 'meta', attrs: { name: 'theme-color', content: metadata.themeColor } },
+          { tag: 'link', attrs: { rel: 'canonical', href: pageUrl } },
+          { tag: 'meta', attrs: { property: 'og:type', content: 'website' } },
+          { tag: 'meta', attrs: { property: 'og:url', content: pageUrl } },
+          { tag: 'meta', attrs: { property: 'og:title', content: title } },
+          { tag: 'meta', attrs: { property: 'og:description', content: metadata.description } },
+          { tag: 'meta', attrs: { property: 'og:image', content: image } },
+          { tag: 'meta', attrs: { property: 'og:site_name', content: `${metadata.name} Portfolio` } },
+          { tag: 'meta', attrs: { property: 'og:locale', content: metadata.locale } },
+          { tag: 'meta', attrs: { property: 'twitter:card', content: 'summary_large_image' } },
+          { tag: 'meta', attrs: { property: 'twitter:url', content: pageUrl } },
+          { tag: 'meta', attrs: { property: 'twitter:title', content: title } },
+          { tag: 'meta', attrs: { property: 'twitter:description', content: metadata.description } },
+          { tag: 'meta', attrs: { property: 'twitter:image', content: image } },
+          { tag: 'script', attrs: { type: 'application/ld+json' }, children: JSON.stringify(personSchema) },
+          { tag: 'script', attrs: { type: 'application/ld+json' }, children: JSON.stringify(websiteSchema) },
+        ],
+      };
+    } catch (error) {
+      console.error('Error injecting metadata:', error);
+      return html;
     }
-  }
-}
+  },
+});

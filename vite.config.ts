@@ -12,10 +12,7 @@ export default defineConfig({
   plugins: [react(), htmlPlugin()],
   build: {
     rollupOptions: {
-      input: {
-        main: path.resolve(__dirname, 'index.html'),
-        game: path.resolve(__dirname, 'game/index.html'),
-      },
+      input: path.resolve(__dirname, 'index.html'),
     },
   },
   resolve: {

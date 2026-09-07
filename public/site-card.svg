@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">FUBUKI_BB portfolio</title>
+  <desc id="description">Engineering, AI workflows and an exploration portfolio</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0c89d"/>
+      <stop offset="1" stop-color="#817482"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#sky)"/>
+  <path d="M0 445 180 350 330 410 530 294 730 405 910 330 1200 430V630H0Z" fill="#4c4a4b" opacity=".58"/>
+  <rect x="72" y="74" width="1056" height="482" rx="8" fill="#f8ead6" fill-opacity=".9" stroke="#5f5145" stroke-width="2"/>
+  <text x="130" y="245" fill="#393630" font-family="Georgia,serif" font-size="82">FUBUKI_BB</text>
+  <text x="135" y="320" fill="#5d5148" font-family="system-ui,sans-serif" font-size="30" letter-spacing="3">ENGINEERING · AI WORKFLOWS · EXPLORATION</text>
+  <path d="M136 375h410" stroke="#a57348" stroke-width="8"/>
+  <path d="m1010 410 42 42-42 42m42-42h-112" fill="none" stroke="#69584b" stroke-width="10"/>
+</svg>

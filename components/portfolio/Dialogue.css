@@ -7,12 +7,13 @@
   background: #f7edd8;
   color: #393630;
   box-shadow: 0 24px 100px #2427327a;
+  overflow: hidden;
 }
 .npc-dialogue::backdrop { background: #24283480; backdrop-filter: blur(4px); }
 .dialogue-toolbar { display: flex; align-items: center; gap: 9px; padding: 12px 16px; border-bottom: 1px solid #765f4030; }
 .dialogue-toolbar > span:first-child { margin-right: auto; }
 .dialogue-toolbar button, .dialogue-pages button { min-height: 42px; padding: 8px 12px; border: 1px solid #73594050; background: #eadcc1; }
-.dialogue-content { min-height: 210px; padding: 32px 38px; }
+.dialogue-content { min-height: 210px; padding: 32px 38px; overflow: auto; }
 .dialogue-speaker { color: #806b4e; font: 10px "IBM Plex Mono", monospace; letter-spacing: .13em; }
 .dialogue-content h2 { margin: 18px 0 14px; font: 30px Georgia, "Songti SC", serif; }
 .dialogue-content > p:last-child { margin: 0; font-size: 15px; line-height: 1.85; }

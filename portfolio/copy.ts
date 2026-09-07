@@ -9,6 +9,8 @@ export const UI_COPY = {
     source: 'Source', visit: 'Visit', contacts: 'Find me elsewhere', talk: 'Talk',
     previous: 'Previous page', next: 'Next page', closeDialogue: 'Close introduction',
     preview: 'Character appearance preview · Hold a direction to walk.',
+    graphicsLoading: 'Loading graphics… You can open the quick overview now.',
+    graphicsUnavailable: 'Graphics unavailable. The complete profile remains available below.',
     overviewLabel: 'Profile overview', dialogueLabel: 'Greeter introduction',
   },
   zh: {
@@ -17,7 +19,10 @@ export const UI_COPY = {
     walk: '按住行走 · 松开停下', keyboard: 'A / D  或  ← / →', closeOverview: '返回城镇',
     profile: '代码背后的我', skills: '技能', projects: '作品', source: '源码', visit: '访问', contacts: '联系入口',
     talk: '交谈', previous: '上一页', next: '下一页', closeDialogue: '关闭介绍',
-    preview: '人物造型预览 · 按住方向键即可行走。', overviewLabel: '资料速览', dialogueLabel: '迎宾介绍',
+    preview: '人物造型预览 · 按住方向键即可行走。',
+    graphicsLoading: '正在加载图形……现在即可打开资料速览。',
+    graphicsUnavailable: '图形不可用，完整个人资料仍可在下方阅读。',
+    overviewLabel: '资料速览', dialogueLabel: '迎宾介绍',
   },
 } satisfies Record<Language, Record<string, string>>;
 

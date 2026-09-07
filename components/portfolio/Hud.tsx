@@ -9,7 +9,13 @@ import {
 import { Dialogue } from './Dialogue';
 import { Overview } from './Overview';
 
-export function Hud({ session, input }: { session: Session; input: TownInput }) {
+export type GraphicsState = 'loading' | 'ready' | 'unavailable';
+
+export function Hud({ session, input, graphics }: {
+  session: Session;
+  input: TownInput;
+  graphics: GraphicsState;
+}) {
   const [, rerender] = useReducer(value => value + 1, 0);
   const language = session.language;
   const isEnglish = language === 'en';
@@ -43,6 +49,9 @@ export function Hud({ session, input }: { session: Session; input: TownInput }) 
   const endPointer = (event: PointerEvent<HTMLButtonElement>) => input.release(`pointer:${event.pointerId}`);
 
   return <>
+    {graphics === 'loading' && <p className="graphics-status graphics-loading" role="status">
+      {text.graphicsLoading}
+    </p>}
     <header className="town-header">
       <a className="wordmark" href="./" aria-label="FUBUKI_BB home"><span className="brand-mark" aria-hidden="true">f.</span>{APP_DATA.profile.name}</a>
       <span className="header-note">{APP_DATA.profile.roles[language][0]} &amp; {APP_DATA.profile.roles[language][2]}</span>
@@ -69,7 +78,7 @@ export function Hud({ session, input }: { session: Session; input: TownInput }) 
     <footer className="town-footer">
       <div className="movement-controls" aria-label={isEnglish ? 'Walking controls' : '行走控制'}>
         {([-1, 1] as const).map(direction => <button key={direction} className="direction-button"
-          aria-label={direction === -1 ? text.left : text.right}
+          disabled={graphics !== 'ready'} aria-label={direction === -1 ? text.left : text.right}
           onPointerDown={event => {
             if (event.button !== 0) return;
             event.preventDefault();
@@ -84,6 +93,8 @@ export function Hud({ session, input }: { session: Session; input: TownInput }) 
     </footer>
     <Dialogue open={session.reader === 'dialogue'} language={language} page={session.dialoguePage}
       onLanguage={toggleLanguage} onPage={page => setDialoguePage(session, page)} onClose={dismissReader} />
-    <Overview open={session.reader === 'overview'} language={language} onLanguage={toggleLanguage} onClose={dismissReader} />
+    <Overview open={session.reader === 'overview' || graphics === 'unavailable'} language={language}
+      persistent={graphics === 'unavailable'} fault={graphics === 'unavailable' ? text.graphicsUnavailable : undefined}
+      onLanguage={toggleLanguage} onClose={dismissReader} />
   </>;
 }
