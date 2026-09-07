@@ -6,10 +6,10 @@ files: [/Users/bb/Projects/0xbb.me/design-reference/player-voxel-black.ts, /User
 refs: [portfolio/player/AC-1, portfolio/player/AC-11]
 parallel: false
 verify: cd /Users/bb/Projects/0xbb.me && bun test ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit
-status: doing
+status: done
 agent: 530320ca-b36f-4509-be8a-82f90ce84e62
-commit: ""
-note: "USER-029明确删除双靴挂件/挂链/高光；AI-026按已授权切片整理，只改两份模型交付物与模型测试。"
+commit: 0401580dc52705ea0c436a673f572879047e3f00
+note: "worker真实Red→Green通过；主agent独立复验42项测试、1375条断言及tsc通过，实际近景确认无挂件/挂链且鞋带、鞋扣和蓝耳饰保留。仅完成T-36，不代表步态或M1完成。"
 ---
 ## 1. 目标
 主页人物和导出GLB的双靴不再有蓝色挂件、挂链和挂件高光，其余人物外观、尺寸与操作不变。
