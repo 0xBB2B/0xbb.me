@@ -6,9 +6,9 @@ files: [/Users/bb/Projects/0xbb.me/portfolio/character.ts, /Users/bb/Projects/0x
 refs: [portfolio/player/AC-1, portfolio/player/AC-2, portfolio/player/AC-3, portfolio/player/AC-4, portfolio/player/AC-5, portfolio/player/AC-7, portfolio/world/AC-2, portfolio/responsive-layout/AC-1]
 parallel: false
 verify: cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/character.test.ts ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit
-status: doing
+status: done
 agent: a8ceccac-3005-4050-a27f-865b6de32951
-commit: ""
+commit: e38e54f73940a1241f0354601d385b4699e0f75e
 note: "AI-028返修运行a8ceccac正常完成且red-green PASS；主agent独立verify为48 pass/2126断言及tsc通过，并查看实际待机/移动截图。接地已按真实石板顶面0.035修正并抵消模型俯仰；USER-031已确认修正后的落地观感和步态；提交前再次verify为48 pass/2126断言及tsc通过，不复用此前悬空版本PASS。"
 ---
 ## 1. 目标
