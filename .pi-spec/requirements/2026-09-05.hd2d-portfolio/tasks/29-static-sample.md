@@ -6,9 +6,9 @@ files: [/Users/bb/Projects/0xbb.me/App.tsx, /Users/bb/Projects/0xbb.me/index.css
 refs: [portfolio/graphics-runtime/AC-1, portfolio/graphics-runtime/AC-2, portfolio/graphics-runtime/AC-3, portfolio/bilingual/AC-4, portfolio/profile-overview/AC-6, portfolio/responsive-layout/AC-2, portfolio/responsive-layout/AC-3, portfolio/responsive-layout/AC-4, portfolio/site-entry/AC-1, portfolio/site-entry/AC-2, portfolio/site-entry/AC-3, portfolio/site-entry/AC-5, portfolio/site-entry/AC-6]
 parallel: false
 verify: cd /Users/bb/Projects/0xbb.me && bun run build && bun test ./plugins/htmlPlugin.test.ts ./public-assets.test.ts ./design-reference/reference.test.ts ./portfolio/character.test.ts ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts ./tests/portfolio-delivery.test.ts && ./node_modules/.bin/tsc --noEmit
-status: doing
+status: done
 agent: bc99254e-f286-45ca-9ae9-d48f371405d0
-commit: ""
+commit: ef8381d34a1bdae1f8d5372ad87816eb1a09de73
 note: "AI-034返修bc99254e正常完成且red-green PASS；主agent最终完整verify为115 pass/2911断言，build与tsc成功。实际静态站390×844的NPC第2页触发真实上下文丢失，中英文说明均在唯一dialog内可见且顶层命中，刷新恢复英文起点。已清理孤立故障样式和无关导入写法；USER-040已确认M1样板，允许保存当前成果；不自动执行T-30，不将M1确认当整站accepted。"
 ---
 ## 1. 目标
