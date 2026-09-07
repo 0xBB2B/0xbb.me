@@ -1,7 +1,7 @@
 ---
 name: hd2d-portfolio
 title: HD-2D 横版探索个人主页
-status: confirmed
+status: planned
 created: 2026-09-05
 ---
 
@@ -61,8 +61,8 @@ created: 2026-09-05
 ### 已确定的规划边界
 
 - USER-029确认仅删除双靴蓝色挂件、挂链和挂件高光，保留鞋带、鞋扣、厚底、蓝色耳饰、闭嘴表情与80%尺寸。源模型和真实GLB同步，预览说明不得继续宣称带蓝饰；不改场景、镜头、输入或其他衣装。按AI-025增量规划T-36，T-35已完成记录不回写为新要求通过。本轮仅执行T-36，不推进其他任务。
-- T-36规划范围：design-reference/player-voxel-black.ts、player-voxel-black.glb、character-comparison.html和character-design.test.ts；如预览TS有挂件文字，核实后方可纳入。必须先用已有模型和真实GLB验证挂件仍存在而得到行为Red，再删除，重新导出并实际回读GLB。保护其余几何、2.4高度、脚底原点及三视口/移动回归；不改基础player-voxel.ts、浏览器helper或现有输入测试。沿用现有Bun/ego，不加依赖。
-- planner仅新增T-36并更新INDEX；进行中T-27的C-1/AC-1原文同步现行规范，已done的T-35按其提交保留验收历史，不修改其内容/状态/commit。新任务完整文件仍≤200行；允许覆盖本条明确列出的生产文件和测试范围，不受默认2文件限制。
+- AI-026核实预览HTML/TS无蓝挂件文案后，T-36写入范围为design-reference/player-voxel-black.ts、player-voxel-black.glb和character-design.test.ts，预览HTML/TS只读核验。必须先用已有模型和真实GLB验证挂件仍存在而得到行为Red，再删除，重新导出并实际回读GLB。保护其余几何、2.4高度、脚底原点及三视口/移动回归；不改基础player-voxel.ts、浏览器helper或现有输入测试。沿用现有Bun/ego，不加依赖。
+- planner因旧硬限制未产出任务，AI-026沿用既有主agent切片整理授权新增T-36并更新INDEX；进行中T-27的C-1/AC-1原文同步现行规范，已done的T-35按其提交保留验收历史，不修改其内容/状态/commit。新任务完整文件仍≤200行；允许覆盖本条明确列出的生产文件和测试范围，不受默认2文件限制。
 
 - USER-027/028授权T-35仅显示黑装Minecraft、自然闭嘴无舌、取消所有人物/白装切换入口，模型整体等比0.8（高3变2.4），脚底原点/头身比例保持。不改房屋、镜头或移动速度，不扩建场景或动画；T-34旧双模型结果不作为新要求通过。
 - 单模型页只查看/导出黑装；基础player-voxel.ts仍被黑装构造实际复用，不作为用户可选白装模型，不复制骨架或新增兼容选择。黑装源与GLB同步2.4单位，当前任务需真实Red→Green→自验收及主agent复验。
