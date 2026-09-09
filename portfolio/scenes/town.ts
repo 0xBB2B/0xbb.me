@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { box, contactShadow } from '../geometry';
+import { npcById } from '../journey';
+import { createAvatarModel } from '../avatar-models';
 
 const timber = 0x594239, trim = 0x97694e;
 
@@ -140,30 +142,15 @@ function planter(parent: THREE.Object3D, x: number, z: number) {
 
 export function createGreeter() {
   const greeter = new THREE.Group();
-  greeter.name = 'Town_Greeter_Minecraft';
-  greeter.position.set(2, 0.035, -0.72);
-  const add = (name: string, color: number, x: number, y: number, z: number, w: number, h: number, d: number) => {
-    const part = box(greeter, color, x, y, z, w, h, d);
-    part.name = name;
-    return part;
-  };
-  add('Left_leg', 0x493f32, -0.18, 0.42, 0, 0.28, 0.84, 0.32);
-  add('Right_leg', 0x493f32, 0.18, 0.42, 0, 0.28, 0.84, 0.32);
-  add('Torso', 0x66704d, 0, 1.19, 0, 0.76, 0.75, 0.38);
-  add('Apron', 0x8b6847, 0, 1.13, 0.205, 0.52, 0.58, 0.045);
-  add('Left_arm', 0x596142, -0.49, 1.2, 0, 0.22, 0.7, 0.27);
-  add('Right_arm', 0x596142, 0.49, 1.2, 0, 0.22, 0.7, 0.27);
-  add('Head', 0xc3916d, 0, 1.86, 0, 0.62, 0.62, 0.58);
-  add('Hair', 0x5a3d2c, 0, 2.14, -0.02, 0.67, 0.16, 0.62);
-  add('Cap', 0x526044, 0, 2.25, -0.01, 0.73, 0.12, 0.67);
-  add('Cap_brim', 0x46533b, 0, 2.2, 0.35, 0.5, 0.08, 0.18);
-  add('Left_eye', 0x25343a, -0.14, 1.91, 0.298, 0.07, 0.07, 0.025);
-  add('Right_eye', 0x25343a, 0.14, 1.91, 0.298, 0.07, 0.07, 0.025);
+  greeter.name = 'NPC_greeter';
+  greeter.position.set(npcById('greeter').x, 0.035, -0.72);
+  greeter.add(createAvatarModel('blonde'));
   return greeter;
 }
 
 export function createTown() {
   const town = new THREE.Group();
+  town.name = 'Scene_town';
   box(town, 0x969780, 4, -0.3, 4, 100, 0.5, 50);
   // The raised promenade has individual stone courses and a visible front face.
   box(town, 0x73675c, 5, -0.18, 0.4, 31, 0.32, 4.8);
@@ -181,7 +168,6 @@ export function createTown() {
   house(town, -3.9, -5.5, 3.8, 4.3, 0xd3bd98);
   house(town, 5.3, -4.7, 4.8, 3.3, 0xc2c5a5, true);
   house(town, 13, -5.3, 4, 4.4, 0xdcb294);
-  house(town, 21, -6, 5, 3.8, 0xc7b697, true);
 
   const tower = new THREE.Group();
   tower.position.set(1.3, 0, -10);
@@ -203,10 +189,10 @@ export function createTown() {
   const hand = box(tower, timber, 0.13, 5.32, 1.13, 0.32, 0.045, 0.03);
   hand.rotation.z = -0.5;
 
-  for (const [x, z, size] of [[-16, -3, 1.4], [-7, -7, 1], [1, -5, 0.85], [10, -8, 1.3], [18, -4, 1], [26, -3, 1.5], [-15, 5.5, 1.25], [8.5, 7.7, 0.35], [25, 6, 1.4]]) tree(town, x, z, size);
+  for (const [x, z, size] of [[-16, -3, 1.4], [-7, -7, 1], [1, -5, 0.85], [10, -8, 1.3], [18, -4, 1], [-15, 5.5, 1.25], [8.5, 7.7, 0.35]]) tree(town, x, z, size);
   for (const x of [-7.3, 2, 11.5, 18.4]) lamp(town, x, -1.6);
   town.add(createGreeter());
-  contactShadow(town, 2, -0.72, 0.58, 0.3);
+  contactShadow(town, npcById('greeter').x, -0.72, 0.58, 0.3);
   for (const x of [-9, -1.5, 7.9, 16]) planter(town, x, -2.4);
   for (const x of [-2, 14.5]) {
     for (const leg of [-0.7, 0.7]) box(town, timber, x + leg, 0.27, -1.7, 0.12, 0.55, 0.55);
@@ -230,8 +216,8 @@ export function createTown() {
   for (let layer = 0; layer < 3; layer++) {
     const shape = new THREE.Shape();
     shape.moveTo(-80, -2);
-    for (let i = 0; i <= 28; i++) shape.lineTo(-80 + i * 6, 1.5 + Math.sin(i * 1.7 + layer) * 1.7 + layer * 0.3);
-    shape.lineTo(88, -2);
+    for (let i = 0; i <= 20; i++) shape.lineTo(-80 + i * 6, 1.5 + Math.sin(i * 1.7 + layer) * 1.7 + layer * 0.3);
+    shape.lineTo(40, -2);
     shape.closePath();
     const ridge = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ color: [0xaaa096, 0xbaaaa0, 0xc7afa0][layer] }));
     ridge.position.set(0, -layer * 2.5, -22 - layer * 10);

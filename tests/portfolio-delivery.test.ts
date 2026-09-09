@@ -87,7 +87,7 @@ beforeAll(async () => {
         const style = status ? getComputedStyle(status) : null;
         const activeInputs = [...document.querySelectorAll('button')].filter(button => {
           const label = button.getAttribute('aria-label') || '';
-          return /^(Move left|Move right|Talk|向左|向右|交谈)$/.test(label) && !button.disabled
+          return /^(Move left|Move right|Talk|View|向左|向右|交谈|查看)$/.test(label) && !button.disabled
             && button.getAttribute('aria-disabled') !== 'true';
         });
         return {
@@ -110,9 +110,12 @@ beforeAll(async () => {
       return frame
     }
     const clickLanguage = async () => {
-      const activated = await js(String.raw\`(() => { const b = [...document.querySelectorAll('dialog[open] button')].find(e => /^(Language|语言)$/.test(e.getAttribute('aria-label') || '')); if (!b) return false; b.click(); return true })()\`)
-      if (!activated) throw new Error('Language control unavailable')
+      await js(String.raw\`(() => { const b=[...document.querySelectorAll('dialog[open] button')].find(e=>/^(Back to town|返回城镇)$/.test(e.getAttribute('aria-label')||''));if(!b)throw Error('Close fault reading unavailable');b.click() })()\`)
+      await wait(.2)
+      const activated = await js(String.raw\`(() => { const b = [...document.querySelectorAll('.town-header button')].find(e => /^(Language|语言)$/.test(e.getAttribute('aria-label') || '')); if (!b) return false; b.click(); return true })()\`)
+      if (!activated) throw new Error('Homepage language control unavailable')
       await wait(0.2)
+      await clickOverview()
     }
     const clickOverview = async () => {
       const button = await js(String.raw\`(() => { const b = [...document.querySelectorAll('button')].find(e => /Quick overview|资料速览/.test(e.getAttribute('aria-label') || '')); if (!b) return null; const r=b.getBoundingClientRect(); return [r.x+r.width/2,r.y+r.height/2] })()\`)
@@ -265,7 +268,10 @@ const expectedLinks = [
 
 function expectCompleteReading(frame: Reading) {
   expect(frame.text).toMatch(/FUBUKI_BB/);
-  for (const skill of ['Harness Engineering', 'Context Engineering', 'Prompt Engineering', 'Go (Golang)', 'Docker / K8s']) expect(frame.text).toContain(skill);
+  for (const skill of [/AI Agent|AI 智能体/, /Golang/, /Docker\/k8s/, /Game Publishing SDK|游戏发行 SDK/, /Payment Platforms|支付平台/]) {
+    expect(frame.text).toMatch(skill);
+  }
+  expect(frame.text).not.toMatch(/\b(?:level|rating|score)\b|等级|评级|评分|\d+\s*%|\b(?:999|99|90|85)\b/i);
   for (const project of ['0xbb.me', 'bb-spec', 'pi-subagent-cluster']) expect(frame.text).toContain(project);
   for (const contact of ['GitHub', 'LinkedIn', 'Juejin', 'Email']) expect(frame.text).toContain(contact);
   expect(new Set(frame.links)).toEqual(new Set(expectedLinks));
@@ -322,9 +328,11 @@ describe('static M1 delivery and graphics fault reading', () => {
     expect(result.resized.promptAfterClose).toBe(true);
   });
 
-  test('site-entry/AC-3/AC-5/AC-6: static page requests no bitmap assets', () => {
+  test('site-entry/AC-3/AC-5/AC-6: only the confirmed HTML persona portrait is requested, not bitmap world assets', () => {
     expect(result.requests.some(request => /WorldViewport[^/]*\.js(?:\?|$)/.test(request))).toBe(true);
     expect(result.requests).not.toContain('http://127.0.0.1:4189/game/');
-    expect(result.requests.filter(request => /\.(?:png|jpe?g|gif|webp|bmp|avif)(?:[?#]|$)/i.test(request))).toEqual([]);
+    for (const image of result.requests.filter(request => /\.(?:png|jpe?g|gif|webp|bmp|avif)(?:[?#]|$)/i.test(request))) {
+      expect(new URL(image).pathname).toBe('/profile-full.png');
+    }
   });
 });

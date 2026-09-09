@@ -158,6 +158,76 @@ describe('player/AC-2 runtime gait and facing', () => {
     character.dispose();
   });
 
+  test('sprinting increases arm and leg swing while keeping the soles supported and restoring the walk pose', () => {
+    const character = createCharacter();
+    const session = createSession();
+    session.walking = true; session.stride = Math.PI / 2;
+    try {
+      character.update(session, camera);
+      const walkArm = Math.abs(requirePart(character.root, 'Left_arm').rotation.x);
+      const walkLeg = Math.abs(requirePart(character.root, 'Left_leg').parent!.rotation.x);
+      session.sprintBlend = 1;
+      character.update(session, camera);
+      expect(Math.abs(requirePart(character.root, 'Left_arm').rotation.x)).toBeGreaterThan(walkArm * 2);
+      expect(Math.abs(requirePart(character.root, 'Left_leg').parent!.rotation.x)).toBeGreaterThan(walkLeg * 2);
+      for (let phase = 0; phase <= Math.PI * 2; phase += Math.PI / 8) {
+        session.stride = phase; character.update(session, camera);
+        const floor = Math.min(...['Left_leg', 'Right_leg'].flatMap(leg => soleBottomCorners(character.root, leg).map(p => p.y)));
+        expect(floor).toBeCloseTo(.035, 6);
+      }
+      session.sprintBlend = 0; session.stride = Math.PI / 2; character.update(session, camera);
+      expect(Math.abs(requirePart(character.root, 'Left_arm').rotation.x)).toBeCloseTo(walkArm);
+      expect(Math.abs(requirePart(character.root, 'Left_leg').parent!.rotation.x)).toBeCloseTo(walkLeg);
+    } finally { character.dispose(); }
+  });
+
+  test('running body bob is small and has one smooth cycle without changing limb cadence or losing foot contact', () => {
+    for (const appearance of ['black', 'dress'] as const) {
+      const character = createCharacter(appearance), session = createSession();
+      session.walking = true; session.sprintBlend = 1;
+      const heights: number[] = [];
+      try {
+        for (let step = 0; step <= 128; step++) {
+          session.stride = step * Math.PI / 64;
+          character.update(session, camera); character.root.updateMatrixWorld(true);
+          heights.push(character.root.children[0].getWorldPosition(new THREE.Vector3()).y);
+          const left = requirePart(character.root, 'Left_leg'), right = requirePart(character.root, 'Right_leg');
+          const floor = Math.min(new THREE.Box3().setFromObject(left).min.y, new THREE.Box3().setFromObject(right).min.y);
+          expect(floor).toBeCloseTo(.035, 6);
+          expect(left.parent!.parent!.scale.y).toBeGreaterThan(.9);
+          expect(left.parent!.parent!.scale.y).toBeLessThan(1.2);
+          expect(left.parent!.rotation.x).toBeCloseTo(Math.sin(session.stride) * .72, 6);
+          expect(requirePart(character.root, 'Left_arm').rotation.x).toBeCloseTo(-Math.sin(session.stride) * .78, 6);
+        }
+        expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(.025001);
+        expect(heights[64] - heights[0]).toBeCloseTo(.025, 6);
+        expect(heights[128]).toBeCloseTo(heights[0], 6);
+        for (let i = 1; i < heights.length; i++) {
+          if (i <= 64) expect(heights[i] - heights[i - 1]).toBeGreaterThanOrEqual(-1e-6);
+          else expect(heights[i] - heights[i - 1]).toBeLessThanOrEqual(1e-6);
+        }
+        session.walking = false; character.update(session, camera); character.root.updateMatrixWorld(true);
+        expect(character.root.children[0].getWorldPosition(new THREE.Vector3()).y).toBeCloseTo(.035, 6);
+      } finally { character.dispose(); }
+    }
+  });
+
+  test('normal walking retains its measured body-height profile for both outfits', () => {
+    const expected = {
+      black: [.0350000032, .0604207041, .0614920326, .0350000032, .0614920326],
+      dress: [.0349999982, .0435520557, .0397915269, .0349999982, .0397915269],
+    };
+    for (const appearance of ['black', 'dress'] as const) {
+      const character = createCharacter(appearance), session = createSession(); session.walking = true;
+      try {
+        for (const [index, phase] of [0, Math.PI / 4, Math.PI / 2, Math.PI, Math.PI * 1.5].entries()) {
+          session.stride = phase; character.update(session, camera); character.root.updateMatrixWorld(true);
+          expect(character.root.children[0].getWorldPosition(new THREE.Vector3()).y).toBeCloseTo(expected[appearance][index], 6);
+        }
+      } finally { character.dispose(); }
+    }
+  });
+
   test('left and right states visibly face opposite road directions while the camera-facing root is preserved', () => {
     const character = createCharacter();
     const session = createSession();

@@ -1,6 +1,9 @@
 .town-page {
   position: relative;
   width: 100%;
+  max-width: calc(100svh * 2.4);
+  margin-inline: auto;
+  box-shadow: 0 0 90px #030a1680;
   height: 100svh;
   min-height: 320px;
   overflow: hidden;
@@ -37,11 +40,27 @@
 .language-button { background: #ffefcc26; white-space: nowrap; }
 .language-button span { margin-right: 5px; }
 .overview-button { background: #fff0d4d9; box-shadow: 0 2px 0 #60422c20; white-space: nowrap; }
+.scene-workshop .overview-button, .scene-gallery .overview-button { color: #3b3432; text-shadow: none; }
 .overview-button span { margin-left: 12px; }
 .overview-button:disabled { cursor: default; opacity: .5; }
-.talk-prompt { position: absolute; z-index: 3; left: 50%; bottom: 118px; transform: translateX(-50%); min-width: 112px; min-height: 48px; padding: 10px 18px; border: 1px solid #ffe0aeaa; background: #302f2bd9; color: #ffe9c5; box-shadow: 0 7px 28px #29242d55; }
+.talk-prompt { position: absolute; z-index: 3; visibility: hidden; min-width: 104px; min-height: 44px; max-width: calc(100vw - 16px); padding: 9px 14px; border: 1px solid #ffe0aecc; border-radius: 5px; background: #202332f2; color: #fff0d6; box-shadow: 0 4px 18px #0b102680; white-space: nowrap; }
+.talk-prompt::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 8px; height: 8px; border-right: 1px solid #ffe0aeaa; border-bottom: 1px solid #ffe0aeaa; background: #202332; transform: translateX(-50%) rotate(45deg); }
+.door-prompt { border-color: #f4cb86; background: #263442f2; }
+.door-prompt:disabled { cursor: wait; color: #d7d2bf; }
+.board-prompt { border-color: #72e7ff; box-shadow: 0 0 16px #00cfff33, 0 4px 18px #0b102680; }
+.star-prompt { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 124px; border-color: #e5d4a7; background: #172138ed; }
+.star-prompt strong { font: 500 12px/1.2 system-ui, sans-serif; }
+.star-prompt::after { top: -5px; bottom: auto; transform: translateX(-50%) rotate(225deg); }
 .talk-prompt kbd { margin-right: 8px; padding: 2px 6px; border: 1px solid #ffe0ae77; font: 11px "IBM Plex Mono", monospace; }
+.avatar-switch { position: absolute; z-index: 4; right: 40px; bottom: 94px; display: flex; align-items: center; gap: 9px; min-height: 44px; max-width: calc(100% - 40px); padding: 10px 14px; border: 1px solid #b9a47d; background: #e6dac1; color: #393630; font-size: 12px; cursor: pointer; }
+.avatar-switch:disabled { cursor: wait; opacity: .72; }
 .town-intro { position: absolute; z-index: 2; left: 40px; top: 132px; pointer-events: none; color: #423a35; }
+.town-header, .town-intro { transition: color .8s ease, text-shadow .8s ease; }
+.town-intro.scene-gallery .character-preview-note, .town-intro.scene-workshop .character-preview-note { display: none; }
+.town-header.scene-workshop, .town-intro.scene-workshop { color: #dff9ff; text-shadow: 0 1px 4px #173447; }
+.town-header.scene-gallery, .town-intro.scene-gallery { color: #f0eaff; text-shadow: 0 1px 5px #090b20; }
+.scene-workshop .brand-mark, .scene-gallery .brand-mark { border-color: #dceaff70; }
+.scene-workshop .language-button, .scene-gallery .language-button { color: inherit; border-color: #dceaff70; background: #11182c66; }
 .eyebrow { font: 10px/1.5 "IBM Plex Mono", monospace; letter-spacing: 0.2em; text-transform: uppercase; }
 .town-intro h1 { margin: 15px 0; white-space: pre-line; font: 400 clamp(30px, 3.8vw, 54px)/1.12 Georgia, "Songti SC", serif; letter-spacing: -0.035em; }
 .intro-caption { max-width: 285px; font-size: 12px; line-height: 1.8; opacity: 0.83; }
@@ -66,7 +85,9 @@
   .town-header nav { width: 100%; justify-content: space-between; }
   .town-header button { min-height: 42px; }
   .graphics-status { top: 126px; left: 18px; max-width: calc(100% - 36px); }
+  .avatar-switch { right: 18px; bottom: 112px; }
   .town-intro { top: 159px; left: 22px; }
+  .town-intro.scene-gallery .intro-caption { display: none; }
   .town-intro h1 { font-size: 35px; }
   .intro-caption { font-size: 11px; max-width: 240px; }
   .town-footer { left: 20px; right: 20px; bottom: max(26px, env(safe-area-inset-bottom)); align-items: flex-end; }
@@ -79,6 +100,7 @@
 @media (max-height: 500px) and (min-width: 601px) {
   .town-header { padding: 12px 22px; }
   .graphics-status { top: 66px; left: 22px; }
+  .avatar-switch { right: 22px; bottom: 84px; }
   .town-intro { top: 80px; left: 24px; }
   .town-intro h1 { font-size: 28px; margin: 8px 0; }
   .intro-caption { display: none; }
@@ -87,3 +109,18 @@
   .keyboard-help { display: none; }
 }
 @media (hover: none) { .keyboard-help { display: none; } }
+.lighthouse-note { position: absolute; visibility: hidden; z-index: 2; width: 290px; padding: 18px 20px; pointer-events: none; color: #f0e4ca; text-shadow: 0 2px 6px #081a2a; background: radial-gradient(ellipse at center, #0c203cbb, #0c203c44 58%, transparent 74%); }
+.lighthouse-note .eyebrow { margin: 0 0 10px; color: #c9c5ad; font-size: 8px; }
+.lighthouse-note h2 { margin: 0 0 13px; font: 22px/1.4 Georgia, "Songti SC", serif; letter-spacing: .04em; }
+.lighthouse-note > p:last-child { margin: 0; font: 13px/1.9 Georgia, "Songti SC", serif; white-space: pre-line; }
+@media (max-width: 600px) {
+  .lighthouse-note { width: 215px; padding: 12px 8px; }
+  .lighthouse-note h2 { font-size: 18px; margin-bottom: 8px; }
+  .lighthouse-note > p:last-child { font-size: 11px; line-height: 1.8; }
+}
+@media (max-height: 500px) and (min-width: 601px) {
+  .lighthouse-note { width: 240px; padding: 8px 10px; }
+  .lighthouse-note h2 { font-size: 17px; margin-bottom: 7px; }
+  .lighthouse-note .eyebrow { margin-bottom: 6px; }
+  .lighthouse-note > p:last-child { font-size: 10px; line-height: 1.55; }
+}

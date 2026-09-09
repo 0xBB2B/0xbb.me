@@ -169,10 +169,11 @@ for (const [index, viewport] of viewports.entries()) {
     });
     test('player/AC-11: language, profile and continued movement retain canvas and session', () => {
       const j = result.journeys[index];
-      expect(j.panel.language?.label).not.toBe(j.initial.language?.label);
+      expect(j.panel.language).toBeUndefined();
+      expect(j.panel.profile).toMatch(/全栈工程师/);
       expect(j.panel.profile).toMatch(/FUBUKI_BB/);
       expect(j.closed.profile).toBeNull();
-      expect(j.closed.language?.label).toBe(j.panel.language?.label);
+      expect(j.closed.language?.label).toBe('语言');
       for (const frame of [j.moved, j.panel, j.closed, j.continued, j.repeated]) {
         expect(frame.canvases).toEqual(j.initial.canvases);
         expect(frame.url).toBe(url);
@@ -191,14 +192,17 @@ for (const [index, viewport] of viewports.entries()) {
         expect(frame.right?.usable).toBe(true);
       }
       expect(j.panel.overflow).toBeLessThanOrEqual(0);
-      expect(j.panel.language?.usable).toBe(true);
+      expect(j.panel.language).toBeUndefined();
       expect(j.panel.close?.usable).toBe(true);
     });
-    test('player/AC-1, AC-11: geometry preview without images or stale incomplete-gait copy', () => {
+    test('player/AC-1, AC-11: geometry characters with only the confirmed persona image in overview reading', () => {
       const { initial, traffic } = result.journeys[index];
       expect(initial.text).toMatch(/造型预览|appearance preview|character preview/i);
       expect(initial.text).not.toMatch(/walking animation not yet complete|行走动画尚未完成/i);
-      expect(traffic.requests.filter(r => /player-redraw|\.(?:png|jpe?g)(?:[?#]|$)/i.test(r))).toEqual([]);
+      expect(traffic.requests.filter(r => /player-redraw/i.test(r))).toEqual([]);
+      for (const image of traffic.requests.filter(r => /\.(?:png|jpe?g)(?:[?#]|$)/i.test(r))) {
+        expect(new URL(image).pathname).toBe('/profile-full.png');
+      }
     });
   });
 }

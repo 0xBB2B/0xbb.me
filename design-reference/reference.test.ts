@@ -17,12 +17,13 @@ function pngFacts(bytes: Buffer) {
   };
 }
 
-describe('site-entry/AC-5: the approved profile bitmap is reference-only', () => {
-  test('the original bytes are moved to the design reference without alteration', () => {
-    expect(existsSync(source)).toBe(false);
+describe('site-entry/AC-5: the confirmed profile artwork is permitted in HTML reading, never as a character texture', () => {
+  test('the published portrait and preserved design reference have the original unchanged bytes', () => {
+    expect(existsSync(source)).toBe(true);
     expect(existsSync(reference)).toBe(true);
     const bytes = readFileSync(reference);
     expect(createHash('sha256').update(bytes).digest('hex')).toBe(expectedHash);
+    expect(createHash('sha256').update(readFileSync(source)).digest('hex')).toBe(expectedHash);
     expect(pngFacts(bytes)).toEqual({ width: 1696, height: 2528, bitDepth: 8, colorType: 2 });
   });
 });

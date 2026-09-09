@@ -54,12 +54,12 @@ describe('public greeter interaction model', () => {
     const session = createSession();
     session.x = GREETER_X - INTERACTION_DISTANCE;
     updateProximity(session);
-    expect(session.nearbyNpc).toBe(true);
+    expect(String(session.nearbyNpc)).toBe('greeter');
     expect(openDialogue(session)).toBe(true);
     closeReader(session);
     session.x = GREETER_X + INTERACTION_DISTANCE + 0.0001;
     updateProximity(session);
-    expect(session.nearbyNpc).toBe(false);
+    expect(session.nearbyNpc == null).toBe(true);
     expect(openDialogue(session)).toBe(false);
   });
 
@@ -78,7 +78,7 @@ describe('public greeter interaction model', () => {
     expect(bounds.min.y).toBeCloseTo(0.035, 6);
     expect(bounds.max.y - bounds.min.y).toBeGreaterThan(2);
     expect(greeter.position.x).toBe(GREETER_X);
-    for (const part of ['Head', 'Torso', 'Left_arm', 'Right_arm', 'Left_leg', 'Right_leg', 'Apron', 'Cap']) {
+    for (const part of ['Head', 'Torso', 'Left_arm', 'Right_arm', 'Left_leg', 'Right_leg', 'Avatar_blonde', 'Blonde_hair', 'Halter_top', 'Dropped_light_jacket', 'Pleated_skirt']) {
       expect(greeter.getObjectByName(part)).toBeDefined();
     }
     greeter.traverse(object => {
@@ -104,7 +104,7 @@ const observe = String.raw`(async () => {
       disabled: element.matches(':disabled, [aria-disabled="true"]') };
   });
   const dialogue = [...document.querySelectorAll('[role="dialog"], dialog[open]')]
-    .find(element => visible(element) && /dialogue|对话|introduction|介绍/i.test(element.getAttribute('aria-label') || ''));
+    .find(element => visible(element) && /dialogue|对话|introduction|介绍|World lore|世界观/i.test(element.getAttribute('aria-label') || ''));
   const overview = [...document.querySelectorAll('[role="dialog"], dialog[open]')]
     .find(element => visible(element) && /overview|速览|profile/i.test(element.getAttribute('aria-label') || ''));
   return {
@@ -197,7 +197,9 @@ beforeAll(async () => {
 
         await activate(control(initial, /^(Quick overview|资料速览)$/i))
         const overviewEn = await observe()
-        await activate(control(overviewEn, /^(Language|语言)$/i))
+        await activate(control(overviewEn, /^(Back to town|返回城镇)$/i))
+        await activate(control(await observe(), /^(Language|语言)$/i))
+        await activate(control(await observe(), /^(Quick overview|资料速览)$/i))
         const overviewZh = await observe()
         await activate(control(overviewZh, /^(Back to town|返回城镇)$/i))
         let current = await observe()
@@ -213,7 +215,12 @@ beforeAll(async () => {
         const first = await observe()
         await activate(control(first, /^(Next page|下一页)$/i))
         const second = await observe()
-        await activate(control(second, /^(Language|语言)$/i))
+        await activate(control(second, /^(Close introduction|关闭介绍)$/i))
+        await activate(control(await observe(), /^(Language|语言)$/i))
+        await activate((await observe()).prompt)
+        const translatedFirst = await observe()
+        if (translatedFirst.page !== '1 / 3') throw Error('Reopened Chinese introduction must start at page one')
+        await activate(control(translatedFirst, /^(Next page|下一页)$/i))
         const translatedSecond = await observe()
         await activate(control(translatedSecond, /^(Next page|下一页)$/i))
         const third = await observe()
@@ -304,21 +311,23 @@ for (const [index, viewport] of viewports.entries()) {
       expect(j.initial.prompt).toBeNull();
       expect(j.near.prompt?.label).toMatch(/Talk|交谈/);
       expect(j.near.dialogue).toBeNull();
-      expect(j.first.dialogue).toMatch(/FUBUKI_BB/);
+      expect(j.first.dialogue).toMatch(/NPC.*(?:GREETER|迎宾者)/s);
       expect(j.far.prompt).toBeNull();
       expect(j.ignored.dialogue).toBeNull();
     });
 
-    test('npc-dialogue/AC-4 and bilingual/AC-3: three ordered pages, stable translated page, close and reread', () => {
+    test('npc-dialogue/AC-4 and bilingual/AC-3: three ordered pages in the homepage-selected language, close and reread', () => {
       const j = journeys[index];
-      expect(j.first.dialogue).toMatch(/FUBUKI_BB.*(?:Tokyo.*Shanghai|Shanghai.*Tokyo)/s);
+      expect(j.first.dialogue).toMatch(/traveler|旅人/i);
+      expect(j.first.dialogue).toMatch(/town|小镇/i);
+      expect(j.first.dialogue).not.toMatch(/FUBUKI_BB|Tokyo|Shanghai/);
       expect(j.first.page).toBe('1 / 3');
       expect(j.first.controls.find(c => /Previous page/.test(c.label))?.disabled).toBe(true);
-      expect(j.second.dialogue).toMatch(/Full Stack|全栈|scalable backend|可扩展后端/i);
+      expect(j.second.dialogue).toMatch(/factory|工厂/i);
       expect(j.second.page).toBe('2 / 3');
-      expect(j.translatedSecond.dialogue).toMatch(/全栈工程|可扩展后端/);
+      expect(j.translatedSecond.dialogue).toMatch(/门后的工厂|流水线|五台终端/);
       expect(j.translatedSecond.page).toBe('2 / 3');
-      expect(j.third.dialogue).toMatch(/AI.*工作流|AI workflow/i);
+      expect(j.third.dialogue).toMatch(/灯塔|lighthouse/i);
       expect(j.third.page).toBe('3 / 3');
       expect(j.third.controls.find(c => /Next page|下一页/.test(c.label))?.disabled).toBe(true);
       expect(j.rereadReady.prompt?.label, 'bounded return must end on a released, visible Talk prompt').toMatch(/Talk|交谈/);
@@ -335,24 +344,25 @@ for (const [index, viewport] of viewports.entries()) {
       expect(j.freshMovement.canvas).not.toBe(j.closedAfterHeldInput.canvas);
     });
 
-    test('profile-overview/AC-1..5: overview is immediately available with complete facts, levels, projects and contacts', () => {
+    test('profile-overview/AC-1..6: overview is immediately available with five unrated skills, projects and contacts', () => {
       const j = journeys[index];
       const english = j.overviewEn.overview || '';
       expect(english).toMatch(/FUBUKI_BB/);
       expect(english).toMatch(/Full Stack Engineer/);
       expect(english).toMatch(/System Architect/);
-      expect(english).toMatch(/AI Explorer/);
+      expect(english).toMatch(/AI Agent Developer/);
       expect(english).toMatch(/Tokyo.*Shanghai/s);
-      for (const fact of ['AI Workflows', 'Scalable Backends', 'Game SDK Ecosystems', 'Trading Platforms']) expect(english).toContain(fact);
-      for (const [skill, level] of [['AI', '999'], ['Harness Engineering', '99'], ['Context Engineering', '99'],
-        ['Prompt Engineering', '99'], ['Go (Golang)', '90'], ['Docker / K8s', '85']]) {
-        expect(english).toMatch(new RegExp(skill.replace(/[()]/g, '\\$&') + '\\s+' + level));
-      }
-      for (const project of ['0xbb.me', 'bb-spec', 'pi-subagent-cluster']) {
-        expect(english).toContain(project);
-      }
+      for (const fact of ['AI Workflows', 'Scalable Backends', 'Game SDK Ecosystems', 'Payment Platforms']) expect(english).toContain(fact);
+      const skillNames = ['AI Agent', 'Golang', 'Docker/k8s', 'Game Publishing SDK', 'Payment Platforms'];
+      for (const skill of skillNames) expect(english).toContain(skill);
+      expect(english).not.toMatch(/\\b(?:level|rating|score)\\b|等级|评级|评分|\\d+\\s*%|\\b(?:999|99|90|85)\\b/i);
+      expect(english.indexOf('AI Agent')).toBeLessThan(english.indexOf('Golang'));
+      expect(english.indexOf('Golang')).toBeLessThan(english.indexOf('Docker/k8s'));
+      expect(english.indexOf('Docker/k8s')).toBeLessThan(english.indexOf('Game Publishing SDK'));
+      expect(english.indexOf('Game Publishing SDK')).toBeLessThan(english.lastIndexOf('Payment Platforms'));
+      for (const project of ['0xbb.me', 'bb-spec', 'pi-subagent-cluster']) expect(english).toContain(project);
       expect(english.match(/ONLINE/g)).toHaveLength(3);
-      expect(english).toMatch(/HD-2D.*(?:exploration|portfolio)/i);
+      expect(english).toMatch(/MC-2D.*(?:portfolio|three-scene)/i);
       for (const contact of ['GitHub', 'LinkedIn', 'Juejin', 'Email']) expect(english).toContain(contact);
       expect(new Set(j.overviewEn.links.map(link => link.href))).toEqual(new Set(expectedLinks));
     });
@@ -364,10 +374,10 @@ for (const [index, viewport] of viewports.entries()) {
       const chinese = j.overviewZh.overview || '';
       expect(chinese).toMatch(/全栈工程师/);
       expect(chinese).toMatch(/系统架构师/);
-      expect(chinese).toMatch(/AI 探索者/);
+      expect(chinese).toMatch(/AI Agent开发者/);
       expect(chinese).toMatch(/可扩展后端/);
       expect(chinese).toMatch(/游戏 SDK 生态/);
-      expect(chinese).toMatch(/交易平台/);
+      expect(chinese).toMatch(/支付平台/);
       expect(chinese).not.toMatch(/Full Stack Engineer|System Architect|Scalable Backends|Trading Platforms/);
       expect(j.overviewZh.links.map(link => link.href)).toEqual(j.overviewEn.links.map(link => link.href));
       expect(j.refreshed.text).toMatch(/Dusk town|A little town/);
@@ -375,9 +385,9 @@ for (const [index, viewport] of viewports.entries()) {
       expect(j.refreshed.prompt).toBeNull();
     });
 
-    test('npc-dialogue/AC-4: language and close remain reachable while overview requests cannot replace dialogue', () => {
+    test('npc-dialogue/AC-4: close remains reachable and language is absent while overview requests cannot replace dialogue', () => {
       const j = journeys[index];
-      expect(j.second.controls.some(c => /^(Language|语言)$/.test(c.label) && !c.disabled)).toBe(true);
+      expect(j.second.controls.some(c => /^(Language|语言)$/.test(c.label))).toBe(false);
       expect(j.second.controls.some(c => /Close introduction|关闭介绍/.test(c.label) && !c.disabled)).toBe(true);
       const overview = j.second.controls.find(c => /Quick overview|资料速览/.test(c.label));
       expect(!overview || overview.disabled).toBe(true);

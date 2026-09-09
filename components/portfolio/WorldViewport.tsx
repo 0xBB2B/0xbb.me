@@ -14,9 +14,10 @@ export function WorldViewport({ session, input, onReady, onUnavailable }: {
   useEffect(() => {
     if (!container.current) return;
     try {
+      let active = true;
       const world = mountWorld(container.current, session, input, onUnavailable);
-      onReady();
-      return () => { world.dispose(); };
+      world.ready.then(() => { if (active) onReady(); }).catch(() => { if (active) onUnavailable(); });
+      return () => { active = false; world.dispose(); };
     } catch {
       onUnavailable();
     }

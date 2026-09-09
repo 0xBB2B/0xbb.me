@@ -1,10 +1,16 @@
 import type { Language } from '../data';
+import {
+  GREETER_X, INTERACTION_DISTANCE, ROAD, nearbyBoardAt, nearbyNpcAt, sceneAt,
+  ROOM_DOORS, DOOR_CLEARANCE, DOOR_OPEN_SECONDS,
+  type BoardId, type DoorId, type NpcId, type SceneId,
+} from './journey';
 
 export type Direction = -1 | 0 | 1;
-export type Reader = 'dialogue' | 'overview' | null;
-export const ROAD = { start: -8, end: 18 };
-export const GREETER_X = 2;
-export const INTERACTION_DISTANCE = 1.8;
+export type Reader = 'dialogue' | 'board' | 'overview' | null;
+export const PLAYER_APPEARANCES = ['black', 'dress'] as const;
+export type PlayerAppearance = typeof PLAYER_APPEARANCES[number];
+export const APPEARANCE_CHANGE_SECONDS = .65;
+export { GREETER_X, INTERACTION_DISTANCE, ROAD };
 
 type Listener = () => void;
 
@@ -14,11 +20,22 @@ export function createSession() {
     facing: 1 as -1 | 1,
     walking: false,
     stride: 0,
+    sprintBlend: 0,
+    appearance: 'black' as PlayerAppearance,
+    appearanceTransition: null as { target: PlayerAppearance; elapsed: number } | null,
     paused: false,
     language: 'en' as Language,
     reader: null as Reader,
     dialoguePage: 0,
-    nearbyNpc: false,
+    scene: sceneAt(ROAD.start).id as SceneId,
+    nearbyNpc: null as NpcId | null,
+    dialogueNpc: null as NpcId | null,
+    nearbyBoard: null as BoardId | null,
+    boardId: null as BoardId | null,
+    atLighthouse: false,
+    nearbyDoor: null as DoorId | null,
+    openingDoor: null as DoorId | null,
+    doors: { 'town-door': 0, 'sea-door': 0 } as Record<DoorId, number>,
     listeners: new Set<Listener>(),
   };
 }
@@ -39,8 +56,19 @@ export function setLanguage(session: Session, language: Language) {
   notify(session);
 }
 
+export function cycleAppearance(session: Session) {
+  if (!session.atLighthouse || session.reader || session.openingDoor || session.appearanceTransition) return false;
+  const target = PLAYER_APPEARANCES[(PLAYER_APPEARANCES.indexOf(session.appearance) + 1) % PLAYER_APPEARANCES.length];
+  session.appearanceTransition = { target, elapsed: 0 };
+  session.walking = false;
+  session.stride = 0;
+  session.sprintBlend = 0;
+  notify(session);
+  return true;
+}
+
 export function openOverview(session: Session) {
-  if (session.reader) return false;
+  if (session.reader || session.openingDoor || session.appearanceTransition) return false;
   session.reader = 'overview';
   session.paused = true;
   notify(session);
@@ -48,12 +76,45 @@ export function openOverview(session: Session) {
 }
 
 export function openDialogue(session: Session) {
-  if (session.reader || !session.nearbyNpc) return false;
+  if (session.reader || session.openingDoor || session.appearanceTransition || !session.nearbyNpc) return false;
   session.reader = 'dialogue';
+  session.dialogueNpc = session.nearbyNpc;
   session.dialoguePage = 0;
   session.paused = true;
   notify(session);
   return true;
+}
+
+export function openBoard(session: Session) {
+  if (session.reader || session.openingDoor || session.appearanceTransition || !session.nearbyBoard) return false;
+  session.reader = 'board';
+  session.boardId = session.nearbyBoard;
+  session.paused = true;
+  notify(session);
+  return true;
+}
+
+export function openNearbyDoor(session: Session) {
+  if (session.reader || session.openingDoor || session.appearanceTransition) return false;
+  const door = ROOM_DOORS.find(door => session.doors[door.id] < 1 && Math.abs(session.x - door.x) <= INTERACTION_DISTANCE);
+  if (!door) return false;
+  session.openingDoor = door.id;
+  session.walking = false;
+  notify(session);
+  return true;
+}
+
+export function cancelAppearanceChange(session: Session) {
+  if (!session.appearanceTransition) return;
+  session.appearanceTransition = null;
+  notify(session);
+}
+
+export function cancelDoorOpening(session: Session) {
+  if (!session.openingDoor) return;
+  session.doors[session.openingDoor] = 0;
+  session.openingDoor = null;
+  notify(session);
 }
 
 export function setDialoguePage(session: Session, page: number) {
@@ -65,6 +126,8 @@ export function setDialoguePage(session: Session, page: number) {
 export function closeReader(session: Session) {
   if (!session.reader) return;
   session.reader = null;
+  session.dialogueNpc = null;
+  session.boardId = null;
   session.dialoguePage = 0;
   session.paused = false;
   session.walking = false;
@@ -72,19 +135,53 @@ export function closeReader(session: Session) {
 }
 
 export function updateProximity(session: Session) {
-  const nearby = Math.abs(session.x - GREETER_X) <= INTERACTION_DISTANCE;
-  if (nearby === session.nearbyNpc) return;
-  session.nearbyNpc = nearby;
+  const nearbyNpc = nearbyNpcAt(session.x);
+  const nearbyBoard = nearbyBoardAt(session.x);
+  const scene = sceneAt(session.x).id;
+  const nearbyDoor = ROOM_DOORS.find(door => session.doors[door.id] < 1 && Math.abs(session.x - door.x) <= INTERACTION_DISTANCE)?.id ?? null;
+  const atLighthouse = session.x >= ROAD.end - 1.2;
+  if (nearbyNpc === session.nearbyNpc && nearbyBoard === session.nearbyBoard && scene === session.scene && nearbyDoor === session.nearbyDoor && atLighthouse === session.atLighthouse) return;
+  session.nearbyNpc = nearbyNpc;
+  session.nearbyBoard = nearbyBoard;
+  session.scene = scene;
+  session.nearbyDoor = nearbyDoor;
+  session.atLighthouse = atLighthouse;
   notify(session);
 }
 
-export function advance(session: Session, direction: Direction, seconds: number) {
+export function advance(session: Session, direction: Direction, seconds: number, sprinting = false) {
   const previous = session.x;
-  if (!session.paused && direction) {
+  if (session.appearanceTransition) {
+    const transition = session.appearanceTransition;
+    transition.elapsed += seconds;
+    if (transition.elapsed >= APPEARANCE_CHANGE_SECONDS / 2 && session.appearance !== transition.target) {
+      session.appearance = transition.target;
+      notify(session);
+    }
+    if (transition.elapsed >= APPEARANCE_CHANGE_SECONDS) {
+      session.appearanceTransition = null;
+      notify(session);
+    }
+  } else if (session.openingDoor) {
+    const id = session.openingDoor;
+    session.doors[id] = Math.min(1, session.doors[id] + seconds / DOOR_OPEN_SECONDS);
+    if (session.doors[id] >= 1) {
+      session.openingDoor = null;
+      notify(session);
+    }
+  } else if (!session.paused && direction) {
     session.facing = direction;
-    session.x = Math.max(ROAD.start, Math.min(ROAD.end, previous + direction * 3.2 * seconds));
+    let next = Math.max(ROAD.start, Math.min(ROAD.end, previous + direction * (sprinting ? 5.6 : 3.2) * seconds));
+    for (const door of ROOM_DOORS) {
+      if (session.doors[door.id] >= 1) continue;
+      if (direction > 0 && previous < door.x) next = Math.max(previous, Math.min(next, door.x - DOOR_CLEARANCE));
+      if (direction < 0 && previous > door.x) next = Math.min(previous, Math.max(next, door.x + DOOR_CLEARANCE));
+    }
+    session.x = next;
   }
   session.walking = session.x !== previous;
-  session.stride = session.walking ? session.stride + Math.abs(session.x - previous) * 4.2 : 0;
+  const running = session.walking && sprinting;
+  session.sprintBlend += ((running ? 1 : 0) - session.sprintBlend) * (1 - Math.exp(-seconds * 14));
+  session.stride = session.walking ? session.stride + Math.abs(session.x - previous) * (running ? 2.6 : 4.2) : 0;
   updateProximity(session);
 }

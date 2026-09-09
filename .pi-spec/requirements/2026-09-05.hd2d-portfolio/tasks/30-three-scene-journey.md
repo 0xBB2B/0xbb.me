@@ -6,10 +6,10 @@ files: [/Users/bb/Projects/0xbb.me/App.tsx, /Users/bb/Projects/0xbb.me/data.ts, 
 refs: [portfolio/world/AC-1, portfolio/world/AC-2, portfolio/world/AC-3, portfolio/world/AC-4, portfolio/world/AC-5, portfolio/npc-dialogue/AC-3, portfolio/npc-dialogue/AC-7, portfolio/profile-overview/AC-2, portfolio/profile-overview/AC-6, portfolio/bilingual/AC-2, portfolio/bilingual/AC-3, portfolio/player/AC-6, portfolio/responsive-layout/AC-3, portfolio/responsive-layout/AC-4]
 parallel: false
 verify: cd /Users/bb/Projects/0xbb.me && bun run build && bun test ./tests/portfolio-boards.test.ts ./tests/portfolio-journey.test.ts ./plugins/htmlPlugin.test.ts ./public-assets.test.ts ./design-reference/reference.test.ts ./portfolio/character.test.ts ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts ./tests/portfolio-delivery.test.ts && ./node_modules/.bin/tsc --noEmit
-status: todo
+status: done
 agent: ""
 commit: ""
-note: "USER-042..046批准五项无等级技能、一NPC/八看板与建筑过渡/观景平台；AI-038原地修订未提交M2，旧131项通过不用于新契约。"
+note: "2026-09-08主agent续接完成。前次8de6dde5运行未交付有效结构化结果，不作为PASS；本轮初始135项通过，实看发现看板跟镜头不同步、交界遮挡和地面重叠，补可信Red后修复。最终完整verify通过：138 pass、0 fail、3841断言，build与tsc成功。静态4173三视口逐板双语阅读、两交界各往返3次、终点返回和同一URL/canvas实测通过；最终地面修复后另走完整静态道路，逐张检查三视口起点/交界/技能/作品/终点截图。清理构建/截图/日志/自启预览，保留3000。代码交付完成，等待用户M2视觉与手感确认；未提交git、未执行M3或发布。"
 ---
 ## 1. 目标
 保留城镇迎宾与主角，以五技能/三作品看板替换后两NPC，丰富工坊/展街建筑与过渡，用观景平台收尾，完整双语阅读并保留M1故障与操作能力。
@@ -133,6 +133,7 @@ note: "USER-042..046批准五项无等级技能、一NPC/八看板与建筑过�
 - 八看板互相间隔足够使1.8横向范围不重叠；每板1详情，无跨板分页。迎宾仍三页、重读第一页。技能英文名AI Agent/Golang/Docker/k8s/Game Publishing SDK/Payment Platforms；仅中性领域概述，不编造SDK登录/渠道数量/支付机构/交易成绩等未经确认能力。
 - 原事实：FUBUKI_BB为全栈工程师/系统架构师/AI探索者，Tokyo与Shanghai，背景方向现有资料不擅自扩写。项目0xbb.me、bb-spec、pi-subagent-cluster，链接来自现有data.ts冻结目标；联系方式GitHub/LinkedIn/Juejin/Email冻结。
 ## 8. 验证方式
+- USER-047恢复优先：旧771fcc44因terminated异常结束，当前可能已有部分新方案，先核查代码/测试和完整基线，不假定仍是旧三NPC现场。对实际缺失行为建立可信Red再修；若全部已满足且本次无任何文件改动，可如实用green-baseline-no-change提供生产路径与实测基线。不得人为破坏实现、重做已正确部分或将旧异常运行当有效Red/PASS。新失败需保留工具返回的完整错误详情；不修改外部工具或旧运行记录。
 - 测试授权：先改tests/portfolio-journey.test.ts、portfolio-reading.test.ts、portfolio-delivery.test.ts的过时三NPC/六等级预期并新增portfolio-boards.test.ts，建立当前真实Red后冻结断言。保留迎宾、暂停、重读、双语、resize、故障可见性、原图迁移/无位图的所有有效断言，不能删除整段失败旅程逃避。
 - 新Red须使用当前真实主页/已有公开模块输出：当前后两NPC存在、看板摘要缺失、技能仍六项/数字等级、终点缺观景平台均为可证伪缺陷；不能import不存在Boards/新模块制造Red，不把构建/网络工具异常当业务Red。新模块仅在Green实现。
 - 功能验收逐一访问5技能+3作品看板：板面确有可见名称/摘要且固定布景；≤1.8时提示，范围外E忽略，路过不自动弹窗；E/触屏查看打开该板自己的详情，不是NPC对话，不使用导师/策展人称呼。语言切换保持同一板和位置，无等级/分数/百分比/评级，全部作品链接准确。

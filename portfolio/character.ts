@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import { createBlackOutfitPlayerVoxel } from '../design-reference/player-voxel-black';
 import { disposeScene } from './geometry';
-import type { Session } from './state';
+import type { PlayerAppearance, Session } from './state';
+import { createAvatarModel } from './avatar-models';
 
 const HIP_HEIGHT = 12;
 const LEG_SWING = 0.28;
 const ARM_SWING = 0.22;
 const ROAD_HEIGHT = 0.035;
+const RUN_BOB_HEIGHT = 0.025;
 
 function geometryCorners(root: THREE.Object3D) {
   root.updateWorldMatrix(true, true);
@@ -29,33 +31,38 @@ function geometryCorners(root: THREE.Object3D) {
   return corners;
 }
 
-export function createCharacter() {
+export function createCharacter(appearance: PlayerAppearance = 'black') {
   const root = new THREE.Group();
-  const black = createBlackOutfitPlayerVoxel();
-  root.add(black);
+  root.name = 'Player_character'; root.userData.appearance = appearance;
+  const model = appearance === 'black' ? createBlackOutfitPlayerVoxel() : createAvatarModel(appearance);
+  root.add(model);
 
-  const leftLeg = black.getObjectByName('Left_leg') as THREE.Group;
-  const rightLeg = black.getObjectByName('Right_leg') as THREE.Group;
-  const leftArm = black.getObjectByName('Left_arm') as THREE.Group;
-  const rightArm = black.getObjectByName('Right_arm') as THREE.Group;
+  const leftLeg = model.getObjectByName('Left_leg') as THREE.Group;
+  const rightLeg = model.getObjectByName('Right_leg') as THREE.Group;
+  const leftArm = model.getObjectByName('Left_arm') as THREE.Group;
+  const rightArm = model.getObjectByName('Right_arm') as THREE.Group;
+  const gown = model.getObjectByName('Long_split_gown');
   const leftFootCorners = geometryCorners(leftLeg);
   const rightFootCorners = geometryCorners(rightLeg);
 
   function hipPivot(leg: THREE.Group) {
+    const support = new THREE.Group();
+    support.name = `${leg.name}_support`;
+    support.position.set(leg.position.x, HIP_HEIGHT, leg.position.z);
     const pivot = new THREE.Group();
-    pivot.position.set(leg.position.x, HIP_HEIGHT, leg.position.z);
-    black.add(pivot);
+    support.add(pivot);
+    model.add(support);
     leg.removeFromParent();
     leg.position.set(0, -HIP_HEIGHT, 0);
     pivot.add(leg);
-    return pivot;
+    return { pivot, support };
   }
 
-  const leftHip = hipPivot(leftLeg);
-  const rightHip = hipPivot(rightLeg);
+  const { pivot: leftHip, support: leftSupport } = hipPivot(leftLeg);
+  const { pivot: rightHip, support: rightSupport } = hipPivot(rightLeg);
   const floorPoint = new THREE.Vector3();
 
-  function keepFeetOnRoad() {
+  function keepFeetOnRoad(sprintBlend: number, phase: number) {
     root.updateMatrixWorld(true);
     let floor = Infinity;
     for (const [leg, corners] of [[leftLeg, leftFootCorners], [rightLeg, rightFootCorners]] as const) {
@@ -65,7 +72,17 @@ export function createCharacter() {
       }
     }
     const localUpWorldY = new THREE.Vector3(0, 1, 0).applyQuaternion(root.quaternion).y;
-    black.position.y += (ROAD_HEIGHT - floor) / localUpWorldY;
+    const correction = ROAD_HEIGHT - floor;
+    const slowBob = RUN_BOB_HEIGHT * (1 - Math.cos(phase)) * .5;
+    const bodyLift = THREE.MathUtils.lerp(correction, slowBob, sprintBlend);
+    model.position.y += bodyLift / localUpWorldY;
+    if (sprintBlend > 0) {
+      // Keep the hips attached and the feet grounded without making the torso follow every footfall.
+      const hipY = leftSupport.getWorldPosition(floorPoint).y;
+      const reach = (hipY - ROAD_HEIGHT) / (hipY - floor - bodyLift);
+      leftSupport.scale.y = reach;
+      rightSupport.scale.y = reach;
+    }
   }
 
   return {
@@ -75,16 +92,24 @@ export function createCharacter() {
       // Keep the sole origin and existing camera-facing orientation.
       root.quaternion.copy(camera.quaternion);
       // Keep the model upright while the billboard root follows the pitched camera.
-      black.quaternion.copy(root.quaternion).invert();
-      black.rotateY(session.facing * Math.PI / 8);
-      black.position.y = 0;
+      model.quaternion.copy(root.quaternion).invert();
+      model.rotateY(session.facing * Math.PI / 8);
+      model.position.y = 0;
+      leftSupport.scale.y = rightSupport.scale.y = 1;
 
       const stride = session.walking && !session.paused ? Math.sin(session.stride) : 0;
-      leftHip.rotation.x = stride * LEG_SWING;
-      rightHip.rotation.x = -stride * LEG_SWING;
-      leftArm.rotation.x = -stride * ARM_SWING;
-      rightArm.rotation.x = stride * ARM_SWING;
-      keepFeetOnRoad();
+      const legSwing = THREE.MathUtils.lerp(LEG_SWING, .72, session.sprintBlend);
+      const armSwing = THREE.MathUtils.lerp(ARM_SWING, .78, session.sprintBlend);
+      leftHip.rotation.x = stride * legSwing;
+      rightHip.rotation.x = -stride * legSwing;
+      leftArm.rotation.x = -stride * armSwing;
+      rightArm.rotation.x = stride * armSwing;
+      if (gown) {
+        gown.rotation.x = -stride * .025;
+        gown.rotation.z = stride * .025;
+        gown.position.y = Math.abs(stride) * .3;
+      }
+      keepFeetOnRoad(session.walking && !session.paused ? session.sprintBlend : 0, session.stride);
     },
     dispose() {
       root.removeFromParent();
