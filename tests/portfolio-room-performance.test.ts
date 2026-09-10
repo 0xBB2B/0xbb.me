@@ -5,10 +5,9 @@ const url = process.env.PORTFOLIO_TEST_URL ?? 'http://127.0.0.1:3000/';
 
 test('first entry and first exit have no quarter-second first-draw stall after graphics are ready', async () => {
   const recordings = await runBrowser<Array<{ door: string; times: number[]; scenes: string[]; visible: string }>>(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab(${JSON.stringify(url)},{wait:true,timeout:20})
+    await navigate(${JSON.stringify(url)},{timeout:20})
     await cdp('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false})
-    await gotoAndWait(${JSON.stringify(url)},{timeout:20,settle:1})
+    await navigate(${JSON.stringify(url)},{timeout:20,settle:1})
     let ready=false
     for(let i=0;i<100;i++){
       if(await js(${JSON.stringify('document.querySelector(\'button[aria-label="Move right"]\')?.disabled === false')})){ready=true;break}

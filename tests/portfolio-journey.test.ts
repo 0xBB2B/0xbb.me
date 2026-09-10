@@ -224,8 +224,7 @@ beforeAll(async () => {
   const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
   expect(response.status, 'Public homepage prerequisite').toBe(200);
   browserJourneys = await runBrowser<BrowserJourney[]>(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab(${JSON.stringify(url)}, { wait: true, timeout: 20 })
+    await navigate(${JSON.stringify(url)}, { timeout: 20 })
     const journeys = []
     const key = async (type, key, code, vk) => cdp('Input.dispatchKeyEvent', { type, key, code, windowsVirtualKeyCode: vk })
     const snapshot = async () => {
@@ -247,7 +246,7 @@ beforeAll(async () => {
     const release=async(mobile,side)=>{const i=direction[side];if(mobile)await cdp('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});else await key('keyUp',i[0],i[1],i[2])}
     try {
       for(const viewport of ${JSON.stringify(viewports)}){
-        await cdp('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});await cdp('Emulation.setTouchEmulationEnabled',{enabled:viewport.mobile});await gotoAndWait(${JSON.stringify(url)},{timeout:20,settle:.5})
+        await cdp('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});await cdp('Emulation.setTouchEmulationEnabled',{enabled:viewport.mobile});await navigate(${JSON.stringify(url)},{timeout:20,settle:.5})
         const firstDocument=await cdp('DOM.getDocument',{depth:0});const firstQuery=await cdp('DOM.querySelector',{nodeId:firstDocument.root.nodeId,selector:'canvas'});const firstCanvas=await cdp('DOM.describeNode',{nodeId:firstQuery.nodeId})
         let frame=await snapshot(),previousScene=frame.scene;const scenes=[frame.scene],boardIds=[],doorIds=[],boardCopy={},speakers=[],boundaryFrames=[]
         await hold(frame,viewport.mobile,'right')

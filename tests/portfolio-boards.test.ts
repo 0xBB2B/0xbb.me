@@ -49,14 +49,13 @@ function allBoards() {
 
 test('npc-dialogue/AC-7: board text follows the rendered camera, stays on its face, and adapts to both phone orientations', async () => {
   const observations = await runBrowser<Array<{ width: number; height: number; x: number; y: number; boardWidth: number; settledX: number; visible: boolean }>>(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab('http://127.0.0.1:3000/', { wait: true, timeout: 20 })
+    await navigate('http://127.0.0.1:3000/', { timeout: 20 })
     const key = type => cdp('Input.dispatchKeyEvent', { type, key:'ArrowRight', code:'ArrowRight', windowsVirtualKeyCode:39 })
     const sample = () => js(${JSON.stringify(`(() => { const r=document.querySelector('.world-board[data-board-id="ai-agent"]').getBoundingClientRect(); return {width:innerWidth,height:innerHeight,x:r.x+r.width/2,y:r.y+r.height/2,boardWidth:r.width,visible:getComputedStyle(document.querySelector('.world-board[data-board-id="ai-agent"]')).visibility==='visible'}; })()`)} )
     const results=[]
     try {
       await cdp('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false})
-      await gotoAndWait('http://127.0.0.1:3000/',{timeout:20,settle:.5})
+      await navigate('http://127.0.0.1:3000/',{timeout:20,settle:.5})
       let ready=false
       for(let step=0;step<100;step++){
         if(await js(${JSON.stringify('!!document.querySelector("canvas") && document.querySelector(\'button[aria-label="Move right"]\')?.disabled === false')})){ready=true;break}

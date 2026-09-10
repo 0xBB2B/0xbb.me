@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Hud, type GraphicsState } from './components/portfolio/Hud';
 import { createInput } from './portfolio/input';
-import { cancelAppearanceChange, cancelDoorOpening, closeReader, openOverview, createSession } from './portfolio/state';
+import { cancelAppearanceChange, cancelDoorOpening, cancelNpcReaction, closeReader, openOverview, createSession } from './portfolio/state';
 
 type Viewport = typeof import('./components/portfolio/WorldViewport')['WorldViewport'];
 
@@ -26,6 +26,7 @@ export default function App() {
     input.pause(true);
     cancelDoorOpening(session);
     cancelAppearanceChange(session);
+    cancelNpcReaction(session);
     if (session.reader !== 'overview') {
       closeReader(session);
       openOverview(session);

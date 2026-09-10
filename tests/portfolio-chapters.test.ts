@@ -6,10 +6,9 @@ const url = process.env.PORTFOLIO_TEST_URL ?? 'http://127.0.0.1:3000/';
 
 test('all three chapter labels and headings share the same vertical position and typography', async () => {
   const frames = await runBrowser<Array<{ scene: string; viewport: string; language: string; chapterY: number; headingY: number; fontSize: string; lineHeight: string }>>(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab(${JSON.stringify(url)},{wait:true,timeout:20})
+    await navigate(${JSON.stringify(url)},{timeout:20})
     await cdp('Emulation.setDeviceMetricsOverride',{width:1440,height:900,mobile:false,deviceScaleFactor:1})
-    await gotoAndWait(${JSON.stringify(url)},{timeout:20,settle:1})
+    await navigate(${JSON.stringify(url)},{timeout:20,settle:1})
     for(let i=0;i<100;i++){if(await js(${JSON.stringify('document.querySelector(\'button[aria-label="Move right"]\')?.disabled === false')}))break;await wait(.1)}
     const key=type=>cdp('Input.dispatchKeyEvent',{type,key:'ArrowRight',code:'ArrowRight',windowsVirtualKeyCode:39})
     const frames=[]

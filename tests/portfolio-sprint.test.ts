@@ -5,15 +5,14 @@ const url = process.env.PORTFOLIO_TEST_URL ?? 'http://127.0.0.1:3000/';
 
 test('real Shift input runs faster, crosses explicitly opened doors and leaves both lighthouse texts readable', async () => {
   const result = await runBrowser<{ times: number[]; changes: Array<{ label: string; locked: boolean; canvases: number }>; layouts: Array<{ width: number; intro: boolean; note: boolean; overlap: boolean; inFrame: boolean; clearTower: boolean }>; returnIntro: boolean; returnNote: boolean; returnSwitch: boolean }>(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab(${JSON.stringify(url)},{wait:true,timeout:20})
+    await navigate(${JSON.stringify(url)},{timeout:20})
     const key=(type,code,modifiers=0)=>cdp('Input.dispatchKeyEvent',{type,code,key:code==='ShiftLeft'?'Shift':code,modifiers,windowsVirtualKeyCode:code==='ShiftLeft'?16:code==='ArrowLeft'?37:39})
     const release=async()=>{await key('keyUp','ArrowRight');await key('keyUp','ArrowLeft');await key('keyUp','ShiftLeft')}
     const times=[],layouts=[],changes=[]
     try {
       await cdp('Emulation.setDeviceMetricsOverride',{width:1440,height:900,mobile:false,deviceScaleFactor:1})
       for(const sprint of [false,true]) {
-        await gotoAndWait(${JSON.stringify(url)},{timeout:20,settle:1})
+        await navigate(${JSON.stringify(url)},{timeout:20,settle:1})
         for(let i=0;i<100;i++){if(await js('document.querySelector(".direction-button")?.disabled===false'))break;await wait(.1)}
         if(await js('!!document.querySelector(".avatar-switch")'))throw Error('Appearance switch leaked before the endpoint')
         if(sprint)await key('keyDown','ShiftLeft',8)

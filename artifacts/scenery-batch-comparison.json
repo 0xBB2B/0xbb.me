@@ -1,0 +1,78 @@
+{
+  "capturedAt": "2026-09-10T03:25:34.545Z",
+  "mode": "same renderer, same geometry/colors/lights/camera, only static batching differs",
+  "results": [
+    {
+      "width": 1440,
+      "height": 900,
+      "x": -8,
+      "changedFraction": 0.00005401234567901235,
+      "callsBefore": 729,
+      "callsAfter": 190
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "x": 30,
+      "changedFraction": 0.000037037037037037037,
+      "callsBefore": 316,
+      "callsAfter": 182
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "x": 65,
+      "changedFraction": 0,
+      "callsBefore": 237,
+      "callsAfter": 104
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "x": -8,
+      "changedFraction": 0.00001822821728034998,
+      "callsBefore": 250,
+      "callsAfter": 25
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "x": 30,
+      "changedFraction": 0.00012455948474905822,
+      "callsBefore": 141,
+      "callsAfter": 76
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "x": 65,
+      "changedFraction": 0,
+      "callsBefore": 87,
+      "callsAfter": 36
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "x": -8,
+      "changedFraction": 0.0001519018106695832,
+      "callsBefore": 675,
+      "callsAfter": 189
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "x": 30,
+      "changedFraction": 0.00007291286912139993,
+      "callsBefore": 312,
+      "callsAfter": 182
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "x": 65,
+      "changedFraction": 0,
+      "callsBefore": 200,
+      "callsAfter": 77
+    }
+  ]
+}

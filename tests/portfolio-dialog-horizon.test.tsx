@@ -14,10 +14,9 @@ const url = process.env.PORTFOLIO_TEST_URL ?? 'http://127.0.0.1:3000/';
 
 test('language controls exist only on the homepage, never while a reading panel is open, in three viewports', async () => {
   const frames = await runBrowser<Array<{ kind: string; languageButtons: number; text: string; overflow: number }>>(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab(${JSON.stringify(url)},{wait:true,timeout:20})
+    await navigate(${JSON.stringify(url)},{timeout:20})
     await cdp('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false})
-    await gotoAndWait(${JSON.stringify(url)},{timeout:20,settle:1})
+    await navigate(${JSON.stringify(url)},{timeout:20,settle:1})
     const key=type=>cdp('Input.dispatchKeyEvent',{type,key:'ArrowRight',code:'ArrowRight',windowsVirtualKeyCode:39})
     const frames=[]
     const inspect=async kind=>{

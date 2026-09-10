@@ -28,14 +28,13 @@ beforeAll(async () => {
   expect(response.status, 'Public homepage responds before behavior assertions').toBe(200);
   expect(response.headers.get('content-type')).toContain('text/html');
   pages = await runBrowser<Observation[]>(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab(${JSON.stringify(url)}, { wait: true, timeout: 20 })
+    await navigate(${JSON.stringify(url)}, { timeout: 20 })
     const pages = []
     try {
       for (const viewport of ${JSON.stringify(viewports)}) {
         await cdp('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1 })
         await cdp('Emulation.setTouchEmulationEnabled', { enabled: viewport.mobile })
-        await gotoAndWait(${JSON.stringify(url)}, { timeout: 20, settle: 1 })
+        await navigate(${JSON.stringify(url)}, { timeout: 20, settle: 1 })
         pages.push(await js(${JSON.stringify(`(() => {
           const visible = (element) => {
             const rect = element.getBoundingClientRect();
@@ -73,7 +72,7 @@ beforeAll(async () => {
 }, 90_000);
 
 // These are entry prerequisites, NOT substitutes for visual/gameplay acceptance.
-// Once they pass, Green still requires real ego-browser screenshots/recording:
+// Once they pass, Green still requires real browser screenshots/recording:
 // player/AC-1: silver ponytail, blue eyes, black/white outfit, both legs/feet,
 // transparent silhouette; compare the read-only profile reference.
 // player/AC-2/3: at mid-road hold/release A,D,ArrowLeft,ArrowRight; observe

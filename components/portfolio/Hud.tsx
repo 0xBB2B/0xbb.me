@@ -11,6 +11,7 @@ import { BoardDetails } from './BoardDetails';
 import { Boards } from './Boards';
 import { Dialogue } from './Dialogue';
 import { Overview } from './Overview';
+import { NpcReaction } from './NpcReaction';
 
 export type GraphicsState = 'loading' | 'ready' | 'unavailable';
 
@@ -26,6 +27,7 @@ export function Hud({ session, input, graphics }: {
   const scene = JOURNEY.find(item => item.id === session.scene)!;
   const ending = graphics === 'ready' && session.atLighthouse;
   const changingAppearance = !!session.appearanceTransition;
+  const npcReacting = !!session.npcReaction;
   const appearanceLabel = { black: text.appearanceBlack, dress: text.appearanceDress }[session.appearance];
   const sceneText = SCENE_COPY[session.scene][language];
   const nearbyBoard = session.nearbyBoard ? boardById(session.nearbyBoard) : null;
@@ -46,7 +48,7 @@ export function Hud({ session, input, graphics }: {
     };
   }, [session, input]);
   useEffect(() => { document.documentElement.lang = isEnglish ? 'en' : 'zh-CN'; }, [isEnglish]);
-  useEffect(() => { input.pause(graphics !== 'ready' || !!session.reader || !!session.openingDoor || changingAppearance); }, [graphics, session.reader, session.openingDoor, changingAppearance, input]);
+  useEffect(() => { input.pause(graphics !== 'ready' || !!session.reader || !!session.openingDoor || changingAppearance || npcReacting); }, [graphics, session.reader, session.openingDoor, changingAppearance, npcReacting, input]);
 
   const toggleLanguage = () => setLanguage(session, isEnglish ? 'zh' : 'en');
   const showOverview = () => {
@@ -71,7 +73,7 @@ export function Hud({ session, input, graphics }: {
           <button className="language-button" aria-label={isEnglish ? 'Language' : '语言'} onClick={toggleLanguage}>
             <span aria-hidden="true">◎</span> {isEnglish ? 'EN / 中' : '中 / EN'}
           </button>
-          <button className="overview-button" aria-label={text.overview} disabled={!!session.openingDoor || changingAppearance} onClick={showOverview}>
+          <button className="overview-button" aria-label={text.overview} disabled={!!session.openingDoor || changingAppearance || npcReacting} onClick={showOverview}>
             {text.overview} <span aria-hidden="true">↗</span>
           </button>
         </>}
@@ -96,7 +98,7 @@ export function Hud({ session, input, graphics }: {
       onClick={() => { if (openNearbyDoor(session)) input.pause(true); }}>
       <kbd>E</kbd> {session.openingDoor ? text.openingDoor : session.scene === 'workshop' ? text.exitRoom : text.enterRoom}
     </button>}
-    {graphics === 'ready' && session.nearbyNpc && !session.reader && !session.openingDoor && <button className="talk-prompt" data-interaction-id={session.nearbyNpc} onClick={() => {
+    {graphics === 'ready' && session.nearbyNpc && !session.reader && !session.openingDoor && !npcReacting && <button className="talk-prompt" data-interaction-id={session.nearbyNpc} onClick={() => {
       if (openDialogue(session)) input.pause(true);
     }} aria-label={text.talk}><kbd>E</kbd> {text.talk}</button>}
     {graphics === 'ready' && nearbyBoard && !session.reader && !session.nearbyDoor && !session.openingDoor && <button className={`talk-prompt board-prompt ${nearbyBoard.kind === 'project' ? 'star-prompt' : ''}`}
@@ -106,6 +108,7 @@ export function Hud({ session, input, graphics }: {
       {nearbyBoard.kind === 'project' && <strong>{nearbyBoard.title[language]}</strong>}
       <span><kbd>E</kbd> {text.view}</span>
     </button>}
+    {graphics === 'ready' && session.npcReaction && <NpcReaction elapsed={session.npcReaction.elapsed} language={language} />}
     {ending && !session.reader && <button className="avatar-switch"
       aria-label={text.changeCharacter} aria-description={appearanceLabel} disabled={changingAppearance}
       onClick={() => { if (cycleAppearance(session)) input.pause(true); }}>
@@ -114,7 +117,7 @@ export function Hud({ session, input, graphics }: {
     <footer className="town-footer">
       <div className="movement-controls" aria-label={isEnglish ? 'Walking controls' : '行走控制'}>
         {([-1, 1] as const).map(direction => <button key={direction} className="direction-button"
-          disabled={graphics !== 'ready' || changingAppearance} aria-label={direction === -1 ? text.left : text.right}
+          disabled={graphics !== 'ready' || changingAppearance || npcReacting} aria-label={direction === -1 ? text.left : text.right}
           onPointerDown={event => {
             if (event.button !== 0) return;
             event.preventDefault();

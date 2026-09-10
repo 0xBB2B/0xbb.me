@@ -5,8 +5,7 @@ const url = process.env.PORTFOLIO_TEST_URL ?? 'http://127.0.0.1:3000/';
 
 test('keyboard and touch open both room doors, reveal terminals, read bilingually and return on the same canvas', async () => {
   const results = await runBrowser<Array<{ viewport: string; opened: string[]; blocked: boolean; beforeHidden: boolean; openEntranceHidden: boolean; revealed: boolean; clearedInput: boolean; read: boolean; returned: boolean; sameCanvas: boolean }>>(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab(${JSON.stringify(url)},{wait:true,timeout:20})
+    await navigate(${JSON.stringify(url)},{timeout:20})
     const results=[]
     const sample=()=>js(${JSON.stringify(`(() => {
       const panel=document.querySelector('.world-board[data-board-id="ai-agent"]');
@@ -20,7 +19,7 @@ test('keyboard and touch open both room doors, reveal terminals, read bilinguall
     const canvas=async()=>{const d=await cdp('DOM.getDocument',{depth:0}),q=await cdp('DOM.querySelector',{nodeId:d.root.nodeId,selector:'canvas'});return(await cdp('DOM.describeNode',{nodeId:q.nodeId})).node.backendNodeId}
     for(const [width,height,mobile] of [[1440,900,false],[390,844,true],[844,390,true]]){
       await cdp('Emulation.setDeviceMetricsOverride',{width,height,mobile,deviceScaleFactor:1});await cdp('Emulation.setTouchEmulationEnabled',{enabled:mobile})
-      await gotoAndWait(${JSON.stringify(url)},{timeout:20,settle:1})
+      await navigate(${JSON.stringify(url)},{timeout:20,settle:1})
       const firstCanvas=await canvas();let held=false
       const key=(type,side)=>cdp('Input.dispatchKeyEvent',{type,key:side==='right'?'ArrowRight':'ArrowLeft',code:side==='right'?'ArrowRight':'ArrowLeft',windowsVirtualKeyCode:side==='right'?39:37})
       const release=async side=>{if(!held)return;if(mobile)await cdp('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});else await key('keyUp',side);held=false}

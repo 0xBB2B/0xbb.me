@@ -100,10 +100,9 @@ const url = process.env.PORTFOLIO_TEST_URL ?? 'http://127.0.0.1:3000/';
 
 test('all five skill descriptions are readable on the cabinet glass, not separate floating cards, in three viewports', async () => {
   const screens = await runBrowser<Array<{ id: string; viewport: string; title: string; copy: string; readable: boolean; transparent: boolean; noCard: boolean }>>(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab(${JSON.stringify(url)}, {wait:true,timeout:20})
+    await navigate(${JSON.stringify(url)}, {timeout:20})
     await cdp('Emulation.setDeviceMetricsOverride',{width:1440,height:900,mobile:false,deviceScaleFactor:1})
-    await gotoAndWait(${JSON.stringify(url)},{timeout:20,settle:1})
+    await navigate(${JSON.stringify(url)},{timeout:20,settle:1})
     const key=type=>cdp('Input.dispatchKeyEvent',{type,key:'ArrowRight',code:'ArrowRight',windowsVirtualKeyCode:39})
     const screens=[]
     try {
@@ -146,10 +145,9 @@ test('all five skill descriptions are readable on the cabinet glass, not separat
 
 test('real NPC, skill and project prompts stay beside their targets instead of a fixed screen region', async () => {
   const results = await runBrowser<Array<{ kind: string; anchor: string; targetOffset: number; movement: number; inViewport: boolean }>>(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab(${JSON.stringify(url)}, {wait:true,timeout:20})
+    await navigate(${JSON.stringify(url)}, {timeout:20})
     await cdp('Emulation.setDeviceMetricsOverride',{width:1440,height:900,mobile:false,deviceScaleFactor:1})
-    await gotoAndWait(${JSON.stringify(url)},{timeout:20,settle:1})
+    await navigate(${JSON.stringify(url)},{timeout:20,settle:1})
     const key=(type,side='right')=>cdp('Input.dispatchKeyEvent',{type,key:side==='right'?'ArrowRight':'ArrowLeft',code:side==='right'?'ArrowRight':'ArrowLeft',windowsVirtualKeyCode:side==='right'?39:37})
     const sample=()=>js(${JSON.stringify(`(() => {
       const button=document.querySelector('.talk-prompt');

@@ -5,9 +5,8 @@ const url = process.env.PORTFOLIO_TEST_URL ?? 'http://127.0.0.1:3000/';
 
 test('overview skills use at most three columns, with two on tablets and one on narrow phones', async () => {
   const results = await runBrowser<Array<{ width: number; expected: number; columns: number; count: number; overflow: boolean; brand: string; canvas: string }>>(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab(${JSON.stringify(url)}, {wait:true,timeout:20})
-    await gotoAndWait(${JSON.stringify(url)}, {timeout:20,settle:1})
+    await navigate(${JSON.stringify(url)}, {timeout:20})
+    await navigate(${JSON.stringify(url)}, {timeout:20,settle:1})
     for(let i=0;i<100;i++){if(await js('!!document.querySelector("canvas")'))break;await wait(.1)}
     const results=[]
     try {

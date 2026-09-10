@@ -1,4 +1,5 @@
 import type { Language } from '../data';
+import { NPC_REACTION_SECONDS, npcReactionFrame } from './npc-reaction';
 import {
   GREETER_X, INTERACTION_DISTANCE, ROAD, nearbyBoardAt, nearbyNpcAt, sceneAt,
   ROOM_DOORS, DOOR_CLEARANCE, DOOR_OPEN_SECONDS,
@@ -23,6 +24,8 @@ export function createSession() {
     sprintBlend: 0,
     appearance: 'black' as PlayerAppearance,
     appearanceTransition: null as { target: PlayerAppearance; elapsed: number } | null,
+    outfitComplimentSeen: false,
+    npcReaction: null as { elapsed: number } | null,
     paused: false,
     language: 'en' as Language,
     reader: null as Reader,
@@ -57,7 +60,7 @@ export function setLanguage(session: Session, language: Language) {
 }
 
 export function cycleAppearance(session: Session) {
-  if (!session.atLighthouse || session.reader || session.openingDoor || session.appearanceTransition) return false;
+  if (!session.atLighthouse || session.reader || session.openingDoor || session.appearanceTransition || session.npcReaction) return false;
   const target = PLAYER_APPEARANCES[(PLAYER_APPEARANCES.indexOf(session.appearance) + 1) % PLAYER_APPEARANCES.length];
   session.appearanceTransition = { target, elapsed: 0 };
   session.walking = false;
@@ -68,7 +71,7 @@ export function cycleAppearance(session: Session) {
 }
 
 export function openOverview(session: Session) {
-  if (session.reader || session.openingDoor || session.appearanceTransition) return false;
+  if (session.reader || session.openingDoor || session.appearanceTransition || session.npcReaction) return false;
   session.reader = 'overview';
   session.paused = true;
   notify(session);
@@ -76,7 +79,17 @@ export function openOverview(session: Session) {
 }
 
 export function openDialogue(session: Session) {
-  if (session.reader || session.openingDoor || session.appearanceTransition || !session.nearbyNpc) return false;
+  if (session.reader || session.openingDoor || session.appearanceTransition || session.npcReaction || !session.nearbyNpc) return false;
+  if (session.nearbyNpc === 'greeter' && session.appearance === 'dress' && !session.outfitComplimentSeen) {
+    session.outfitComplimentSeen = true;
+    session.npcReaction = { elapsed: 0 };
+    session.paused = true;
+    session.walking = false;
+    session.stride = 0;
+    session.sprintBlend = 0;
+    notify(session);
+    return true;
+  }
   session.reader = 'dialogue';
   session.dialogueNpc = session.nearbyNpc;
   session.dialoguePage = 0;
@@ -86,7 +99,7 @@ export function openDialogue(session: Session) {
 }
 
 export function openBoard(session: Session) {
-  if (session.reader || session.openingDoor || session.appearanceTransition || !session.nearbyBoard) return false;
+  if (session.reader || session.openingDoor || session.appearanceTransition || session.npcReaction || !session.nearbyBoard) return false;
   session.reader = 'board';
   session.boardId = session.nearbyBoard;
   session.paused = true;
@@ -95,13 +108,21 @@ export function openBoard(session: Session) {
 }
 
 export function openNearbyDoor(session: Session) {
-  if (session.reader || session.openingDoor || session.appearanceTransition) return false;
+  if (session.reader || session.openingDoor || session.appearanceTransition || session.npcReaction) return false;
   const door = ROOM_DOORS.find(door => session.doors[door.id] < 1 && Math.abs(session.x - door.x) <= INTERACTION_DISTANCE);
   if (!door) return false;
   session.openingDoor = door.id;
   session.walking = false;
   notify(session);
   return true;
+}
+
+export function cancelNpcReaction(session: Session) {
+  if (!session.npcReaction) return;
+  session.npcReaction = null;
+  session.paused = !!session.reader;
+  session.walking = false;
+  notify(session);
 }
 
 export function cancelAppearanceChange(session: Session) {
@@ -149,9 +170,15 @@ export function updateProximity(session: Session) {
   notify(session);
 }
 
-export function advance(session: Session, direction: Direction, seconds: number, sprinting = false) {
+export function advance(session: Session, direction: Direction, seconds: number, sprinting = false, elapsedSeconds = seconds) {
   const previous = session.x;
-  if (session.appearanceTransition) {
+  if (session.npcReaction) {
+    const reaction = session.npcReaction;
+    const frame = npcReactionFrame(reaction.elapsed);
+    reaction.elapsed += elapsedSeconds;
+    if (reaction.elapsed >= NPC_REACTION_SECONDS) cancelNpcReaction(session);
+    else if (npcReactionFrame(reaction.elapsed) !== frame) notify(session);
+  } else if (session.appearanceTransition) {
     const transition = session.appearanceTransition;
     transition.elapsed += seconds;
     if (transition.elapsed >= APPEARANCE_CHANGE_SECONDS / 2 && session.appearance !== transition.target) {

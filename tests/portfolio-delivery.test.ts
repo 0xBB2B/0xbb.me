@@ -59,8 +59,7 @@ beforeAll(async () => {
   }
 
   result = await runBrowser<Result>(`
-    const task = await useOrCreateTaskSpace('hd2d-portfolio-static-delivery')
-    await openOrReuseTab(${JSON.stringify(url)}, { wait: true, timeout: 20 })
+    await navigate(${JSON.stringify(url)}, { timeout: 20 })
     await cdp('Network.enable')
     await cdp('Network.setCacheDisabled', { cacheDisabled: true })
     await cdp('Fetch.enable', { patterns: [{ urlPattern: '*WorldViewport*', requestStage: 'Request' }] })
@@ -123,7 +122,7 @@ beforeAll(async () => {
       await click(button); await wait(0.2)
     }
     const navigateAndPause = async suffix => {
-      await gotoUrl(${JSON.stringify(url)} + suffix)
+      await cdp('Page.navigate', { url: ${JSON.stringify(url)} + suffix })
       const event = await paused()
       return event
     }
@@ -186,7 +185,7 @@ beforeAll(async () => {
           };
         }
       \` })
-      await gotoAndWait(${JSON.stringify(url)} + '?webgl-failure', { timeout: 20, settle: 1 })
+      await navigate(${JSON.stringify(url)} + '?webgl-failure', { timeout: 20, settle: 1 })
       const webglFailure = await read()
 
       const contextFaults = []
@@ -232,7 +231,7 @@ beforeAll(async () => {
         await cdp('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1 })
         await cdp('Emulation.setTouchEmulationEnabled', { enabled: viewport.mobile })
         for (const openedReader of ['dialogue', 'overview']) {
-          await gotoAndWait(${JSON.stringify(url)} + '?real-context-loss=' + openedReader + '-' + viewport.width, { timeout: 20, settle: 1 })
+          await navigate(${JSON.stringify(url)} + '?real-context-loss=' + openedReader + '-' + viewport.width, { timeout: 20, settle: 1 })
           const pageBeforeLoss = await openReader(openedReader)
           const extension = await loseRealContext()
           await wait(0.6)
@@ -245,14 +244,13 @@ beforeAll(async () => {
       const contextFailure = contextFaults[0].en
       await cdp('Emulation.setTouchEmulationEnabled', { enabled: false })
       await cdp('Emulation.clearDeviceMetricsOverride')
-      await gotoAndWait(${JSON.stringify(url)} + '?recovered', { timeout: 20, settle: 1 })
+      await navigate(${JSON.stringify(url)} + '?recovered', { timeout: 20, settle: 1 })
       const recovered = await read()
       const requests = (await cdp('Performance.getMetrics').catch(() => ({ metrics: [] })), await js('performance.getEntriesByType("resource").map(entry => entry.name)'))
       cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ loading, loaded, moduleFailure, moduleFailureZh, webglFailure, contextFailure, contextFaults, recovered, resized, requests }))
     } finally {
       await cdp('Fetch.disable').catch(() => {})
       await cdp('Network.setCacheDisabled', { cacheDisabled: false })
-      await completeTaskSpace(task.id, { keep: false })
     }
   `);
 }, 90_000);

@@ -60,8 +60,7 @@ beforeAll(async () => {
   expect(response.status, 'HTTP prerequisite, not the character behavior assertion').toBe(200);
   expect(response.headers.get('content-type')).toContain('text/html');
   result = await runBrowser(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab(${JSON.stringify(url)}, { wait: true, timeout: 20 })
+    await navigate(${JSON.stringify(url)}, { timeout: 20 })
     await cdp('Network.enable')
     await cdp('Network.setCacheDisabled', { cacheDisabled: true })
     await cdp('Runtime.enable')
@@ -118,7 +117,7 @@ beforeAll(async () => {
         await cdp('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1 })
         await cdp('Emulation.setTouchEmulationEnabled', { enabled: viewport.mobile })
         await drainEvents()
-        await gotoAndWait(${JSON.stringify(url)}, { timeout: 20, settle: 1 })
+        await navigate(${JSON.stringify(url)}, { timeout: 20, settle: 1 })
         const initial = await frame()
         await move(initial, 'right', viewport.mobile, 1.2)
         const moved = await frame()
@@ -133,7 +132,7 @@ beforeAll(async () => {
         await wait(2)
         const repeated = await frame()
         const normalTraffic = await traffic()
-        await gotoAndWait(${JSON.stringify(url)}, { timeout: 20, settle: 1 })
+        await navigate(${JSON.stringify(url)}, { timeout: 20, settle: 1 })
         const refreshed = await frame()
         normalTraffic.errors.push(...(await traffic()).errors)
         journeys.push({ initial, moved, panel, closed, continued, repeated, refreshed, traffic: normalTraffic })

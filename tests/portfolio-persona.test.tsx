@@ -21,9 +21,8 @@ test('the confirmed persona artwork is part of the open overview only, with intr
 
 test('persona loading, desktop/mobile placement and image-failure fallback keep all profile reading usable', async () => {
   const result = await runBrowser<{ beforePortraitRequests: number; layouts: Array<{ width: number; imageWidth: number; imageHeight: number; naturalWidth: number; naturalHeight: number; placement: boolean; overflow: number; controls: boolean }>; fallback: boolean; text: string; links: string[] }>(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab(${JSON.stringify(url)},{wait:true,timeout:20})
-    await gotoAndWait(${JSON.stringify(url)},{timeout:20,settle:1})
+    await navigate(${JSON.stringify(url)},{timeout:20})
+    await navigate(${JSON.stringify(url)},{timeout:20,settle:1})
     const beforePortraitRequests=await js('performance.getEntriesByType("resource").filter(e=>e.name.includes("profile-full.png")).length')
     const layouts=[]
     try {
@@ -48,7 +47,7 @@ test('persona loading, desktop/mobile placement and image-failure fallback keep 
       }
       await cdp('Network.enable');await cdp('Network.setCacheDisabled',{cacheDisabled:true})
       await cdp('Network.setBlockedURLs',{urls:['*profile-full.png*']})
-      await gotoAndWait(${JSON.stringify(url)},{timeout:20,settle:1})
+      await navigate(${JSON.stringify(url)},{timeout:20,settle:1})
       await click('button[aria-label="Quick overview"]')
       let fallback=false
       for(let i=0;i<60;i++){fallback=await js('!!document.querySelector(".portrait-unavailable")');if(fallback)break;await wait(.1)}

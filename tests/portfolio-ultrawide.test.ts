@@ -5,10 +5,9 @@ const url = process.env.PORTFOLIO_TEST_URL ?? 'http://127.0.0.1:3000/';
 
 test('ultrawide screens keep a centered bounded world and reachable door prompts without exposing unlimited scenery', async () => {
   const frames = await runBrowser<Array<{ width: number; height: number; worldWidth: number; left: number; overflow: number; usable: boolean; door: boolean }>>(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab(${JSON.stringify(url)},{wait:true,timeout:20})
+    await navigate(${JSON.stringify(url)},{timeout:20})
     await cdp('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false})
-    await gotoAndWait(${JSON.stringify(url)},{timeout:20,settle:1})
+    await navigate(${JSON.stringify(url)},{timeout:20,settle:1})
     let ready=false
     for(let i=0;i<100;i++){if(await js(${JSON.stringify('document.querySelector(\'button[aria-label="Move right"]\')?.disabled === false')})){ready=true;break}await wait(.1)}
     if(!ready)throw Error('Graphics preparation did not finish')

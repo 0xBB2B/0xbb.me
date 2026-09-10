@@ -124,8 +124,7 @@ beforeAll(async () => {
   const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
   expect(response.status, 'Public homepage prerequisite').toBe(200);
   const result = await runBrowser<{ journeys: Journey[]; modelPreviewText: string }>(`
-    await useOrCreateTaskSpace('hd2d-portfolio')
-    await openOrReuseTab(${JSON.stringify(url)}, { wait: true, timeout: 20 })
+    await navigate(${JSON.stringify(url)}, { timeout: 20 })
     const observe = async () => {
       const frame = await js(${JSON.stringify(observe)})
       await js(String.raw\`(() => { for (const element of document.querySelectorAll('.town-header,.town-intro,.town-footer,.talk-prompt,dialog')) { element.dataset.captureVisibility = element.style.visibility; element.style.visibility = 'hidden'; } })()\`)
@@ -192,7 +191,7 @@ beforeAll(async () => {
       for (const viewport of ${JSON.stringify(viewports)}) {
         await cdp('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1 })
         await cdp('Emulation.setTouchEmulationEnabled', { enabled: viewport.mobile })
-        await gotoAndWait(${JSON.stringify(url)}, { timeout: 20, settle: 0.5 })
+        await navigate(${JSON.stringify(url)}, { timeout: 20, settle: 0.5 })
         const initial = await observe()
 
         await activate(control(initial, /^(Quick overview|资料速览)$/i))
@@ -268,14 +267,14 @@ beforeAll(async () => {
         const far = await observe()
         await key('keyDown', 'e', 'KeyE', 69); await key('keyUp', 'e', 'KeyE', 69); await wait(0.25)
         const ignored = await observe()
-        await gotoAndWait(${JSON.stringify(url)}, { timeout: 20, settle: 0.5 })
+        await navigate(${JSON.stringify(url)}, { timeout: 20, settle: 0.5 })
         const refreshed = await observe()
         // Preserve a direct canvas comparison made before and after held input.
         paused.canvasBefore = canvasBefore
         journeys.push({ initial, overviewEn, overviewZh, near, first, second, translatedSecond, third,
           paused, closedAfterHeldInput, freshMovement, rereadReady, rereadActivated, reread, escaped, far, ignored, refreshed })
       }
-      await gotoAndWait('http://127.0.0.1:3000/design-reference/character-comparison.html', { timeout: 20, settle: 1 })
+      await navigate('http://127.0.0.1:3000/design-reference/character-comparison.html', { timeout: 20, settle: 1 })
       const modelPreviewText = await js('document.body.innerText')
       cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ journeys, modelPreviewText }))
     } finally {

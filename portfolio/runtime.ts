@@ -7,6 +7,7 @@ import type { TownInput } from './input';
 import { BOARDS, JOURNEY, ROAD, ROOM_DOORS } from './journey';
 import { advance, createSession, type Session } from './state';
 import { createWorld } from './world';
+import { batchStaticScenery } from './static-batches';
 
 export function mountWorld(
   container: HTMLElement,
@@ -100,6 +101,7 @@ export function mountWorld(
     const notePoint = new THREE.Vector3();
     const towerBounds = new THREE.Box3().setFromObject(scene.getObjectByName('Coastal_lighthouse')!);
     const towerPoint = new THREE.Vector3();
+    batchStaticScenery(scene);
     const projectLighthouseNote = () => {
       const note = container.parentElement!.querySelector<HTMLElement>('.lighthouse-note');
       if (!note) return;
@@ -132,7 +134,9 @@ export function mountWorld(
       promptPoint.copy(target.point).project(camera);
       const halfWidth = prompt.offsetWidth / 2;
       const x = (promptPoint.x + 1) * container.clientWidth / 2;
-      prompt.style.left = `${THREE.MathUtils.clamp(x, halfWidth + 8, container.clientWidth - halfWidth - 8)}px`;
+      const center = THREE.MathUtils.clamp(x, halfWidth + 8, container.clientWidth - halfWidth - 8);
+      prompt.style.left = `${center}px`;
+      if (prompt.classList.contains('npc-reaction')) prompt.style.setProperty('--reaction-tail-x', `${x - center + halfWidth}px`);
       prompt.style.top = `${(1 - promptPoint.y) * container.clientHeight / 2 + (target.below ? 12 : -12)}px`;
       prompt.style.transform = `translate(-50%, ${target.below ? '0' : '-100%'})`;
       prompt.style.visibility = 'visible';
@@ -179,9 +183,10 @@ export function mountWorld(
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const render = (now: number) => {
       if (disposed) return;
-      const seconds = Math.min((now - previous) / 1000, 0.05);
+      const elapsedSeconds = Math.max(0, (now - previous) / 1000);
+      const seconds = Math.min(elapsedSeconds, 0.05);
       previous = now;
-      advance(session, input.direction(), seconds, input.sprinting());
+      advance(session, input.direction(), seconds, input.sprinting(), elapsedSeconds);
       if (!session.paused) cameraX += (session.x - cameraX) * (1 - Math.exp(-seconds * 7));
       camera.position.set(cameraX, targetHeight + 5, 20);
       camera.lookAt(cameraX, targetHeight, 0);
