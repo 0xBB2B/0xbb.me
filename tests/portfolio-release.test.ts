@@ -14,7 +14,10 @@ test('release documentation describes the actual MC-2D journey, controls, outfit
 
 test('production artifacts contain only the selected entry and no reference pages, game or browser test hooks', () => {
   expect(existsSync(path.join(root, 'dist/index.html'))).toBe(true);
-  for (const item of ['game', 'design-reference', 'tests', 'music.ogg', 'profile.png', 'profile.jpg']) expect(existsSync(path.join(root, 'dist', item))).toBe(false);
+  for (const item of ['game', 'design-reference', 'tests', 'music.ogg']) expect(existsSync(path.join(root, 'dist', item))).toBe(false);
+  for (const image of ['profile-full.png', 'profile.png', 'profile.jpg']) {
+    expect(readFileSync(path.join(root, 'dist', image)).equals(readFileSync(path.join(root, 'public', image)))).toBe(true);
+  }
   const sources = readdirSync(path.join(root, 'dist/assets')).filter(name => name.endsWith('.js')).map(name => read(`dist/assets/${name}`)).join('\n');
   expect(sources).toContain('MC-2D');
   expect(sources).toContain('Switch outfit');

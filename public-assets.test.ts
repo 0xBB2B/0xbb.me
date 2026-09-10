@@ -4,8 +4,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 
 const root = path.dirname(new URL(import.meta.url).pathname);
-// Preserve exact user-provided source files; only profile-full.png can enter the published build.
-// Pin bytes instead of deleting user files or accepting arbitrary bitmap assets.
+// Published portrait assets are identified by exact path and SHA-256.
 const userPortraits: Record<string, string> = {
   'profile-full.png': '93112c75b439d72949250c21da06d5a6ff86be5e7211ed1ee09eb17575747a8f',
   'profile.png': '3bbaa161ddf6141706341ab661ba3da59230e8a87b932e1eefdd6f2bd132e2d8',
@@ -31,7 +30,7 @@ function expectNoConcealedBitmap(filename: string) {
   const bytes = readFileSync(filename);
   const basename = path.basename(filename);
   if (userPortraits[basename] && (path.dirname(filename) === path.join(root, 'public')
-    || (path.dirname(filename) === path.join(root, 'dist') && basename === 'profile-full.png'))) {
+    || path.dirname(filename) === path.join(root, 'dist'))) {
     expect(createHash('sha256').update(bytes).digest('hex')).toBe(userPortraits[basename]);
     return;
   }
@@ -45,13 +44,17 @@ function expectNoConcealedBitmap(filename: string) {
   }
 }
 
-describe('site-entry/AC-5/AC-6: only the user portrait is referenced outside vector/geometry graphics', () => {
-  test('unapproved cyber portrait is absent and the selected full portrait is present', () => {
+describe('site-entry/AC-5/AC-6: published portraits and geometry-only world graphics', () => {
+  test('the explicit portrait files are published unchanged and unapproved artwork is absent', () => {
     expect(existsSync(path.join(root, 'public', 'profile-cyber.png'))).toBe(false);
     expect(existsSync(path.join(root, 'public', 'profile-full.png'))).toBe(true);
     if (existsSync(path.join(root, 'dist'))) {
       expect(existsSync(path.join(root, 'dist', 'profile-full.png'))).toBe(true);
-      for (const file of ['profile.png', 'profile.jpg']) expect(existsSync(path.join(root, 'dist', file))).toBe(false);
+      for (const file of Object.keys(userPortraits)) {
+        expect(existsSync(path.join(root, 'public', file))).toBe(true);
+        expect(existsSync(path.join(root, 'dist', file))).toBe(true);
+        expect(readFileSync(path.join(root, 'dist', file)).equals(readFileSync(path.join(root, 'public', file)))).toBe(true);
+      }
       for (const file of ['robots.txt', 'site-card.svg', 'sitemap.xml']) {
         expect(readFileSync(path.join(root, 'dist', file)).equals(readFileSync(path.join(root, 'public', file)))).toBe(true);
       }

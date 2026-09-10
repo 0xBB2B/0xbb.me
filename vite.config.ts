@@ -13,7 +13,7 @@ export default defineConfig({
   plugins: [react(), htmlPlugin(), {
     name: 'portfolio-public-assets',
     generateBundle() {
-      for (const fileName of ['profile-full.png', 'robots.txt', 'site-card.svg', 'sitemap.xml', 'THIRD_PARTY_NOTICES.txt']) {
+      for (const fileName of ['profile-full.png', 'profile.png', 'profile.jpg', 'robots.txt', 'site-card.svg', 'sitemap.xml', 'THIRD_PARTY_NOTICES.txt']) {
         this.emitFile({ type: 'asset', fileName, source: readFileSync(path.resolve(__dirname, 'public', fileName)) });
       }
     },

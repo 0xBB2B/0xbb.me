@@ -32,6 +32,7 @@
 - [T-48 设计资源与图标检查](48-clean-design-and-favicon.md)
 - [T-50 代码与临时材料审计](50-residue-audit.md)
 - [T-51 现行文档与注释一致性](51-current-documentation.md)
+- [T-52 公开图片与静态构建确认](52-published-images.md)
 
 ## 执行规则
 - 每项任务明确文件范围、验收条件、验证命令和结果，任务说明不超过200行。

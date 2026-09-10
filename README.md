@@ -85,8 +85,9 @@ artifacts/                    进度与发布验收证据
 - React 19 + TypeScript + Three.js r184，Vite 6 单入口静态构建，不需要独立后端、账户或服务端存档。
 - 部署目录为 `dist/`，`base` 为 `./`。浏览器需支持 ES modules、WebGL2 和原生 `dialog`；没有 WebGL2 时仍提供资料阅读。
 - 三维人物、场景和特效由几何与程序化材质生成，不使用图片贴图；没有模型生成服务密钥或付费 API。
-- 唯一的位图例外是用户确认的 `public/profile-full.png`：仅打开资料速览后按需加载，保持原比例，失败不影响文字阅读；原图约 6.1 MiB。
-- 发布时明确输出 `profile-full.png`、`site-card.svg`、`robots.txt`、`sitemap.xml` 和 `THIRD_PARTY_NOTICES.txt`，不整体复制 `public/`。未选头像、设计参考、对比页面及验收截图不进入发布包。
+- 公开图片为 `profile-full.png`、`profile.png` 和 `profile.jpg`，原文件直接进入静态产物，可通过各自URL访问。资料速览仅按需加载`profile-full.png`，保持原比例，失败不影响文字阅读；该图约6.1 MiB。
+- 发布资源清单包含上述三张图片，以及`site-card.svg`、`robots.txt`、`sitemap.xml`和`THIRD_PARTY_NOTICES.txt`。设计输入、对比页面和验收截图不进入发布包。
+- 部署在域名根目录时，图片地址为`/profile.png`、`/profile.jpg`、`/profile-full.png`；部署在子目录时，在图片地址前加部署目录。
 - 标签页图标`favicon.svg`使用深蓝底、暖色灯光与青蓝海面的方块灯塔，纯SVG、无图片嵌入或闪烁动画。
 - 角色几何位于`portfolio/models/`，行为与资源检查位于`portfolio/`和`tests/`。
 - 页面字体使用本地/系统字体回退，不加载字体 CDN；React 和 Three.js 等代码打包为本地资源。
@@ -102,6 +103,8 @@ artifacts/                    进度与发布验收证据
 ## 部署
 
 [GitHub Actions](./.github/workflows/deploy.yml) 在推送 `main` 时执行冻结依赖安装、构建并将 `dist/` 发布到 GitHub Pages。其它静态托管也可使用同一目录；先验证目标地址的相对资源路径，再人工确认发布。
+
+Actions构建步骤只需安装依赖和执行`bun run build`，不需要运行开发服务器、浏览器测试或独立后端。该工作流仅由`main`分支推送触发；仓库的GitHub Pages来源需选择GitHub Actions。
 
 本地提交不等于已经推送或上线。
 
