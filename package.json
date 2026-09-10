@@ -1,5 +1,5 @@
 {
-  "name": "cyberdeck-portfolio",
+  "name": "mc2d-portfolio",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -9,7 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "motion": "^12.38.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "three": "^0.184.0"

@@ -1,0 +1,64 @@
+.profile-overview {
+  border: 1px solid #e5c393;
+  background: #f5ecd9;
+  color: #393630;
+  width: min(900px, calc(100% - 32px));
+  max-height: calc(100svh - 40px);
+  padding: 0;
+  box-shadow: 0 20px 100px #24273266;
+  margin: auto;
+  overflow: auto;
+}
+.profile-overview::backdrop { background: #24283488; backdrop-filter: blur(5px); }
+.overview-toolbar { position: sticky; top: 0; display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-bottom: 1px solid #574d3526; background: #f5ecd9; z-index: 1; }
+.overview-toolbar > span { margin-right: auto; }
+.overview-toolbar button { min-height: 42px; padding: 9px 15px; border: 1px solid #73594050; background: #e6dac1; font-size: 12px; }
+.overview-fault { margin: 18px 38px 0; padding: 10px 12px; border: 1px solid #9c5b4f66; background: #fff0d4; color: #6d3027; font-size: 12px; line-height: 1.45; }
+.overview-content { padding: 32px 38px 40px; }
+.overview-content h2 { margin: 8px 0; font: 36px Georgia, serif; overflow-wrap: anywhere; }
+.profile-dossier { display: grid; grid-template-columns: minmax(190px, .72fr) minmax(0, 1.28fr); gap: 30px; align-items: start; }
+.profile-portrait { margin: 0; padding: 7px; min-width: 0; border: 1px solid #8a94867a; background: #e2e5dc; box-shadow: 0 5px 18px #49524b14; }
+.profile-portrait img { display: block; width: 100%; height: auto; aspect-ratio: 1696 / 2528; object-fit: contain; }
+.profile-portrait figcaption { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 12px 3px 5px; color: #4e635f; font: 10px/1.3 monospace; letter-spacing: .06em; }
+.profile-portrait figcaption small { font: 10px/1.3 system-ui, sans-serif; letter-spacing: 0; }
+.profile-identity { min-width: 0; }
+.profile-identity > .eyebrow { margin-top: 0; }
+.profile-identity .profile-role { font-size: 14px; line-height: 1.7; }
+.portrait-unavailable { aspect-ratio: 1696 / 2528; display: flex; flex-direction: column; justify-content: center; padding: 20px; text-align: center; color: #5a716b; background: #dce3da; }
+.portrait-unavailable > span { font: italic 48px Georgia, serif; }
+.portrait-unavailable p { font-size: 12px; line-height: 1.8; }
+.profile-role { font-size: 15px; }
+.profile-bio { font-size: 13px; line-height: 1.9; white-space: pre-line; }
+.profile-location { margin-top: 7px; font: 11px "IBM Plex Mono", monospace; color: #756552; }
+.profile-directions { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 24px 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
+.overview-content h3 { font: 24px Georgia, "Songti SC", serif; margin: 28px 0 16px; }
+.skill-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; padding: 0; list-style: none; }
+.skill-list li { border: 1px solid #8b795a44; padding: 12px; }
+.skill-list h4 { margin: 0 0 7px; font-size: 13px; }
+.skill-list p { margin: 0; font-size: 12px; line-height: 1.75; color: #625948; white-space: pre-line; }
+.overview-projects article { padding: 18px 0; border-top: 1px solid #8b795a44; }
+.overview-projects h4 { font-weight: 600; font-size: 16px; margin: 0 0 7px; }
+.overview-projects h4 small { margin-left: 8px; color: #526d55; font: 10px "IBM Plex Mono", monospace; }
+.overview-projects p { font-size: 13px; line-height: 1.8; white-space: pre-line; }
+.overview-projects article > div, .social-links { display: flex; flex-wrap: wrap; gap: 18px; font-size: 12px; }
+.profile-overview a { text-underline-offset: 4px; }
+.profile-overview a:hover { color: #a26034; }
+@media (max-width: 760px) {
+  .skill-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .profile-dossier { grid-template-columns: 1fr; gap: 25px; }
+  .profile-portrait { width: min(210px, 100%); justify-self: center; }
+  .overview-toolbar { padding: 10px; gap: 6px; flex-wrap: wrap; }
+  .overview-toolbar > span { display: none; }
+  .overview-toolbar button { padding: 8px; font-size: 11px; }
+  .overview-fault { margin: 14px 20px 0; }
+  .overview-content { padding: 25px 20px; }
+  .overview-content h2 { font-size: 28px; }
+}
+@media (max-width: 480px) {
+  .skill-list { grid-template-columns: 1fr; }
+}
+@media (max-height: 500px) and (min-width: 601px) {
+  .profile-overview { max-height: calc(100svh - 20px); }
+}

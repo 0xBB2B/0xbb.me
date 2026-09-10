@@ -1,168 +1,116 @@
-<div align="center">
+# FUBUKI_BB · MC-2D 探索个人主页
 
-```
-███████╗██╗   ██╗██████╗ ██╗   ██╗██╗  ██╗██╗      ██████╗ ██████╗ ██████╗ ██████╗
-██╔════╝██║   ██║██╔══██╗██║   ██║██║ ██╔╝██║      ██╔══██╗██╔══██╗██╔══██╗██╔══██╗
-█████╗  ██║   ██║██████╔╝██║   ██║█████╔╝ ██║      ██████╔╝██████╔╝██████╔╝██████╔╝
-██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔═██╗ ██║      ██╔══██╗██╔══██╗ ██╔══╝ ██╔══██╗
-██║     ╚██████╔╝██████╔╝╚██████╔╝██║  ██╗██║      ██████╔╝██████╔╝ ██║    ██║  ██║
-╚═╝      ╚═════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝      ╚═════╝ ╚═════╝  ╚═╝    ╚═╝  ╚═╝
-                          // FUBUKI_BB · LV.999 PORTFOLIO
-```
+[0xbb.me](https://0xbb.me) 的个人主页源码。操控方块角色，从黄昏小镇出发，推门走进数据工厂，再沿星光和荧光海走到灯塔；也可以直接打开资料速览。
 
-### Tactical HUD 风格个人作品集 · 独立 3D 节奏光剑页
+## 体验与操作
 
-[**▶ 在线访问 0xbb.me**](https://0xbb.me)
+| 操作 | 方式 |
+| --- | --- |
+| 左右行走 | 按住 `A` / `D` 或 `←` / `→`，松开停止 |
+| 快跑 | 键盘方向键配合 `Shift`；摆臂与迈腿更大，身体轻微起伏 |
+| 跳跃（仅电脑） | 游戏画面中按 `Space` / 空格，可配合行走或快跑；落地后才能再次跳跃 |
+| 交谈、查看项目、开门 | 靠近后按 `E`，或点击对象旁的按钮 |
+| 关闭阅读 | 关闭按钮或 `Esc` |
+| 切换语言 | 在主页点击 `EN / 中`；阅读弹窗里不显示语言按钮 |
+| 触屏 | 长按屏幕左右按钮移动，点击交谈、查看或开门按钮 |
+| 切换服装 | 灯塔寄语出现时显示按钮，在默认黑装与 A 黑裙之间切换 |
 
-[![React](https://img.shields.io/badge/React-19.2-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
-[![three.js](https://img.shields.io/badge/three.js-r184-000000?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org)
-[![Bun](https://img.shields.io/badge/Bun-runtime-FBF0DF?style=for-the-badge&logo=bun&logoColor=black)](https://bun.sh)
-[![License: MIT](https://img.shields.io/badge/License-MIT-9b7bff?style=for-the-badge)](./LICENSE)
+- 三个连续场景：黄昏小镇 → 地下数据工厂 → 星夜海岸。门需要主动开启，关闭时不能穿过。
+- B 金发浅外套 NPC 讲述三页世界观；五台终端介绍实际技能，三颗项目星星通向项目详情。
+- 灯塔寄语在电脑/横屏位于塔右侧、竖屏位于左侧，章节标题不消失；返程后寄语和换装按钮一起收起。
+- 换装有局部光点动画，位置和语言不重置；阅读与换装期间暂停移动，恢复后需重新输入方向。
+- 空格跳跃适用于黑装和A服装，不提供触屏跳跃按钮；触屏模式不触发跳跃。按住空格不会自动连跳；移动起跳沿用当前迈步时的手脚前后顺序，平滑过渡到前后迈开双腿、反向摆臂的姿势；原地起跳采用固定的前后错步姿势。空中保持姿势，接近落地时收拢，不在空中循环走路/跑步动作。跳跃不能越过关闭的门或道路端点；阅读、开门、换装和彩蛋期间不能起跳。
+- **服装彩蛋**：穿着 A 黑裙首次主动和迎宾者交谈，先出现 1 秒感叹号，再打字显示“新服装真好看”；英文模式有对应文案。完整文字停留片刻后恢复交互，同一页面只触发一次，刷新后重置。
+- 支持减少动态偏好，保留可直接阅读的简介、五项技能、三个项目和四个联系入口。
+- 3D 加载失败或图形环境不可用时，资料速览仍可阅读和打开外链，不必恢复游戏。
 
-</div>
+## 本地开发
 
----
-
-## 项目简介
-
-`0xbb.me` 是 **FUBUKI_BB** 的个人作品集站点。视觉走 **Tactical HUD**（军用抬头显示 / 驾驶舱遥测）路线：石墨黑底 `#0B0E12`、冰蓝 `#8FD3FF` 主色、琥珀 `#FFB454` 仅用于 LV.999 警示；48px 网格底纹、角括号取景框、四格 telemetry 数字条、缓慢扫描光带。首页 `/` 单屏紧凑呈现档案 / 状态 / 技能 / 项目；`/game/` 是独立页面，承载基于 three.js 的 **3D 双手节奏光剑** 小游戏（保留自有霓虹视觉），BGM 走 `public/music.ogg` 静态资源、切击 / 失误 SFX 由 Web Audio API 实时合成。
-
-## 核心特性
-
-- **Tactical HUD 视觉**：Chakra Petch 标题 + IBM Plex Mono 数据 + IBM Plex Sans 正文；冰蓝单主色、网格底纹、取景框角标、扫描光带。
-- **紧凑单屏首页**：HERO + telemetry 面板、四格统计条、技能矩阵、项目部署一屏到底，无入站动画阻塞。
-- **独立游戏页 `/game/`**：Vite 多页构建，three.js 只进游戏页 chunk，首页 bundle 零 3D 依赖。
-- **3D 节奏光剑**：three.js 渲染的双轨光剑游戏，全键盘驱动，命中粒子 / LV.999 全连特效一应俱全。
-- **混合音频管线**：BGM 加载 `public/music.ogg` 经 Web Audio AudioBufferSource 播放并附 fade-in/out；切击 / 失误 SFX 仍用 OscillatorNode 实时合成（chiptune 风格）。
-- **纯函数判定核心**：判定窗口、连击、命中率、谱面生成全部由 `bun:test` 单测覆盖（PERFECT / GOOD / MISS）。
-- **响应式布局**：桌面端 / 移动端均已适配，游戏页在移动端自动展示占位卡片。
-- **bun 工作流**：依赖、脚本、测试、构建、CI 部署全程 bun。
-
-## 节奏光剑玩法
-
-| 手 | 按键 | 光剑 |
-| --- | --- | --- |
-| 左手 | `W` / `A` / `S` / `D` | 紫剑 |
-| 右手 | `I` / `J` / `K` / `L` | 青剑 |
-
-按键方向必须匹配方块上的箭头方向（W↑ / A← / S↓ / D→，右手同理）。判定分为 **PERFECT / GOOD / MISS**，全连达成即触发 LV.999 特效。
-
-## 快速开始
+需要Bun、Node.js和本机Chrome。所有浏览器测试都使用Chrome无窗口实例；可通过`PORTFOLIO_CHROME_PATH`指定已有Chrome程序，不自动下载浏览器。
 
 ```bash
-bun install      # 安装依赖
-bun run dev      # 启动开发服务器，访问 http://localhost:3000
-bun run build    # 构建生产版本到 dist/
-bun run preview  # 本地预览生产构建
-bun test         # 运行游戏内核单元测试
+bun install --frozen-lockfile
+bun run dev                 # 默认 http://localhost:3000
 ```
 
-> 仅依赖 [bun](https://bun.sh)，无需额外安装 Node.js 或其它包管理器。
+另开终端：
 
-## 项目结构
+```bash
+bun run build               # 生成 dist，静态交付测试会使用它
+bun test                    # 单元测试 + 真实浏览器回归 + 发布性能门槛
+./node_modules/.bin/tsc --noEmit
+bun run preview             # 查看构建后的静态页面
+```
+
+只测纯逻辑和模型时，例如：
+
+```bash
+bun test ./portfolio/input.test.ts ./portfolio/room.test.ts ./portfolio/character.test.ts
+bun test ./tests/portfolio-outfit-reaction.test.tsx ./tests/portfolio-appearance.test.tsx
+```
+
+浏览器自动化始终静默后台：`tests/headless-browser.ts`以`--headless=new`和新的临时资料目录启动Chrome，不激活应用、不切换到前台、不使用日常浏览器资料。测试结束（包括异常退出）后关闭实例并删除资料目录。
+
+`tests/browser.ts`通过浏览器调试协议发送真实鼠标/键盘/触屏事件，读取实际页面、网络和截图。自动行走使用浏览器内部焦点模拟，避免桌面操作干扰；这不会抢系统焦点，也不修改网站的失焦停止逻辑。没有图形替身、虚拟时钟或前台操作回退。
+
+无窗口测试结果会明确记录模式，不能直接当作真实桌面前台帧率或手机真机表现。Pi的Chrome DevTools使用无窗口模式。
+
+浏览器回归默认访问 `http://127.0.0.1:3000/`，部分测试可通过 `PORTFOLIO_TEST_URL` 指定地址。静态交付与性能测试会自行启动、关闭本地预览端口 4189 / 4191；不要同时占用这些端口。源码级像素对照测试需要开发服务，而不是发布目录。
+
+## 代码结构
 
 ```text
-0xbb.me/
-├── components/
-│   └── beat-saber/
-│       ├── BeatSaberGame.tsx           # 3D 双手节奏光剑主组件
-│       ├── BeatSaberPlaceholder.tsx    # 移动端 / 不支持环境的占位
-│       ├── sceneAssets.ts              # three.js 场景资产工厂（方块 / 光剑 / 环境）
-│       └── sceneAssets.test.ts         # 飞行公式纯函数测试
-├── game/                               # 游戏页入口 + 与渲染无关的纯函数游戏内核
-│   ├── index.html / main.tsx           # /game/ 独立页面入口
-│   ├── types.ts                        # Note / BeatChart / Judgement 类型
-│   ├── judge.ts / judge.test.ts        # 切击判定与连击计算
-│   ├── scoring.ts / scoring.test.ts    # 分数 / 命中率 / 等级
-│   ├── chart.ts / chart.test.ts        # 基于 BGM_BPM 与片段时长生成的默认谱面
-│   └── chiptune.ts                     # BGM 文件加载播放器 + 切击/失误 SFX 合成
-├── hooks/
-│   └── useMediaQuery.ts                # 响应式断点 Hook
-├── lib/
-│   └── scrollToAnchor.ts               # 站内锚点平滑滚动（不污染 URL hash）
-├── plugins/
-│   └── htmlPlugin.ts                   # 按页面注入 metadata.json 到 <head> 的 Vite 插件
-├── public/                             # 静态资源（profile.png / music.ogg / robots.txt / sitemap.xml ...）
-├── App.tsx                             # 首页组件
-├── data.ts                             # 个人资料 / 技能 / 项目数据
-├── types.ts                            # 站点 TypeScript 类型
-├── index.html                          # 首页模板（Tailwind CDN + Chakra Petch / IBM Plex）
-├── index.tsx / index.css               # 首页入口 + HUD 主题样式（两页共用）
-├── metadata.json                       # 站点元数据（被 htmlPlugin 注入到 <head>）
-├── favicon.svg                         # 站点 favicon
-├── vite.config.ts                      # Vite 配置
-└── .github/workflows/deploy.yml        # GitHub Pages 自动部署
+App.tsx                       图形加载与故障阅读
+components/portfolio/         导航、资料、对话、终端与彩蛋气泡
+portfolio/state.ts            行走、阅读、换装、一次性彩蛋状态
+portfolio/input.ts            键盘/触屏输入及释放处理
+portfolio/character.ts         主角步态、快跑与接地
+portfolio/avatar-models.ts     A 服装与 B NPC 的方块几何
+portfolio/models/             直接构建正式黑装主角的几何与模型测试
+portfolio/runtime.ts           渲染、镜头和世界到屏幕的位置换算
+portfolio/scenes/              小镇、工厂房间、海面、星星和灯塔
+portfolio/journey.ts           路线、门和交互对象的位置
+portfolio/npc-reaction.ts      彩蛋的展示与打字时间
+portfolio/appearance-effect.ts 换装光点效果
+data.ts                       中英资料、技能、作品及外链
+metadata.json                 页面描述、canonical 和分享信息
+plugins/htmlPlugin.ts         构建时注入页面信息
+public/                       选定的人设图、站点图和站点辅助文件
+tests/                        浏览器行为、交付和性能验证
 ```
 
-## 技术栈
+## 静态发布与素材边界
 
-| 层 | 技术 |
-| --- | --- |
-| UI 框架 | React 19 + TypeScript 5.8 |
-| 构建 | Vite 6 多页（`/` + `/game/`），自定义 `htmlPlugin` 按页注入 metadata |
-| 样式 | Tailwind CSS（CDN）；首页 Chakra Petch / IBM Plex Mono / IBM Plex Sans，游戏页 Orbitron / JetBrains Mono / Press Start 2P |
-| 3D | three.js r184 |
-| 音频 | Web Audio API：BGM 解码 `public/music.ogg`；SFX 实时合成 |
-| 测试 | `bun:test` |
-| 运行时 / 包管理 | bun |
-| 部署 | GitHub Actions → GitHub Pages |
+- React 19 + TypeScript + Three.js r184，Vite 6 单入口静态构建，不需要独立后端、账户或服务端存档。
+- 部署目录为 `dist/`，`base` 为 `./`。浏览器需支持 ES modules、WebGL2 和原生 `dialog`；没有 WebGL2 时仍提供资料阅读。
+- 三维人物、场景和特效由几何与程序化材质生成，不使用图片贴图；没有模型生成服务密钥或付费 API。
+- 公开图片为 `profile-full.png`、`profile.png` 和 `profile.jpg`，原文件直接进入静态产物，可通过各自URL访问。资料速览仅按需加载`profile-full.png`，保持原比例，失败不影响文字阅读；该图约6.1 MiB。
+- 发布资源清单包含上述三张图片，以及`site-card.svg`、`robots.txt`、`sitemap.xml`和`THIRD_PARTY_NOTICES.txt`。设计输入、对比页面和验收截图不进入发布包。
+- 部署在域名根目录时，图片地址为`/profile.png`、`/profile.jpg`、`/profile-full.png`；部署在子目录时，在图片地址前加部署目录。
+- 标签页图标`favicon.svg`使用深蓝底、暖色灯光与青蓝海面的方块灯塔，纯SVG、无图片嵌入或闪烁动画。
+- 角色几何位于`portfolio/models/`，行为与资源检查位于`portfolio/`和`tests/`。
+- 页面字体使用本地/系统字体回退，不加载字体 CDN；React 和 Three.js 等代码打包为本地资源。
 
-## 测试
+## 发布验收
 
-游戏内核的判定、分数、谱面、合成器全部以纯函数方式实现，使用 `bun:test`：
+完整发布检查覆盖跨场景、门、双语、触屏、长文阅读、换装、彩蛋和图形失败。
 
-```bash
-bun test                       # 跑全部单元测试
-bun test game/                 # 仅跑游戏内核
-bun test components/beat-saber # 仅跑 three.js 场景纯函数
-```
+性能检查在静态构建上记录 1440×900、页面可见、包含跨场景的完整 30 秒帧时间；门开启过程和慢帧都保留。门槛是 **95% 的帧间隔不超过 33.4 ms**，不是宣称所有设备稳定 60 FPS。每次测量的设备、浏览器、GPU、全部时间戳和结果输出到测试日志；场景绘制优化的像素对比结果也输出到测试日志。
 
-## 自定义配置
-
-编辑 [`data.ts`](./data.ts) 即可改写个人资料、社交链接、技能矩阵和项目列表：
-
-```typescript
-export const APP_DATA = {
-  profile: {
-    name: "YOUR_HANDLE",
-    role: "Your Role",
-    status: "SYSTEM STATUS: ONLINE",
-    location: "CITY",
-    stats: { contributions: "♾️", uptime: "99.9%" },
-    bio: "一段自我介绍……",
-    avatar: "/profile.png",
-    fullImage: "/profile-cyber.png",
-    footer: "SYSTEM_ID: ...",
-    copyright: "YOUR_HANDLE. ALL RIGHTS RESERVED.",
-  },
-  socialLinks: [
-    { name: "GitHub", url: "https://github.com/...", icon: "GH" },
-  ],
-  skills: [
-    { name: "Go (Golang)", level: 90, category: "Backend" }, // category: Frontend | Backend | DevOps | Tools
-  ],
-  projects: [
-    {
-      id: "1",
-      title: "Project",
-      description: "...",
-      tech: ["React", "TypeScript"],
-      status: "ONLINE",          // ONLINE | OFFLINE | DEVELOPMENT
-      repo: "https://github.com/...",
-      link: "https://...",
-    },
-  ],
-};
-```
-
-站点 SEO / OG 元数据维护在 [`metadata.json`](./metadata.json)，构建时由 `plugins/htmlPlugin.ts` 注入到每个页面的 `<head>`（游戏页标题与 canonical 自动切换为 `/game/`）。
+手机视口和触屏模拟不代表手机真机性能已通过。构建仍有 Three.js 场景包超过 500 kB 的提醒；应依据真实测量定位问题，不通过删除慢帧或削减已确认画面来掩盖结果。
 
 ## 部署
 
-`main` 分支推送即触发 [`deploy.yml`](./.github/workflows/deploy.yml)：bun 安装依赖 → `bun run build` → 上传 `dist/` → 发布到 GitHub Pages。生产构建产物为纯静态资源，同样可托管在 Vercel、Netlify、Cloudflare Pages 等平台。
+[GitHub Actions](./.github/workflows/deploy.yml) 在推送 `main` 时执行冻结依赖安装、构建并将 `dist/` 发布到 GitHub Pages。其它静态托管也可使用同一目录；先验证目标地址的相对资源路径，再人工确认发布。
 
-## 开源协议
+Actions构建步骤只需安装依赖和执行`bun run build`，不需要运行开发服务器、浏览器测试或独立后端。该工作流仅由`main`分支推送触发；仓库的GitHub Pages来源需选择GitHub Actions。
 
-本项目采用 [MIT](./LICENSE) 协议。
+本地提交不等于已经推送或上线。
+
+## 来源与许可
+
+- 本仓库代码使用 [MIT](./LICENSE)。
+- [React / React DOM](https://github.com/facebook/react) 与 [Three.js 及其 addons](https://github.com/mrdoob/three.js) 使用 MIT，完整许可声明随 `THIRD_PARTY_NOTICES.txt` 进入发布包；未新增外部引擎或动画依赖。
+- 方块角色根据用户提供的设计参考由代码制作，不使用 Minecraft 官方模型或贴图，也不表示官方关联。
+- 资料人设图、人物参考图不因代码的 MIT 许可而自动获得转载授权；使用这些图像需另行确认权利。
+- 当前系统字体没有作为字体文件打包分发。
