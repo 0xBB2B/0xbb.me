@@ -1,5 +1,4 @@
 import { expect, test } from 'bun:test';
-import { writeFileSync } from 'node:fs';
 import { startHeadlessBrowser } from './headless-browser';
 
 const url = process.env.PORTFOLIO_TEST_URL ?? 'http://127.0.0.1:3000/';
@@ -35,7 +34,7 @@ test('batched scenery keeps original pixels across all three scenes and desktop/
       }
       return results;
     })()`);
-    writeFileSync(new URL('../artifacts/scenery-batch-comparison.json', import.meta.url), JSON.stringify({ capturedAt: new Date().toISOString(), mode: 'same renderer, same geometry/colors/lights/camera, only static batching differs', results: result }, null, 2) + '\n');
+    console.info('Scenery batch comparison', JSON.stringify({ capturedAt: new Date().toISOString(), mode: 'same renderer, same geometry/colors/lights/camera, only static batching differs', results: result }));
     expect(result).toHaveLength(9);
     for (const frame of result) {
       expect(frame.changedFraction, `${frame.width}x${frame.height} scene x=${frame.x}`).toBeLessThan(.0002);

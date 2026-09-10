@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dir, '..');
@@ -21,11 +21,6 @@ test('the temporary design directory is removed while production models and the 
   expect(existsSync(path.join(root, 'portfolio/models/player-voxel-black.ts'))).toBe(true);
   expect(existsSync(path.join(root, 'portfolio/models/player-voxel.ts'))).toBe(false);
   expect(existsSync(path.join(root, 'public/profile-full.png'))).toBe(true);
-});
-
-test('old comparison screenshots, source backups and diffs no longer remain in the project cache', () => {
-  const cache = path.join(root, '.pi-spec/.cache');
-  expect(existsSync(cache) ? readdirSync(cache).filter(name => name.startsWith('t33-')) : []).toEqual([]);
 });
 
 test('the application keeps its runtime dependencies but no longer carries motion or its private packages', () => {

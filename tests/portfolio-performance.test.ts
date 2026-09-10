@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { startHeadlessBrowser } from './headless-browser';
 
 const url = 'http://127.0.0.1:4191/';
@@ -69,10 +69,7 @@ test('production desktop keeps 95% of frame gaps within 33.4 ms over a complete 
       device: { model: command(['sysctl', '-n', 'hw.model']), chip: command(['sysctl', '-n', 'machdep.cpu.brand_string']), os: command(['sw_vers', '-productVersion']) },
       ...result, browser, gpu, samplingPollMs: 250, focusEmulated: true, doorInput: 'keyboard E', durationMs: result.times.at(-1)! - result.times[0],
       p95, maximum: Math.max(...gaps), threshold: 33.4, passed: validJourney && p95 <= 33.4 };
-    const evidence = new URL('../artifacts/release-performance.json', import.meta.url);
-    const previous = existsSync(evidence) ? JSON.parse(readFileSync(evidence, 'utf8')) : [];
-    writeFileSync(evidence, JSON.stringify([...(Array.isArray(previous) ? previous : [previous]), record], null, 2) + '\n');
-    console.info('Production frame timing', { p95, maximum: record.maximum, durationMs: record.durationMs, frames: result.times.length, scenes: result.scenes });
+    console.info('Production frame timing', JSON.stringify(record));
     expect(result.viewport).toEqual([1440, 900]); expect(result.visibility).toEqual(['visible']);
     expect(record.durationMs).toBeGreaterThanOrEqual(30_000);
     expect(result.scenes).toContain('Dusk town'); expect(result.scenes).toContain('Tech workshop'); expect(result.scenes).toContain('Starlit shore');
