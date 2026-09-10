@@ -5,8 +5,8 @@
 .board-details-toolbar > span:first-child { margin-right: auto; }
 .board-details-toolbar button { min-height: 42px; padding: 8px 12px; border: 1px solid #41667155; background: #d4e4df; }
 .board-details-content { min-height: 0; flex: 1 1 auto; padding: 34px 38px; overflow: auto; box-sizing: border-box; }
-.board-kind, .board-status { color: #39707a; font: 10px/1.4 "IBM Plex Mono", monospace; letter-spacing: .14em; text-transform: uppercase; }
-.board-details-content h2 { margin: 15px 0 12px; overflow-wrap: anywhere; font: 30px Georgia, "Songti SC", serif; }
+.board-kind, .board-status { color: #305f68; font: 600 11px/1.4 var(--font-sans); letter-spacing: .14em; text-transform: uppercase; }
+.board-details-content h2 { margin: 15px 0 12px; overflow-wrap: anywhere; font: var(--font-display-weight) 30px var(--font-display); }
 .board-details-content > p:last-of-type { font-size: 15px; line-height: 1.85; white-space: pre-line; }
 .board-details-content nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
 .board-details-content a { min-height: 42px; display: inline-flex; align-items: center; padding: 8px 12px; border: 1px solid #41667166; color: inherit; font-size: 12px; text-decoration: none; }

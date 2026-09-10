@@ -15,8 +15,8 @@
 .dialogue-toolbar > span:first-child { margin-right: auto; }
 .dialogue-toolbar button, .dialogue-pages button { min-height: 42px; padding: 8px 12px; border: 1px solid #73594050; background: #eadcc1; }
 .dialogue-content { min-height: 0; flex: 1 1 auto; padding: 32px 38px; overflow: auto; }
-.dialogue-speaker { color: #806b4e; font: 10px "IBM Plex Mono", monospace; letter-spacing: .13em; }
-.dialogue-content h2 { margin: 18px 0 14px; font: 30px Georgia, "Songti SC", serif; }
+.dialogue-speaker { color: #69563d; font: 600 11px var(--font-sans); letter-spacing: .13em; }
+.dialogue-content h2 { margin: 18px 0 14px; font: var(--font-display-weight) 30px var(--font-display); }
 .dialogue-content > p { margin: 0; font-size: 15px; line-height: 1.85; white-space: pre-line; }
 .dialogue-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 .dialogue-links a { min-height: 40px; display: inline-flex; align-items: center; padding: 7px 11px; border: 1px solid #73594050; color: inherit; font-size: 12px; text-decoration: none; }
@@ -24,7 +24,7 @@
 .dialogue-pages { flex-shrink: 0; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 14px 16px; border-top: 1px solid #765f4030; }
 .dialogue-pages button:last-child { justify-self: end; }
 .dialogue-pages button:disabled { cursor: default; opacity: .42; }
-.dialogue-pages span { font: 11px "IBM Plex Mono", monospace; }
+.dialogue-pages span { font: 600 12px var(--font-sans); }
 @media (max-width: 600px) {
   .dialogue-toolbar { flex-wrap: wrap; }
   .dialogue-toolbar > span:first-child { width: 100%; }

@@ -1,8 +1,6 @@
 :root {
-  font-family: "IBM Plex Sans", system-ui, sans-serif;
   color: #3b3432;
   background: #d9af91;
-  font-synthesis: none;
 }
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; width: 100%; min-height: 100%; }

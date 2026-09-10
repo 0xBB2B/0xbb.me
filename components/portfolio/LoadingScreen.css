@@ -1,0 +1,68 @@
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-rows: 1fr auto 1fr;
+  align-items: center;
+  min-width: 320px;
+  padding: max(28px, env(safe-area-inset-top)) max(38px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(38px, env(safe-area-inset-left));
+  box-sizing: border-box;
+  overflow: auto;
+  color: #443b32;
+  background: radial-gradient(ellipse at 50% 42%, #f6ecd7, #e9d9be 72%);
+  font: 500 14px/1.6 var(--font-sans);
+  transition-property: opacity;
+  transition-timing-function: ease;
+}
+.loading-screen::before { content: ""; position: absolute; inset: 14px; border: 1px solid #8f745030; pointer-events: none; }
+.loading-screen.is-leaving { opacity: 0; }
+.loading-brand { position: absolute; top: max(28px, env(safe-area-inset-top)); left: max(38px, env(safe-area-inset-left)); display: flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 600; letter-spacing: .08em; }
+.loading-brand > span { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #8f745060; font: italic 25px var(--font-display); font-synthesis: style; }
+.loading-edition { position: absolute; top: max(39px, env(safe-area-inset-top)); right: max(38px, env(safe-area-inset-right)); color: #6a5b47; font: 600 10px/1.5 var(--font-sans); letter-spacing: .13em; }
+.loading-content { grid-row: 2; width: min(100%, 580px); margin: 64px auto 34px; text-align: center; }
+.loading-town { display: block; width: 256px; max-width: 70%; height: auto; margin: 0 auto 23px; }
+.loading-window { animation: loading-lights 2.8s ease-in-out infinite alternate; }
+.loading-chapter { margin: 0 0 16px; color: #6c5a40; font-size: 11px; font-weight: 600; letter-spacing: .16em; }
+.loading-content h1 { margin: 0; font: var(--font-display-weight) clamp(30px, 3.2vw, 46px)/1.18 var(--font-display); letter-spacing: -.025em; white-space: pre-line; }
+.loading-content h1:lang(zh) { font-weight: 600; letter-spacing: 0; }
+.loading-subtitle { margin: 18px 0 30px; font-size: 13px; color: #6a5b47; }
+.loading-track { width: 180px; height: 3px; margin: 0 auto; overflow: hidden; background: #8f74502b; }
+.loading-track > span { display: block; width: 45%; height: 100%; background: #87653e; animation: loading-travel 1.9s ease-in-out infinite; }
+.loading-status { min-height: 22px; margin: 13px 0 17px; color: #5e503e; font-size: 12px; font-weight: 600; }
+.loading-overview { min-height: 44px; padding: 8px 12px; border: 0; border-radius: 3px; background: transparent; color: #65513a; font: 600 12px/1.6 var(--font-sans); cursor: pointer; text-decoration: underline; text-decoration-color: #8f745070; text-underline-offset: 5px; }
+.loading-overview > span { margin-left: 7px; }
+.loading-overview:hover:not(:disabled) { background: #8f745012; }
+.loading-overview:focus-visible { outline: 2px solid #87653e; outline-offset: 3px; }
+.loading-overview:disabled { cursor: default; opacity: .55; }
+.loading-route { grid-row: 3; align-self: end; justify-self: center; text-align: center; color: #6a5b47; font-size: 10px; font-weight: 600; letter-spacing: .13em; }
+@keyframes loading-travel { from { transform: translateX(-100%); } to { transform: translateX(325%); } }
+@keyframes loading-lights { from { opacity: .55; } to { opacity: 1; } }
+@media (max-width: 600px) {
+  .loading-screen { padding: max(22px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom)); }
+  .loading-screen::before { inset: 10px; }
+  .loading-brand { top: max(24px, env(safe-area-inset-top)); left: 24px; font-size: 12px; gap: 9px; }
+  .loading-edition { display: none; }
+  .loading-content { margin-top: 72px; }
+  .loading-town { width: 216px; }
+  .loading-chapter { font-size: 10px; letter-spacing: .1em; }
+  .loading-subtitle { max-width: 260px; margin: 18px auto 26px; }
+  .loading-route { font-size: 9px; letter-spacing: .08em; }
+}
+@media (max-height: 600px) {
+  .loading-content { margin-top: 58px; margin-bottom: 16px; }
+  .loading-town { width: 144px; margin-bottom: 8px; }
+  .loading-chapter { margin-bottom: 8px; }
+  .loading-content h1 { font-size: 28px; }
+  .loading-subtitle { margin-top: 10px; margin-bottom: 16px; }
+  .loading-status { margin: 8px 0 0; }
+}
+@media (max-height: 420px) {
+  .loading-town, .loading-subtitle, .loading-route { display: none; }
+  .loading-track { margin-top: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-screen { transition: none; }
+  .loading-track > span { animation: none; width: 100%; opacity: .65; }
+  .loading-window { animation: none; }
+}

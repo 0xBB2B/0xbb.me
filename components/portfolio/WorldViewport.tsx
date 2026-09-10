@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import type { TownInput } from '../../portfolio/input';
 import { mountWorld } from '../../portfolio/runtime';
 import type { Session } from '../../portfolio/state';
-import './WorldViewport.css';
 
 export function WorldViewport({ session, input, onReady, onUnavailable }: {
   session: Session;

@@ -1,10 +1,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Plugin } from 'vite';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { LoadingScreen } from '../components/portfolio/LoadingScreen';
 
 export const htmlPlugin = (): Plugin => ({
   name: 'html-transform',
   transformIndexHtml(html) {
+    if (html.includes('<div id="root"></div>')) {
+      const loadingStyles = fs.readFileSync(path.resolve(process.cwd(), 'components/portfolio/LoadingScreen.css'), 'utf8');
+      html = html.replace('<div id="root"></div>', `<div id="root">${renderToStaticMarkup(createElement(LoadingScreen))}</div>`)
+        .replace('</head>', `<style data-loading-styles>${loadingStyles}</style></head>`);
+    }
     try {
       const metadata = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'metadata.json'), 'utf8'));
       const title = `${metadata.name} — Engineering, AI Workflows & Exploration`;
@@ -27,6 +35,7 @@ export const htmlPlugin = (): Plugin => ({
         '@type': 'WebSite',
         name: `${metadata.name} Portfolio`,
         url: pageUrl,
+        image,
         description: metadata.description,
         author: { '@type': 'Person', name: metadata.author.name },
         inLanguage: metadata.locale,

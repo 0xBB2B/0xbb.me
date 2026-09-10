@@ -22,7 +22,8 @@
 - 空格跳跃适用于黑装和A服装，不提供触屏跳跃按钮；触屏模式不触发跳跃。按住空格不会自动连跳；移动起跳沿用当前迈步时的手脚前后顺序，平滑过渡到前后迈开双腿、反向摆臂的姿势；原地起跳采用固定的前后错步姿势。空中保持姿势，接近落地时收拢，不在空中循环走路/跑步动作。跳跃不能越过关闭的门或道路端点；阅读、开门、换装和彩蛋期间不能起跳。
 - **服装彩蛋**：穿着 A 黑裙首次主动和迎宾者交谈，先出现 1 秒感叹号，再打字显示“新服装真好看”；英文模式有对应文案。完整文字停留片刻后恢复交互，同一页面只触发一次，刷新后重置。
 - 支持减少动态偏好，保留可直接阅读的简介、五项技能、三个项目和四个联系入口。
-- 3D 加载失败或图形环境不可用时，资料速览仍可阅读和打开外链，不必恢复游戏。
+- 首次打开显示全屏 Loading 页面，HTML 内含开场插画和样式，脚本下载期间也可显示，以阶段文字和循环指示条表示加载状态。场景完成准备并绘制首帧后淡出；减少动态模式在就绪后直接进入。加载期间可选择先读个人资料，场景在后台继续准备。
+- 3D 加载失败或图形环境不可用时，Loading 页面退出并打开资料速览，仍可阅读和打开外链，不必恢复游戏。
 
 ## 本地开发
 
@@ -60,7 +61,7 @@ bun test ./tests/portfolio-outfit-reaction.test.tsx ./tests/portfolio-appearance
 ## 代码结构
 
 ```text
-App.tsx                       图形加载与故障阅读
+App.tsx                       开场加载、场景就绪切换与故障阅读
 components/portfolio/         导航、资料、对话、终端与彩蛋气泡
 portfolio/state.ts            行走、阅读、换装、一次性彩蛋状态
 portfolio/input.ts            键盘/触屏输入及释放处理
@@ -74,7 +75,7 @@ portfolio/npc-reaction.ts      彩蛋的展示与打字时间
 portfolio/appearance-effect.ts 换装光点效果
 data.ts                       中英资料、技能、作品及外链
 metadata.json                 页面描述、canonical 和分享信息
-plugins/htmlPlugin.ts         构建时注入页面信息
+plugins/htmlPlugin.ts         注入页面信息、首屏 Loading 标记与样式
 public/                       选定的人设图、站点图和站点辅助文件
 tests/                        浏览器行为、交付和性能验证
 ```
@@ -85,11 +86,13 @@ tests/                        浏览器行为、交付和性能验证
 - 部署目录为 `dist/`，`base` 为 `./`。浏览器需支持 ES modules、WebGL2 和原生 `dialog`；没有 WebGL2 时仍提供资料阅读。
 - 三维人物、场景和特效由几何与程序化材质生成，不使用图片贴图；没有模型生成服务密钥或付费 API。
 - 公开图片为 `profile-full.png`、`profile.png` 和 `profile.jpg`，原文件直接进入静态产物，可通过各自URL访问。资料速览仅按需加载`profile-full.png`，保持原比例，失败不影响文字阅读；该图约6.1 MiB。
+- 搜索与分享图片统一指向 `https://0xbb.me/profile.jpg`（1250 × 1250 JPEG），通过 Open Graph、Twitter Card 和 Person / WebSite 结构化数据提供。页面允许大图预览；搜索结果是否采用该图及更新时间由搜索引擎决定，发布后需等待重新抓取。
 - 发布资源清单包含上述三张图片，以及`site-card.svg`、`robots.txt`、`sitemap.xml`和`THIRD_PARTY_NOTICES.txt`。设计输入、对比页面和验收截图不进入发布包。
 - 部署在域名根目录时，图片地址为`/profile.png`、`/profile.jpg`、`/profile-full.png`；部署在子目录时，在图片地址前加部署目录。
 - 标签页图标`favicon.svg`使用深蓝底、暖色灯光与青蓝海面的方块灯塔，纯SVG、无图片嵌入或闪烁动画。
 - 角色几何位于`portfolio/models/`，行为与资源检查位于`portfolio/`和`tests/`。
-- 页面字体使用本地/系统字体回退，不加载字体 CDN；React 和 Three.js 等代码打包为本地资源。
+- 网站统一使用 Noto Sans SC 正文与标签、Noto Serif SC 标题，保留接近 Mac 的黑体与宋体搭配。两套可变字体通过锁定版本的 Fontsource 依赖随构建打包为本地 WOFF2 文件，不请求字体 CDN，也不依赖设备安装同名字体。`typography.css` 在 HTML 首屏加载，Loading 与主页共享字体；预加载英文首屏所需的两个拉丁字符分块，中文按实际字符范围加载并缓存。
+- 字体字形、字重与布局采用同一套规则；系统的文字边缘处理、屏幕缩放仍可能产生细微差异。字体下载期间先显示系统备用字体，下载成功后切换为网站字体；请求失败时保留可读文字，恢复网络后可刷新重试。
 
 ## 发布验收
 
@@ -113,4 +116,4 @@ Actions构建步骤只需安装依赖和执行`bun run build`，不需要运行�
 - [React / React DOM](https://github.com/facebook/react) 与 [Three.js 及其 addons](https://github.com/mrdoob/three.js) 使用 MIT，完整许可声明随 `THIRD_PARTY_NOTICES.txt` 进入发布包；未新增外部引擎或动画依赖。
 - 方块角色根据用户提供的设计参考由代码制作，不使用 Minecraft 官方模型或贴图，也不表示官方关联。
 - 资料人设图、人物参考图不因代码的 MIT 许可而自动获得转载授权；使用这些图像需另行确认权利。
-- 当前系统字体没有作为字体文件打包分发。
+- Noto Sans SC 与 Noto Serif SC 字体按 SIL Open Font License 1.1 分发，完整许可随 `THIRD_PARTY_NOTICES.txt` 进入发布包；没有分发 Apple 系统字体。

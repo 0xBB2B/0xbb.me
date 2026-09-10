@@ -25,6 +25,24 @@ afterAll(async () => {
   await server?.close();
 });
 
+test('homepage includes the loading shell and critical styles before the entry script runs', async () => {
+  const template = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const html = await server.transformIndexHtml('/', template);
+  expect(html.match(/class="loading-screen"/g)).toHaveLength(1);
+  expect(html).toContain('<div id="root"><section');
+  expect(html).toContain('<style data-loading-styles>');
+  expect(html).toContain('Loading the journey…');
+  expect(html.indexOf('<style data-loading-styles>')).toBeLessThan(html.indexOf('</head>'));
+  expect(html.indexOf('class="loading-screen"')).toBeLessThan(html.indexOf('src="/index.tsx"'));
+  expect(html).not.toContain('<div id="root"></div>');
+});
+
+test('homepage allows large image previews without changing indexing permission', async () => {
+  const template = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const page = parseMetadata(await server.transformIndexHtml('/', template));
+  expect(page.meta.get('robots')).toBe('index, follow, max-image-preview:large');
+});
+
 function parseMetadata(html: string) {
   const titles: string[] = [];
   const meta = new Map<string, string>();
@@ -55,49 +73,6 @@ function parseMetadata(html: string) {
     canonicals,
     schemas: scripts.map((script) => JSON.parse(script) as Record<string, unknown>),
   };
-}
-
-// Inspect referenced bytes, not extensions or response MIME types. Follow SVG
-// paint/use references too, so a vector container cannot conceal a bitmap.
-async function expectVectorGraphic(reference: string) {
-  const pending = [new URL(reference, siteUrl)];
-  const visited = new Set<string>();
-  while (pending.length) {
-    const url = pending.pop()!;
-    url.hash = '';
-    if (visited.has(url.href)) continue;
-    visited.add(url.href);
-    let svg: string;
-    let base = url;
-    if (url.origin === siteUrl.origin) {
-      svg = fs.readFileSync(path.join(root, 'public', decodeURIComponent(url.pathname)), 'utf8');
-    } else {
-      const response = await fetch(url, { signal: AbortSignal.timeout(3000) });
-      expect(response.ok).toBe(true);
-      svg = await response.text();
-      base = url.protocol === 'data:' ? siteUrl : new URL(response.url);
-    }
-    const isSvgDocument = /^\s*(?:<\?xml[^?]*\?>\s*)?(?:<!--[^]*?-->\s*|<!DOCTYPE\s+svg[^>]*>\s*)*<svg(?:\s|>)/i.test(svg);
-    expect(isSvgDocument).toBe(true);
-    expect(svg).not.toMatch(/<(?:[\w-]+:)?(?:image|feImage|foreignObject)\b/i);
-    expect(svg).not.toMatch(/data:image\/(?:png|jpe?g|gif|webp|bmp|avif|x-icon)\b/i);
-
-    const references: string[] = [];
-    new HTMLRewriter()
-      .on('use, linearGradient, radialGradient, pattern, filter', {
-        element(element) {
-          const href = element.getAttribute('href') ?? element.getAttribute('xlink:href');
-          if (href) references.push(href);
-        },
-      })
-      .transform(svg);
-    for (const match of svg.matchAll(/url\(\s*(['"]?)(.*?)\1\s*\)/gi)) {
-      references.push(match[2]);
-    }
-    for (const ref of references) {
-      if (!ref.startsWith('#')) pending.push(new URL(ref, base));
-    }
-  }
 }
 
 for (const route of ['/', '/game/']) {
@@ -176,19 +151,17 @@ for (const route of ['/', '/game/']) {
       expect(html).not.toContain('profile.png');
     });
 
-    test('AC-6: every emitted image resolves to actual pure SVG content', async () => {
-      expect(page.meta.get('og:image')).toBeString();
-      expect(page.meta.get('twitter:image')).toBeString();
-      const person = page.schemas.find((schema) => schema['@type'] === 'Person');
-      expect(person?.image).toBeString();
-      const references = [
-        ...[...page.meta].filter(([key]) => /(?:^|:)image(?::(?:url|secure_url))?$/.test(key)).map(([, value]) => value),
-        ...page.schemas.filter((schema) => schema.image !== undefined).map((schema) => schema.image),
-      ];
-      for (const reference of new Set(references)) {
-        expect(reference).toBeString();
-        await expectVectorGraphic(reference as string);
+    test('search and sharing metadata consistently reference the public profile JPEG', () => {
+      const image = new URL('profile.jpg', siteUrl).href;
+      expect(page.meta.get('og:image')).toBe(image);
+      expect(page.meta.get('twitter:image')).toBe(image);
+      for (const type of ['Person', 'WebSite']) {
+        expect(page.schemas.find(schema => schema['@type'] === type)?.image).toBe(image);
       }
+      expect(html).not.toContain('site-card.svg');
+      const bytes = fs.readFileSync(path.join(root, 'public/profile.jpg'));
+      expect([...bytes.subarray(0, 3)]).toEqual([0xff, 0xd8, 0xff]);
+      expect([...bytes.subarray(-2)]).toEqual([0xff, 0xd9]);
     });
   });
 }

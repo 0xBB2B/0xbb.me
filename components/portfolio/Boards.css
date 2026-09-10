@@ -1,9 +1,9 @@
 .world-boards { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
-.world-board { position: absolute; visibility: hidden; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; transform: translate(-50%, -50%); padding: 9px 11px; border: 0; background: transparent; color: #bceef0; text-shadow: 0 0 4px #40cedd55; font-family: "IBM Plex Mono", monospace; }
+.world-board { position: absolute; visibility: hidden; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; transform: translate(-50%, -50%); padding: 9px 11px; border: 0; background: transparent; color: #bceef0; text-shadow: 0 0 4px #40cedd55; font-family: var(--font-sans); }
 .world-board::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(transparent 0 3px, #04121922 3px 4px); }
 .world-board-amber { color: #ffe2aa; text-shadow: 0 0 4px #ffbc5955; }
-.world-board > span { display: block; padding-bottom: 5px; margin-bottom: 6px; border-bottom: 1px solid currentColor; opacity: .65; font: 7px/1.2 "IBM Plex Mono", monospace; letter-spacing: .13em; }
-.world-board h2 { margin: 0 0 6px; overflow-wrap: anywhere; font: 600 clamp(10px, .9vw, 13px)/1.15 "IBM Plex Mono", monospace; }
+.world-board > span { display: block; padding-bottom: 5px; margin-bottom: 6px; border-bottom: 1px solid currentColor; opacity: .65; font: 500 7px/1.2 var(--font-sans); letter-spacing: .13em; }
+.world-board h2 { margin: 0 0 6px; overflow-wrap: anywhere; font: 600 clamp(10px, .9vw, 13px)/1.15 var(--font-sans); }
 .world-board p { margin: 0; overflow: hidden; font-size: clamp(8px, .69vw, 10px); line-height: 1.45; }
 @media (max-width: 600px) {
   .world-board { padding: 8px 9px; }
