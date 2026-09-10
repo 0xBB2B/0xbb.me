@@ -1,6 +1,6 @@
 .npc-reaction { position: absolute; z-index: 5; visibility: hidden; pointer-events: none; text-align: center; color: #403528; }
-.npc-surprise { width: 48px; padding: 3px 0; color: #ffe2a3; font: bold 48px/1.1 Georgia, serif; text-shadow: 0 2px 4px #3c3029, 0 0 12px #edca8466; }
-.npc-compliment { width: 252px; max-width: calc(100vw - 32px); min-height: 52px; display: flex; align-items: center; justify-content: center; padding: 13px 14px; border: 1px solid #c6ae84; border-radius: 8px; background: #fff3dc; box-shadow: 0 4px 14px #392e3529; font: 14px/1.6 Georgia, 'Songti SC', serif; }
+.npc-surprise { width: 48px; padding: 3px 0; color: #ffe2a3; font: 700 48px/1.1 var(--font-display); text-shadow: 0 2px 4px #3c3029, 0 0 12px #edca8466; }
+.npc-compliment { width: 252px; max-width: calc(100vw - 32px); min-height: 52px; display: flex; align-items: center; justify-content: center; padding: 13px 14px; border: 1px solid #c6ae84; border-radius: 8px; background: #fff3dc; box-shadow: 0 4px 14px #392e3529; font: 500 14px/1.6 var(--font-display); }
 .npc-compliment::after { content: ''; position: absolute; left: clamp(12px, calc(var(--reaction-tail-x, 50%) - 7px), calc(100% - 25px)); bottom: -8px; width: 13px; height: 13px; background: #fff3dc; border-right: 1px solid #c6ae84; border-bottom: 1px solid #c6ae84; transform: rotate(45deg); }
 .npc-surprise .reaction-visible { display: block; animation: surprise-pop .22s ease-out; }
 @keyframes surprise-pop { from { opacity: 0; transform: translateY(7px) scale(.65); } to { opacity: 1; transform: translateY(0) scale(1); } }

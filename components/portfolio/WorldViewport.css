@@ -32,8 +32,8 @@
   color: #3b3432;
 }
 .wordmark { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-decoration: none; white-space: nowrap; }
-.brand-mark { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #5b483c60; font: italic 25px Georgia, serif; }
-.header-note { margin-left: 12px; font-size: 11px; letter-spacing: 0.07em; opacity: 0.75; }
+.brand-mark { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #5b483c60; font: italic 25px var(--font-display); font-synthesis: style; }
+.header-note { margin-left: 12px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
 .town-header nav { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 .town-header button, .overview-toolbar button { min-height: 42px; padding: 9px 15px; border: 1px solid #73594050; font-size: 12px; letter-spacing: 0.02em; }
 .language-button { background: #ffefcc26; white-space: nowrap; }
@@ -48,9 +48,9 @@
 .door-prompt:disabled { cursor: wait; color: #d7d2bf; }
 .board-prompt { border-color: #72e7ff; box-shadow: 0 0 16px #00cfff33, 0 4px 18px #0b102680; }
 .star-prompt { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 124px; border-color: #e5d4a7; background: #172138ed; }
-.star-prompt strong { font: 500 12px/1.2 system-ui, sans-serif; }
+.star-prompt strong { font: 500 12px/1.2 var(--font-sans); }
 .star-prompt::after { top: -5px; bottom: auto; transform: translateX(-50%) rotate(225deg); }
-.talk-prompt kbd { margin-right: 8px; padding: 2px 6px; border: 1px solid #ffe0ae77; font: 11px "IBM Plex Mono", monospace; }
+.talk-prompt kbd { margin-right: 8px; padding: 2px 6px; border: 1px solid #ffe0ae77; font: 600 12px var(--font-sans); }
 .avatar-switch { position: absolute; z-index: 4; right: 40px; bottom: 94px; display: flex; align-items: center; gap: 9px; min-height: 44px; max-width: calc(100% - 40px); padding: 10px 14px; border: 1px solid #b9a47d; background: #e6dac1; color: #393630; font-size: 12px; cursor: pointer; }
 .avatar-switch:disabled { cursor: wait; opacity: .72; }
 .town-intro { position: absolute; z-index: 2; left: 40px; top: 132px; pointer-events: none; color: #423a35; }
@@ -59,20 +59,21 @@
 .town-header.scene-gallery, .town-intro.scene-gallery { color: #f0eaff; text-shadow: 0 1px 5px #090b20; }
 .scene-workshop .brand-mark, .scene-gallery .brand-mark { border-color: #dceaff70; }
 .scene-workshop .language-button, .scene-gallery .language-button { color: inherit; border-color: #dceaff70; background: #11182c66; }
-.eyebrow { font: 10px/1.5 "IBM Plex Mono", monospace; letter-spacing: 0.2em; text-transform: uppercase; }
-.town-intro h1 { margin: 15px 0; white-space: pre-line; font: 400 clamp(30px, 3.8vw, 54px)/1.12 Georgia, "Songti SC", serif; letter-spacing: -0.035em; }
-.intro-caption { max-width: 285px; font-size: 12px; line-height: 1.8; opacity: 0.83; }
+.eyebrow { font: 600 11px/1.5 var(--font-sans); letter-spacing: 0.16em; text-transform: uppercase; }
+.town-intro h1 { margin: 15px 0; white-space: pre-line; font: var(--font-display-weight) clamp(30px, 3.8vw, 54px)/1.12 var(--font-display); letter-spacing: -0.035em; }
+.intro-caption { max-width: 285px; font-size: 13px; font-weight: 600; line-height: 1.8; }
+.scene-town .intro-caption { color: #302a26; text-shadow: 0 1px 2px #fff0d480; }
 .town-footer { position: absolute; z-index: 2; bottom: max(28px, env(safe-area-inset-bottom)); left: 38px; right: 38px; display: flex; align-items: center; justify-content: space-between; color: #fff0d4; }
 .movement-controls { display: flex; align-items: center; gap: 9px; }
 .direction-button { width: 54px; height: 52px; display: grid; place-items: center; border: 1px solid #fbe4bf66; background: #383730c9; box-shadow: 0 3px 0 #302c3359; color: #ffe7be; font-size: 24px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .direction-button:active { background: #f6d5a8; color: #352e28; transform: translateY(2px); box-shadow: none; }
-.walk-help { display: flex; flex-direction: column; gap: 5px; padding-left: 12px; font-size: 11px; text-shadow: 0 1px 3px #302b31; }
-.keyboard-help { font: 12px "IBM Plex Mono", monospace; letter-spacing: 0.09em; }
+.walk-help { display: flex; flex-direction: column; gap: 5px; padding-left: 12px; font-size: 12px; font-weight: 600; text-shadow: 0 1px 3px #302b31; }
+.keyboard-help { font: 600 13px/1.5 var(--font-sans); letter-spacing: 0.04em; }
 .place-label { display: flex; align-items: center; gap: 12px; text-shadow: 0 1px 3px #302b31; }
 .place-dot { width: 7px; height: 7px; background: #fcd59a; box-shadow: 0 0 14px #fbd08699; transform: rotate(45deg); }
 .place-label div { display: flex; flex-direction: column; gap: 4px; }
-.place-label b { font: 400 19px Georgia, "Songti SC", serif; }
-.place-label div > span { font: 9px "IBM Plex Mono", monospace; letter-spacing: 0.18em; opacity: 0.7; }
+.place-label b { font: var(--font-display-weight) 19px var(--font-display); }
+.place-label div > span { font: 600 10px var(--font-sans); letter-spacing: 0.14em; }
 @media (max-width: 1000px) {
   .header-note { display: none; }
 }
@@ -87,7 +88,7 @@
   .town-intro { top: 159px; left: 22px; }
   .town-intro.scene-gallery .intro-caption { display: none; }
   .town-intro h1 { font-size: 35px; }
-  .intro-caption { font-size: 11px; max-width: 240px; }
+  .intro-caption { font-size: 12px; max-width: 240px; }
   .town-footer { left: 20px; right: 20px; bottom: max(26px, env(safe-area-inset-bottom)); align-items: flex-end; }
   .direction-button { width: 58px; height: 58px; }
   .walk-help { position: absolute; bottom: 72px; left: 0; padding-left: 0; }
@@ -108,9 +109,9 @@
 }
 @media (hover: none) { .keyboard-help { display: none; } }
 .lighthouse-note { position: absolute; visibility: hidden; z-index: 2; width: 290px; padding: 18px 20px; pointer-events: none; color: #f0e4ca; text-shadow: 0 2px 6px #081a2a; background: radial-gradient(ellipse at center, #0c203cbb, #0c203c44 58%, transparent 74%); }
-.lighthouse-note .eyebrow { margin: 0 0 10px; color: #c9c5ad; font-size: 8px; }
-.lighthouse-note h2 { margin: 0 0 13px; font: 22px/1.4 Georgia, "Songti SC", serif; letter-spacing: .04em; }
-.lighthouse-note > p:last-child { margin: 0; font: 13px/1.9 Georgia, "Songti SC", serif; white-space: pre-line; }
+.lighthouse-note .eyebrow { margin: 0 0 10px; color: #e1dcc4; font-size: 10px; }
+.lighthouse-note h2 { margin: 0 0 13px; font: var(--font-display-weight) 22px/1.4 var(--font-display); letter-spacing: .04em; }
+.lighthouse-note > p:last-child { margin: 0; font: 500 13px/1.9 var(--font-sans); white-space: pre-line; }
 @media (max-width: 600px) {
   .lighthouse-note { width: 215px; padding: 12px 8px; }
   .lighthouse-note h2 { font-size: 18px; margin-bottom: 8px; }

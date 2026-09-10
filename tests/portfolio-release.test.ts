@@ -28,3 +28,44 @@ test('production artifacts contain only the selected entry and no reference page
   expect(notices).toBe(read('public/THIRD_PARTY_NOTICES.txt'));
   for (const text of ['Meta Platforms', 'three.js authors', 'Permission is hereby granted', 'Copyright (c) 2025 BB']) expect(notices).toContain(text);
 });
+
+test('production HTML advertises the published profile JPEG before JavaScript runs', () => {
+  const html = read('dist/index.html');
+  const meta = new Map<string, string>();
+  new HTMLRewriter().on('meta', {
+    element(element) {
+      const key = element.getAttribute('property') ?? element.getAttribute('name');
+      if (key) meta.set(key, element.getAttribute('content') ?? '');
+    },
+  }).transform(html);
+  expect(meta.get('og:image')).toBe('https://0xbb.me/profile.jpg');
+  expect(meta.get('twitter:image')).toBe('https://0xbb.me/profile.jpg');
+  expect(meta.get('robots')).toBe('index, follow, max-image-preview:large');
+  expect(html).not.toContain('site-card.svg');
+  expect(readFileSync(path.join(root, 'dist/profile.jpg')).equals(readFileSync(path.join(root, 'public/profile.jpg')))).toBe(true);
+});
+
+test('production font rules and preloads resolve to bundled WOFF2 assets with their license', () => {
+  const css = readdirSync(path.join(root, 'dist/assets')).filter(name => name.endsWith('.css')).map(name => read(`dist/assets/${name}`)).join('\n');
+  expect(css).toContain('Noto Sans SC Variable');
+  expect(css).toContain('Noto Serif SC Variable');
+  expect(css).toContain('unicode-range:');
+  expect(css).not.toMatch(/node_modules|fonts\.googleapis|fonts\.gstatic|local\(/);
+  const fonts = [...css.matchAll(/url\(["']?([^\s)"']+\.woff2)["']?\)/g)].map(match => match[1]);
+  expect(fonts.length).toBeGreaterThan(2);
+  for (const reference of fonts) {
+    expect(reference).not.toMatch(/^(?:https?:|\/)/);
+    const bytes = readFileSync(path.resolve(root, 'dist/assets', reference));
+    expect(bytes.subarray(0, 4).toString()).toBe('wOF2');
+  }
+  const html = read('dist/index.html');
+  const preloads = [...html.matchAll(/<link\b[^>]*rel="preload"[^>]*>/g)].map(match => match[0]);
+  expect(preloads).toHaveLength(2);
+  for (const preload of preloads) {
+    const reference = preload.match(/href="([^"]+)"/)![1];
+    expect(reference).toStartWith('./assets/');
+    expect(reference).toContain('-latin-wght-normal-');
+    expect(existsSync(path.resolve(root, 'dist', reference))).toBe(true);
+  }
+  expect(read('dist/THIRD_PARTY_NOTICES.txt')).toContain('SIL OPEN FONT LICENSE Version 1.1');
+});

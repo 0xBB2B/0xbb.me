@@ -63,9 +63,6 @@ export function Hud({ session, input, graphics }: {
   const endPointer = (event: PointerEvent<HTMLButtonElement>) => input.release(`pointer:${event.pointerId}`);
 
   return <>
-    {graphics === 'loading' && <p className="graphics-status graphics-loading" role="status">
-      {text.graphicsLoading}
-    </p>}
     {graphics === 'unavailable' && !session.reader && <p className="graphics-status" role="alert">{text.graphicsUnavailable}</p>}
     <header className={`town-header scene-${session.scene}`}>
       <a className="wordmark" href="./" aria-label="FUBUKI_BB home"><span className="brand-mark" aria-hidden="true">f.</span>{APP_DATA.profile.name}</a>
