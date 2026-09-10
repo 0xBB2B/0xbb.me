@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "cyberdeck-portfolio",
+      "name": "mc2d-portfolio",
       "dependencies": {
         "react": "^19.2.1",
         "react-dom": "^19.2.1",

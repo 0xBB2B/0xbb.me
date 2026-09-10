@@ -3,8 +3,7 @@ import type { NpcId, SceneId } from './journey';
 
 export const UI_COPY = {
   en: {
-    town: 'Dusk town', chapter: '01 / A WALK AT GOLDEN HOUR', title: 'A little town.\nA wider world.',
-    welcome: 'Take a stroll. Get to know the person behind the code.', overview: 'Quick overview',
+    overview: 'Quick overview',
     left: 'Move left', right: 'Move right', walk: 'Hold to walk · Release to pause', keyboard: 'A / D  or  ← / → · Shift to run · Space to jump',
     changeCharacter: 'Switch outfit', changingCharacter: 'Changing outfit…',
     npcSurprised: 'The greeter is surprised', outfitCompliment: 'Your new outfit looks great!',
@@ -13,14 +12,12 @@ export const UI_COPY = {
     source: 'Source', visit: 'Visit', contacts: 'Find me elsewhere', talk: 'Talk', view: 'View',
     enterRoom: 'Open & enter', exitRoom: 'Open & exit', openingDoor: 'Opening door…',
     previous: 'Previous page', next: 'Next page', closeDialogue: 'Close introduction', closeBoard: 'Close details',
-    preview: 'Character appearance preview · Hold a direction to walk.',
     graphicsLoading: 'Loading graphics… You can open the quick overview now.',
     graphicsUnavailable: 'Graphics unavailable. The complete profile remains available below.',
     overviewLabel: 'Profile overview', dialogueLabel: 'World lore', boardLabel: 'Details',
   },
   zh: {
-    town: '黄昏小镇', chapter: '01 / 漫步于日落时分', title: '一座小镇，\n一个更大的世界。',
-    welcome: '沿着石板路走走，认识代码背后的我。', overview: '资料速览', left: '向左', right: '向右',
+    overview: '资料速览', left: '向左', right: '向右',
     walk: '按住行走 · 松开停下', keyboard: 'A / D  或  ← / → · Shift 快跑 · 空格跳跃', closeOverview: '返回城镇',
     changeCharacter: '切换服装', changingCharacter: '正在换装…',
     npcSurprised: '迎宾者感到惊讶', outfitCompliment: '新服装真好看',
@@ -28,7 +25,6 @@ export const UI_COPY = {
     profile: '代码背后的我', skills: '技能', projects: '作品', source: '源码', visit: '访问', contacts: '联系入口',
     talk: '交谈', view: '查看', previous: '上一页', next: '下一页', closeDialogue: '关闭介绍', closeBoard: '关闭详情',
     enterRoom: '开门进入', exitRoom: '开门离开', openingDoor: '正在开门…',
-    preview: '人物造型预览 · 按住方向键即可行走。',
     graphicsLoading: '正在加载图形……现在即可打开资料速览。',
     graphicsUnavailable: '图形不可用，完整个人资料仍可在下方阅读。',
     overviewLabel: '资料速览', dialogueLabel: '世界观', boardLabel: '内容详情',
@@ -81,5 +77,3 @@ export function npcPages(_npc: NpcId, language: Language): NpcPage[] {
     { title: '星海与归航', body: '走出工厂，眼前就是那片会发光的海。蓝色微光在浪里聚拢，靠近岸边又轻轻散开。海平线上方有三颗明亮的星星，每一颗都替走近的人收着一个故事。\n\n沿木板路一直走，就能到灯塔旁。它的光缓缓转过黑夜，从不追问你去了哪里。我总觉得，它不是在替人指定唯一正确的方向，而是在提醒我们：回来的路还在。\n\n这就是我们的小小世界——一座可以歇脚的镇子，一个值得推门探看的房间，一片让目光走得更远的海。去找令你向往的生活吧，旅人。我们会在这里留一盏灯。' },
   ];
 }
-
-export const greeterPages = (language: Language) => npcPages('greeter', language);

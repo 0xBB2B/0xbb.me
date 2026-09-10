@@ -85,7 +85,6 @@ export function Hud({ session, input, graphics }: {
       <p className="eyebrow">{sceneText.chapter}</p>
       <h1>{sceneText.title}</h1>
       <p className="intro-caption">{sceneText.welcome}</p>
-      <p className="character-preview-note">{text.preview}</p>
     </section>
     {ending && !session.reader && <aside className="lighthouse-note" aria-label={language === 'en' ? 'A note by the lighthouse' : '灯塔旁的题记'}>
       <p className="eyebrow">{LIGHTHOUSE_COPY[language].chapter}</p>

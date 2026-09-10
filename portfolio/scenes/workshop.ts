@@ -37,7 +37,7 @@ function terminal(parent: THREE.Group, id: string, x: number, index: number) {
   const material = screen.material as THREE.MeshStandardMaterial;
   material.emissive.set(0x0d343e);
   material.emissiveIntensity = .32;
-  // The projected copy lives inside this recessed glass surface, not on a separate card.
+  // This recessed glass surface anchors the projected cabinet text.
   for (const side of [-1, 1]) {
     box(cabinet, 0x162630, side * 1.4, 2.08, .41, .12, 2.28, .15);
     lightStrip(cabinet, color, side * 1.5, 2.07, .38, .035, 2.67);

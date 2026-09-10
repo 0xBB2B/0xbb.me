@@ -148,7 +148,7 @@ beforeAll(async () => {
     expect(journey.initial.url, 'Browser actually loaded the homepage').toBe(url);
     expect(journey.initial.ready).toBe('complete');
   }
-  console.info('Character preview observations:', JSON.stringify(result, (key, value) => {
+  console.info('Homepage observations:', JSON.stringify(result, (key, value) => {
     if (['text', 'profile', 'body'].includes(key) && typeof value === 'string') return `[${value.length} characters]`;
     if (key === 'requests') return `[${value.length} observed requests]`;
     return value;
@@ -196,7 +196,7 @@ for (const [index, viewport] of viewports.entries()) {
     });
     test('player/AC-1, AC-11: geometry characters with only the confirmed persona image in overview reading', () => {
       const { initial, traffic } = result.journeys[index];
-      expect(initial.text).toMatch(/造型预览|appearance preview|character preview/i);
+      expect(initial.text).not.toMatch(/造型预览|appearance preview|character preview/i);
       expect(initial.text).not.toMatch(/walking animation not yet complete|行走动画尚未完成/i);
       expect(traffic.requests.filter(r => /player-redraw/i.test(r))).toEqual([]);
       for (const image of traffic.requests.filter(r => /\.(?:png|jpe?g)(?:[?#]|$)/i.test(r))) {

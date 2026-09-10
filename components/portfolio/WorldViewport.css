@@ -36,7 +36,6 @@
 .header-note { margin-left: 12px; font-size: 11px; letter-spacing: 0.07em; opacity: 0.75; }
 .town-header nav { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 .town-header button, .overview-toolbar button { min-height: 42px; padding: 9px 15px; border: 1px solid #73594050; font-size: 12px; letter-spacing: 0.02em; }
-.character-preview-note { max-width: 285px; margin-top: 12px; font-size: 11px; line-height: 1.6; }
 .language-button { background: #ffefcc26; white-space: nowrap; }
 .language-button span { margin-right: 5px; }
 .overview-button { background: #fff0d4d9; box-shadow: 0 2px 0 #60422c20; white-space: nowrap; }
@@ -56,7 +55,6 @@
 .avatar-switch:disabled { cursor: wait; opacity: .72; }
 .town-intro { position: absolute; z-index: 2; left: 40px; top: 132px; pointer-events: none; color: #423a35; }
 .town-header, .town-intro { transition: color .8s ease, text-shadow .8s ease; }
-.town-intro.scene-gallery .character-preview-note, .town-intro.scene-workshop .character-preview-note { display: none; }
 .town-header.scene-workshop, .town-intro.scene-workshop { color: #dff9ff; text-shadow: 0 1px 4px #173447; }
 .town-header.scene-gallery, .town-intro.scene-gallery { color: #f0eaff; text-shadow: 0 1px 5px #090b20; }
 .scene-workshop .brand-mark, .scene-gallery .brand-mark { border-color: #dceaff70; }

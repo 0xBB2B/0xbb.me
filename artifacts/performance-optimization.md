@@ -15,7 +15,7 @@
 ## 用户最终要求：默认静默后台
 - 不再主动激活浏览器、不抢用户焦点，不为了测试时序执行open -a或Page.bringToFront。
 - tests/headless-browser.ts供全部浏览器测试共用，仅使用--headless=new和临时独立资料目录。最终30秒无窗口三景行走1802帧、P95 16.7ms、最大16.8ms，通过33.4ms门槛；记录标为headless-final-all。**此前有窗口性能数据不作为无窗口测量数据**。
-- ego本身的无窗口能力尚未确认，不调用它。项目tests/browser.ts已直接使用无窗口Chrome发送真实输入事件，去掉ego启动、任务空间和确认变量，不提供旧驱动回退。
+- tests/browser.ts通过无窗口Chrome发送真实输入事件；独立实例使用临时资料目录，结束后关闭并清理。
 - 全局AGENTS.md记录静默要求，~/.pi/agent/mcp.json已为chrome-devtools加入--headless/--isolated。用缓存的官方1.8.0服务及这些参数完成真实MCP握手、list_pages、evaluate_script，确认HeadlessChrome后关闭实例；用户重载Pi后，当前工具连接也已验证HeadlessChrome，后台创建的复核页已关闭。
 - 无窗口通道完整验收：206项通过、0失败、9017断言（41文件），构建/类型检查通过；包括三景往返、门、双语阅读、换装、彩蛋、故障恢复、真实可信输入和失活清理。未再次提交、推送或上线。
 

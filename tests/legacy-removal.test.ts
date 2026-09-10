@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dir, '..');
@@ -18,10 +18,14 @@ test('the unused rhythm-game implementation, adapters and dedicated tests are de
 
 test('the temporary design directory is removed while production models and the selected portrait remain', () => {
   expect(existsSync(path.join(root, 'design-reference'))).toBe(false);
-  for (const name of ['player-voxel.ts', 'player-voxel-black.ts']) {
-    expect(existsSync(path.join(root, 'portfolio/models', name)), name).toBe(true);
-  }
+  expect(existsSync(path.join(root, 'portfolio/models/player-voxel-black.ts'))).toBe(true);
+  expect(existsSync(path.join(root, 'portfolio/models/player-voxel.ts'))).toBe(false);
   expect(existsSync(path.join(root, 'public/profile-full.png'))).toBe(true);
+});
+
+test('old comparison screenshots, source backups and diffs no longer remain in the project cache', () => {
+  const cache = path.join(root, '.pi-spec/.cache');
+  expect(existsSync(cache) ? readdirSync(cache).filter(name => name.startsWith('t33-')) : []).toEqual([]);
 });
 
 test('the application keeps its runtime dependencies but no longer carries motion or its private packages', () => {

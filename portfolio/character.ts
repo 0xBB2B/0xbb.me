@@ -89,7 +89,7 @@ export function createCharacter(appearance: PlayerAppearance = 'black') {
     root,
     update(session: Session, camera: THREE.Camera) {
       root.position.set(session.x, ROAD_HEIGHT, 0.6);
-      // Keep the sole origin and existing camera-facing orientation.
+      // The root faces the camera with its origin at sole height.
       root.quaternion.copy(camera.quaternion);
       // Keep the model upright while the billboard root follows the pitched camera.
       model.quaternion.copy(root.quaternion).invert();

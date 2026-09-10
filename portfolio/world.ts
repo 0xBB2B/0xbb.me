@@ -56,8 +56,8 @@ export function createWorld() {
   sunlight.shadow.normalBias = 0.04;
   sunlight.shadow.bias = -0.0003;
 
-  // Continue after the town's original stone promenade: the top stays at the
-  // character's 0.035 sole height without covering or z-fighting the pavers.
+  // The road meets the stone promenade at sole height (0.035),
+  // with distinct surfaces to avoid z-fighting.
   const roadStart = 21.15;
   const roadEnd = BOARDWALK.start;
   const road = box(scene, 0x8c8790, (roadStart + roadEnd) / 2, -0.015, 0.4, roadEnd - roadStart, 0.1, 4.8);
