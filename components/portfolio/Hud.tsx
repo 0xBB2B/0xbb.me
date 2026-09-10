@@ -4,7 +4,7 @@ import { LIGHTHOUSE_COPY, SCENE_COPY, UI_COPY } from '../../portfolio/copy';
 import { boardById, JOURNEY } from '../../portfolio/journey';
 import type { TownInput } from '../../portfolio/input';
 import {
-  closeReader, cycleAppearance, openBoard, openDialogue, openNearbyDoor, openOverview, setDialoguePage, setLanguage,
+  closeReader, cycleAppearance, jump, openBoard, openDialogue, openNearbyDoor, openOverview, setDialoguePage, setLanguage,
   subscribeSession, type Session,
 } from '../../portfolio/state';
 import { BoardDetails } from './BoardDetails';
@@ -34,6 +34,7 @@ export function Hud({ session, input, graphics }: {
 
   useEffect(() => subscribeSession(session, rerender), [session]);
   useEffect(() => {
+    input.setJump(() => { jump(session); });
     input.setInteract(() => {
       if (openNearbyDoor(session) || openDialogue(session) || openBoard(session)) input.pause(true);
     });
@@ -45,6 +46,7 @@ export function Hud({ session, input, graphics }: {
     return () => {
       input.setInteract(() => {});
       input.setCancel(() => {});
+      input.setJump(() => {});
     };
   }, [session, input]);
   useEffect(() => { document.documentElement.lang = isEnglish ? 'en' : 'zh-CN'; }, [isEnglish]);

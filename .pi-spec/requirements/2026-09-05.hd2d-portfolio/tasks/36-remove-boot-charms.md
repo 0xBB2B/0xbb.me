@@ -5,7 +5,7 @@ depends_on: [T-35]
 files: [/Users/bb/Projects/0xbb.me/design-reference/player-voxel-black.ts, /Users/bb/Projects/0xbb.me/design-reference/player-voxel-black.glb, /Users/bb/Projects/0xbb.me/design-reference/character-design.test.ts]
 refs: [portfolio/player/AC-1, portfolio/player/AC-11]
 parallel: false
-verify: cd /Users/bb/Projects/0xbb.me && bun test ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit
+verify: cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/models/player-voxel.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit
 status: done
 agent: 530320ca-b36f-4509-be8a-82f90ce84e62
 commit: 0401580dc52705ea0c436a673f572879047e3f00
@@ -41,11 +41,11 @@ note: "worker真实Red→Green通过；主agent独立复验42项测试、1375条
 - 保持已有一次性0.8缩放、高2.4、脚底0和闭嘴无舌，不调整视角或人物其他形状补偿。
 ## 8. 验证方式
 - 测试授权仅design-reference/character-design.test.ts；tests/browser.ts、tests/character-toggle.test.ts、tests/portfolio-playable.test.ts及全部其他测试只读。Green阶段不改测试预期，不把导入或环境失败作为Red。
-- Red命令：cd /Users/bb/Projects/0xbb.me && bun test ./design-reference/character-design.test.ts。
+- Red命令：cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/models/player-voxel.test.ts。
 - 通过既有createBlackOutfitPlayerVoxel返回的真实模型和GLTFLoader回读实际player-voxel-black.glb，先证明两组挂件仍存在导致新断言失败；测试不得只搜源码关键词。分别检测双腿的挂件/链/高光不存在，鞋带、鞋扣、厚底、耳饰及自然闭嘴保留。
 - 在Red阶段捕获保留部件的真实几何/颜色/变换基线或现有准确数值，防止通过删腿、重命名、改色或隐藏挂件骗过断言；对照删除后其余几何及尺寸不变。
 - 通过既有单模型页exportVoxel实际导出GLB，回读其高度2.4、脚底0、双靴无挂件/链/高光，且images/textures/外部buffer为空；不要只改源码而保留旧导出。
 - 真实页面入口http://127.0.0.1:3000/，独立页http://127.0.0.1:3000/design-reference/character-comparison.html。使用已安装ego-browser及原helper，先确认HTTP/图形正常，再检查主页和独立页正面/斜侧近景：没有蓝挂件或悬空链条，鞋带/鞋扣/厚底/蓝耳饰仍可辨，无新增切换按钮。
-- 完整独立verify：cd /Users/bb/Projects/0xbb.me && bun test ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit。
+- 完整独立verify：cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/models/player-voxel.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit。
 - 保留三视口1440×900、390×844、844×390及真实左右移动/释放、语言/资料回归；不改变房屋/镜头/速度，不宣称步态或M1已完成。
 - 提交结构化Red/Green命令、结果与实际回读/观察证据；临时导出中间文件、日志和截图结束后清理，不将位图引入页面或添加测试钩子。

@@ -25,6 +25,35 @@ test('Shift sprint preserves normal walking, closed-door collision, reading paus
   expect(end.atLighthouse).toBe(true);
 });
 
+test('Space is a desktop-only single press, does not auto-repeat and respects pause/blur', () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  const names = ['window', 'document', 'HTMLElement'];
+  const previous = names.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
+  const windowTarget = new EventTarget(), documentTarget = new EventTarget();
+  let coarse = false, jumps = 0;
+  Object.defineProperty(windowTarget, 'matchMedia', { value: () => ({ matches: coarse }) });
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: windowTarget });
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: documentTarget });
+  Object.defineProperty(globalThis, 'HTMLElement', { configurable: true, value: class {} });
+  const input = createInput(); input.setJump(() => jumps++); const detach = input.attach();
+  const key = (type: string, repeat = false, ctrlKey = false) => windowTarget.dispatchEvent(Object.assign(new Event(type, { cancelable: true }), { code: 'Space', repeat, ctrlKey }));
+  try {
+    expect(key('keydown')).toBe(false); expect(jumps).toBe(1);
+    key('keydown', true); key('keydown'); expect(jumps).toBe(1);
+    key('keyup'); key('keydown'); expect(jumps).toBe(2);
+    key('keyup'); input.pause(true); key('keydown'); expect(jumps).toBe(2);
+    input.pause(false); key('keydown', true); expect(jumps).toBe(2);
+    key('keyup'); key('keydown'); expect(jumps).toBe(3);
+    windowTarget.dispatchEvent(new Event('blur')); key('keydown', true); expect(jumps).toBe(3);
+    key('keyup'); coarse = true; key('keydown'); expect(jumps).toBe(3);
+    coarse = false; key('keyup'); key('keydown', false, true); expect(jumps).toBe(3);
+    key('keyup'); key('keydown'); expect(jumps).toBe(4);
+  } finally {
+    detach();
+    names.forEach((name, index) => { const descriptor = previous[index]; if (descriptor) Object.defineProperty(globalThis, name, descriptor); else delete globals[name]; });
+  }
+});
+
 test('both Shift keys are held modifiers, cleared by pause and blur, and never accelerate pointer controls', () => {
   const globals = globalThis as unknown as Record<string, unknown>;
   const names = ['window', 'document', 'HTMLElement'];

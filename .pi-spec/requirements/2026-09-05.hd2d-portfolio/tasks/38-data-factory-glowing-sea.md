@@ -5,7 +5,7 @@ depends_on: [T-37]
 files: [portfolio/scenes/workshop.ts, portfolio/scenes/gallery.ts, portfolio/world.ts, portfolio/journey.ts, portfolio/copy.ts, data.ts, components/portfolio/Boards.tsx, components/portfolio/Boards.css, tests/portfolio-atmosphere.test.ts, tests/portfolio-journey.test.ts]
 refs: [portfolio/world/AC-1, portfolio/world/AC-2, portfolio/world/AC-3, portfolio/world/AC-4, portfolio/world/AC-5, portfolio/npc-dialogue/AC-3, portfolio/npc-dialogue/AC-7, portfolio/responsive-layout/AC-3]
 parallel: false
-verify: bun run build && bun test ./tests/portfolio-atmosphere.test.ts ./tests/portfolio-boards.test.ts ./tests/portfolio-journey.test.ts ./plugins/htmlPlugin.test.ts ./public-assets.test.ts ./design-reference/reference.test.ts ./portfolio/character.test.ts ./design-reference/character-design.test.ts ./design-reference/scene-comparison.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts ./tests/portfolio-delivery.test.ts && ./node_modules/.bin/tsc --noEmit
+verify: bun run build && bun test ./tests/portfolio-atmosphere.test.ts ./tests/portfolio-boards.test.ts ./tests/portfolio-journey.test.ts ./plugins/htmlPlugin.test.ts ./public-assets.test.ts ./tests/portrait-asset.test.ts ./portfolio/character.test.ts ./portfolio/models/player-voxel.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts ./tests/portfolio-delivery.test.ts && ./node_modules/.bin/tsc --noEmit
 status: done
 agent: ""
 commit: ""

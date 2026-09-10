@@ -5,7 +5,7 @@ depends_on: []
 files: [/Users/bb/Projects/0xbb.me/portfolio/character.ts, /Users/bb/Projects/0xbb.me/portfolio/character.test.ts]
 refs: [portfolio/player/AC-1, portfolio/player/AC-2, portfolio/player/AC-3, portfolio/player/AC-4, portfolio/player/AC-5, portfolio/player/AC-7, portfolio/world/AC-2, portfolio/responsive-layout/AC-1]
 parallel: false
-verify: cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/character.test.ts ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit
+verify: cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/character.test.ts ./portfolio/models/player-voxel.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit
 status: done
 agent: a8ceccac-3005-4050-a27f-865b6de32951
 commit: e38e54f73940a1241f0354601d385b4699e0f75e
@@ -86,7 +86,7 @@ note: "AI-028返修运行a8ceccac正常完成且red-green PASS；主agent独立v
 - 验证左右行走朝向对应道路方向，保留角色辨识度；由运行时相机变换后的实际脚底检查地面关系，不能只检查未变换的局部y坐标。
 - 反复相位更新以及左右转向不累积缩放/位移误差；walking=false、paused=true及道路端点停止状态均停止迈步，重新输入后正常恢复。
 - 复用已有createSession/advance/input公开接口或真实浏览器输入验证A/D/箭头、触屏左右及释放/cancel/blur，关闭资料后须新输入恢复，两端可返回；不得以DOM控件存在当作移动停止证据。
-- 完整verify：cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/character.test.ts ./design-reference/character-design.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit。
+- 完整verify：cd /Users/bb/Projects/0xbb.me && bun test ./portfolio/character.test.ts ./portfolio/models/player-voxel.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts && ./node_modules/.bin/tsc --noEmit。
 - 真实网页http://127.0.0.1:3000/，用已有ego-browser和helper；先确认HTTP与图形正常。1440×900、390×844、844×390分别操作左右行走、松手、资料开关；拍同视口待机/左右不同步态相位或录制并实际查看，不用静态截图声称完整步态。
 - 画面检查双腿交替、手臂配合、朝向、完整鞋脚、无明显穿地/跳动/滑行，房屋/镜头/速度不变；world/AC-2仍仅验城镇，三景由T-30处理。不得制作NPC/工坊/展街或修改数据/依赖/发布配置。
 - 若两文件范围不足以正确完成，报告具体技术阻塞，不越权改外部文件或弱化测试。临时日志/截图/视频验证后清理，最终structured_output提供真实命令与动作证据。

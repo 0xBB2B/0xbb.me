@@ -47,7 +47,6 @@ type Journey = {
   refreshed: Frame;
 };
 let journeys: Journey[];
-let modelPreviewText = '';
 
 describe('public greeter interaction model', () => {
   test('npc-dialogue/AC-1, AC-5: the 1.8-unit boundary is inclusive and outside interaction is ignored', () => {
@@ -123,7 +122,7 @@ const observe = String.raw`(async () => {
 beforeAll(async () => {
   const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
   expect(response.status, 'Public homepage prerequisite').toBe(200);
-  const result = await runBrowser<{ journeys: Journey[]; modelPreviewText: string }>(`
+  const result = await runBrowser<{ journeys: Journey[] }>(`
     await navigate(${JSON.stringify(url)}, { timeout: 20 })
     const observe = async () => {
       const frame = await js(${JSON.stringify(observe)})
@@ -274,22 +273,14 @@ beforeAll(async () => {
         journeys.push({ initial, overviewEn, overviewZh, near, first, second, translatedSecond, third,
           paused, closedAfterHeldInput, freshMovement, rereadReady, rereadActivated, reread, escaped, far, ignored, refreshed })
       }
-      await navigate('http://127.0.0.1:3000/design-reference/character-comparison.html', { timeout: 20, settle: 1 })
-      const modelPreviewText = await js('document.body.innerText')
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ journeys, modelPreviewText }))
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ journeys }))
     } finally {
       await cdp('Emulation.setTouchEmulationEnabled', { enabled: false })
       await cdp('Emulation.clearDeviceMetricsOverride')
     }
   `);
-  modelPreviewText = result.modelPreviewText;
   journeys = result.journeys;
 }, 240_000);
-
-test('player/AC-11: standalone model preview does not report completed gait as unfinished', () => {
-  expect(modelPreviewText).toMatch(/造型预览/);
-  expect(modelPreviewText).not.toMatch(/walking animation not yet complete|行走动画尚未完成/i);
-});
 
 const expectedLinks = [
   'https://0xbb.me/',

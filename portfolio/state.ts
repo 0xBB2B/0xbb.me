@@ -11,6 +11,8 @@ export type Reader = 'dialogue' | 'board' | 'overview' | null;
 export const PLAYER_APPEARANCES = ['black', 'dress'] as const;
 export type PlayerAppearance = typeof PLAYER_APPEARANCES[number];
 export const APPEARANCE_CHANGE_SECONDS = .65;
+const JUMP_SPEED = 5.6;
+const JUMP_GRAVITY = 16;
 export { GREETER_X, INTERACTION_DISTANCE, ROAD };
 
 type Listener = () => void;
@@ -22,6 +24,9 @@ export function createSession() {
     walking: false,
     stride: 0,
     sprintBlend: 0,
+    jumpOffset: 0,
+    jumpVelocity: 0,
+    jumpPose: { lead: -1, stride: 0, sprintBlend: 0 },
     appearance: 'black' as PlayerAppearance,
     appearanceTransition: null as { target: PlayerAppearance; elapsed: number } | null,
     outfitComplimentSeen: false,
@@ -57,6 +62,19 @@ export function setLanguage(session: Session, language: Language) {
   if (session.language === language) return;
   session.language = language;
   notify(session);
+}
+
+export function jump(session: Session) {
+  if (session.paused || session.reader || session.openingDoor || session.appearanceTransition || session.npcReaction
+    || session.jumpOffset > 0 || session.jumpVelocity > 0) return false;
+  const stride = session.walking ? Math.sin(session.stride) : 0;
+  const lead = session.walking
+    ? (Math.abs(stride) > 1e-6 ? Math.sign(stride) : Math.sign(Math.cos(session.stride)))
+    : -1;
+  session.jumpPose = { lead, stride, sprintBlend: session.sprintBlend };
+  session.jumpVelocity = JUMP_SPEED;
+  session.stride = 0;
+  return true;
 }
 
 export function cycleAppearance(session: Session) {
@@ -172,6 +190,12 @@ export function updateProximity(session: Session) {
 
 export function advance(session: Session, direction: Direction, seconds: number, sprinting = false, elapsedSeconds = seconds) {
   const previous = session.x;
+  const wasAirborne = session.jumpOffset > 0 || session.jumpVelocity > 0;
+  if (!session.paused && !session.reader && !session.openingDoor && !session.appearanceTransition && !session.npcReaction
+    && (session.jumpOffset > 0 || session.jumpVelocity > 0)) {
+    session.jumpOffset = Math.max(0, session.jumpOffset + session.jumpVelocity * seconds - .5 * JUMP_GRAVITY * seconds * seconds);
+    session.jumpVelocity = session.jumpOffset > 0 ? session.jumpVelocity - JUMP_GRAVITY * seconds : 0;
+  }
   if (session.npcReaction) {
     const reaction = session.npcReaction;
     const frame = npcReactionFrame(reaction.elapsed);
@@ -209,6 +233,6 @@ export function advance(session: Session, direction: Direction, seconds: number,
   session.walking = session.x !== previous;
   const running = session.walking && sprinting;
   session.sprintBlend += ((running ? 1 : 0) - session.sprintBlend) * (1 - Math.exp(-seconds * 14));
-  session.stride = session.walking ? session.stride + Math.abs(session.x - previous) * (running ? 2.6 : 4.2) : 0;
+  session.stride = session.walking && !wasAirborne ? session.stride + Math.abs(session.x - previous) * (running ? 2.6 : 4.2) : 0;
   updateProximity(session);
 }

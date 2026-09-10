@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createBlackOutfitPlayerVoxel } from '../design-reference/player-voxel-black';
+import { createBlackOutfitPlayerVoxel } from './models/player-voxel-black';
 import { disposeScene } from './geometry';
 import type { PlayerAppearance, Session } from './state';
 import { createAvatarModel } from './avatar-models';
@@ -97,19 +97,30 @@ export function createCharacter(appearance: PlayerAppearance = 'black') {
       model.position.y = 0;
       leftSupport.scale.y = rightSupport.scale.y = 1;
 
-      const stride = session.walking && !session.paused ? Math.sin(session.stride) : 0;
+      const airborne = session.jumpOffset > 0 || session.jumpVelocity > 0;
+      const spread = airborne ? THREE.MathUtils.smoothstep(session.jumpOffset, 0, .55) : 0;
+      const stride = session.walking && !session.paused && !airborne ? Math.sin(session.stride) : 0;
       const legSwing = THREE.MathUtils.lerp(LEG_SWING, .72, session.sprintBlend);
       const armSwing = THREE.MathUtils.lerp(ARM_SWING, .78, session.sprintBlend);
-      leftHip.rotation.x = stride * legSwing;
-      rightHip.rotation.x = -stride * legSwing;
-      leftArm.rotation.x = -stride * armSwing;
-      rightArm.rotation.x = stride * armSwing;
+      const takeoff = session.jumpPose;
+      const heldLeg = takeoff.lead * .52, heldArm = -takeoff.lead * .65;
+      const jumpLeg = !airborne ? 0 : session.jumpVelocity > 0
+        ? THREE.MathUtils.lerp(takeoff.stride * THREE.MathUtils.lerp(LEG_SWING, .72, takeoff.sprintBlend), heldLeg, spread)
+        : heldLeg * spread;
+      const jumpArm = !airborne ? 0 : session.jumpVelocity > 0
+        ? THREE.MathUtils.lerp(-takeoff.stride * THREE.MathUtils.lerp(ARM_SWING, .78, takeoff.sprintBlend), heldArm, spread)
+        : heldArm * spread;
+      leftHip.rotation.x = stride * legSwing + jumpLeg;
+      rightHip.rotation.x = -stride * legSwing - jumpLeg;
+      leftArm.rotation.x = -stride * armSwing + jumpArm;
+      rightArm.rotation.x = stride * armSwing - jumpArm;
       if (gown) {
-        gown.rotation.x = -stride * .025;
+        gown.rotation.x = -stride * .025 - spread * .04;
         gown.rotation.z = stride * .025;
-        gown.position.y = Math.abs(stride) * .3;
+        gown.position.y = Math.abs(stride) * .3 + spread * .25;
       }
-      keepFeetOnRoad(session.walking && !session.paused ? session.sprintBlend : 0, session.stride);
+      keepFeetOnRoad(session.walking && !session.paused && !airborne ? session.sprintBlend : 0, session.stride);
+      root.position.y += session.jumpOffset;
     },
     dispose() {
       root.removeFromParent();

@@ -5,7 +5,7 @@ depends_on: []
 files: [/Users/bb/Projects/0xbb.me/App.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/Hud.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/WorldViewport.tsx, /Users/bb/Projects/0xbb.me/components/portfolio/WorldViewport.css, /Users/bb/Projects/0xbb.me/portfolio/character.ts, /Users/bb/Projects/0xbb.me/portfolio/runtime.ts, /Users/bb/Projects/0xbb.me/design-reference/player-voxel-black.ts, /Users/bb/Projects/0xbb.me/design-reference/player-voxel-black.glb, /Users/bb/Projects/0xbb.me/design-reference/character-comparison.html, /Users/bb/Projects/0xbb.me/design-reference/character-comparison.ts, /Users/bb/Projects/0xbb.me/design-reference/character-design.test.ts, /Users/bb/Projects/0xbb.me/tests/character-toggle.test.ts]
 refs: [portfolio/player/AC-1, portfolio/player/AC-11, portfolio/responsive-layout/AC-1]
 parallel: false
-verify: cd /Users/bb/Projects/0xbb.me && bun test ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts ./design-reference/character-design.test.ts && ./node_modules/.bin/tsc --noEmit
+verify: cd /Users/bb/Projects/0xbb.me && bun test ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts ./portfolio/models/player-voxel.test.ts && ./node_modules/.bin/tsc --noEmit
 status: done
 agent: 9e575291-776f-4903-aaed-c27dc61bddce
 commit: 35a13ae01b91dd5fa0a0989b61442deb0d165276
@@ -52,7 +52,7 @@ note: "原Red→Green运行56d38caf-92a9-4ff2-9fe9-ba1d9e1f4c09通过；AI-024�
 ## 8. 验证方式
 - 测试授权：首次Red仅修改tests/character-toggle.test.ts与design-reference/character-design.test.ts；tests/browser.ts和tests/portfolio-playable.test.ts只读保留。Red之后不得弱化断言换取Green。
 - AI-024续修仅允许tests/character-toggle.test.ts移除无消费的toggle、SVG/白装/失败恢复准备旅程及孤立字段；不得改新断言语义或生产代码。清理前后跑完整verify，并明确引用同任务原生运行56d38caf-92a9-4ff2-9fe9-ba1d9e1f4c09的真实Red：12 pass/6 fail，按钮1而非0、尺寸3而非2.4、Tongue/Tongue_crease存在；不得制造假Red。报告清理的测试文件与未改断言证据。
-- 独立命令：cd /Users/bb/Projects/0xbb.me && bun test ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts ./design-reference/character-design.test.ts && ./node_modules/.bin/tsc --noEmit。
+- 独立命令：cd /Users/bb/Projects/0xbb.me && bun test ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts ./portfolio/models/player-voxel.test.ts && ./node_modules/.bin/tsc --noEmit。
 - 使用已恢复的ego-browser和原runBrowser真实页面入口http://127.0.0.1:3000/；先确认HTTP与浏览器正常，再因现有切换按钮、模型3高及舌头存在产生真实行为Red，不把导入或环境错误作为Red。
 - 公开模型接口为已存在的createBlackOutfitPlayerVoxel返回Group及实际GLB；测量真实几何包围盒为原[x=1.2030719151632912,y=3,z=1.0048746332120269]各乘0.8（允许浮点误差），高度2.4、脚底0；多次构造/更新尺寸不累积变化。
 - 真实几何和导出模型不再有舌头/吐舌口型，实际近景截图确认自然闭嘴，不用仅改网格名称隐藏舌头；黑装、银白马尾、蓝眼/耳饰、腰部肤色、短裤/腰带、单侧袜、靴带/鞋带/蓝饰保持可辨。

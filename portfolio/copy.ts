@@ -5,7 +5,7 @@ export const UI_COPY = {
   en: {
     town: 'Dusk town', chapter: '01 / A WALK AT GOLDEN HOUR', title: 'A little town.\nA wider world.',
     welcome: 'Take a stroll. Get to know the person behind the code.', overview: 'Quick overview',
-    left: 'Move left', right: 'Move right', walk: 'Hold to walk · Release to pause', keyboard: 'A / D  or  ← / → · Shift to run',
+    left: 'Move left', right: 'Move right', walk: 'Hold to walk · Release to pause', keyboard: 'A / D  or  ← / → · Shift to run · Space to jump',
     changeCharacter: 'Switch outfit', changingCharacter: 'Changing outfit…',
     npcSurprised: 'The greeter is surprised', outfitCompliment: 'Your new outfit looks great!',
     appearanceBlack: 'Black outfit', appearanceDress: 'A · Black gown',
@@ -21,7 +21,7 @@ export const UI_COPY = {
   zh: {
     town: '黄昏小镇', chapter: '01 / 漫步于日落时分', title: '一座小镇，\n一个更大的世界。',
     welcome: '沿着石板路走走，认识代码背后的我。', overview: '资料速览', left: '向左', right: '向右',
-    walk: '按住行走 · 松开停下', keyboard: 'A / D  或  ← / → · Shift 快跑', closeOverview: '返回城镇',
+    walk: '按住行走 · 松开停下', keyboard: 'A / D  或  ← / → · Shift 快跑 · 空格跳跃', closeOverview: '返回城镇',
     changeCharacter: '切换服装', changingCharacter: '正在换装…',
     npcSurprised: '迎宾者感到惊讶', outfitCompliment: '新服装真好看',
     appearanceBlack: '黑装', appearanceDress: 'A · 黑色长裙',

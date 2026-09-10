@@ -8,7 +8,9 @@ export function createInput() {
   let paused = false;
   let interact: () => void = () => {};
   let cancel: () => void = () => {};
-  const clear = () => { held.clear(); shiftKeys.clear(); };
+  let jump: () => void = () => {};
+  let spaceHeld = false;
+  const clear = () => { held.clear(); shiftKeys.clear(); spaceHeld = false; };
   const release = (source: string) => { held.delete(source); };
   const press = (source: string, direction: Direction) => {
     if (!paused) held.set(source, direction);
@@ -17,6 +19,14 @@ export function createInput() {
     event.target instanceof HTMLElement && !!event.target.closest('input, textarea, select, [contenteditable="true"]');
   const keyDown = (event: KeyboardEvent) => {
     if (event.altKey || event.ctrlKey || event.metaKey || editableTarget(event)) return;
+    if (event.code === 'Space') {
+      if (paused || window.matchMedia('(pointer: coarse)').matches) return;
+      if (event.target instanceof HTMLElement && event.target.closest('button, a, [role="button"]')
+        && !event.target.matches('.direction-button')) return;
+      event.preventDefault();
+      if (!event.repeat && !spaceHeld) { spaceHeld = true; jump(); }
+      return;
+    }
     if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
       if (!paused && !event.repeat) shiftKeys.add(event.code);
       return;
@@ -40,6 +50,7 @@ export function createInput() {
   };
   const keyUp = (event: KeyboardEvent) => {
     release(event.code);
+    if (event.code === 'Space') spaceHeld = false;
     shiftKeys.delete(event.code);
     if ((event.code === 'ShiftLeft' || event.code === 'ShiftRight') && !event.shiftKey) shiftKeys.delete('ShiftHeld');
   };
@@ -55,6 +66,7 @@ export function createInput() {
     pause(value: boolean) { paused = value; clear(); },
     setInteract(handler: () => void) { interact = handler; },
     setCancel(handler: () => void) { cancel = handler; },
+    setJump(handler: () => void) { jump = handler; },
     attach() {
       window.addEventListener('keydown', keyDown);
       window.addEventListener('keyup', keyUp);

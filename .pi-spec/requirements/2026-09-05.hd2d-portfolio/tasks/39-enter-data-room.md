@@ -5,7 +5,7 @@ depends_on: [T-38]
 files: [App.tsx, portfolio/journey.ts, portfolio/state.ts, portfolio/scenes/room.ts, portfolio/scenes/workshop.ts, portfolio/world.ts, portfolio/runtime.ts, portfolio/copy.ts, components/portfolio/Hud.tsx, components/portfolio/WorldViewport.css, portfolio/room.test.ts, tests/portfolio-room.test.ts, tests/portfolio-atmosphere.test.ts, tests/portfolio-boards.test.ts, tests/portfolio-journey.test.ts]
 refs: [portfolio/world/AC-3, portfolio/world/AC-4, portfolio/world/AC-6, portfolio/npc-dialogue/AC-7, portfolio/bilingual/AC-3, portfolio/graphics-runtime/AC-3]
 parallel: false
-verify: bun run build && bun test ./portfolio/room.test.ts ./tests/portfolio-room.test.ts ./tests/portfolio-atmosphere.test.ts ./tests/portfolio-boards.test.ts ./tests/portfolio-journey.test.ts ./plugins/htmlPlugin.test.ts ./public-assets.test.ts ./design-reference/reference.test.ts ./portfolio/character.test.ts ./design-reference/character-design.test.ts ./design-reference/scene-comparison.test.ts ./design-reference/transition-comparison.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts ./tests/portfolio-delivery.test.ts && ./node_modules/.bin/tsc --noEmit
+verify: bun run build && bun test ./portfolio/room.test.ts ./tests/portfolio-room.test.ts ./tests/portfolio-atmosphere.test.ts ./tests/portfolio-boards.test.ts ./tests/portfolio-journey.test.ts ./plugins/htmlPlugin.test.ts ./public-assets.test.ts ./tests/portrait-asset.test.ts ./portfolio/character.test.ts ./portfolio/models/player-voxel.test.ts ./tests/character-toggle.test.ts ./tests/portfolio-playable.test.ts ./tests/portfolio-reading.test.ts ./tests/portfolio-delivery.test.ts && ./node_modules/.bin/tsc --noEmit
 status: done
 agent: ""
 commit: ""
