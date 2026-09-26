@@ -3,7 +3,7 @@
 |---|---|---|---|
 | 01 | legacy-removal | done | 2026-09-26 |
 | 02 | content-and-language | done | 2026-09-26 |
-| 03 | profile-ui | pending | — |
+| 03 | profile-ui | done | 2026-09-26 |
 | 04 | site-shell | pending | — |
 | 05 | diorama-renderer | pending | — |
 | 06 | diorama-world | pending | — |
@@ -13,9 +13,11 @@
 | 10 | app-shell | pending | — |
 | 11 | docs-and-release | pending | — |
 ## 当前
-正在执行 `03-profile-ui.md`。
+正在执行 `04-site-shell.md`。
 - 01 记录：主 Agent 修正 `public-assets.test.ts` 的图片引用豁免（原豁免已删除的 profile-full.png，改为豁免 spec 要求的分享图 /profile.jpg）；按 Review 意见清理 `tests/public-images.test.ts` 残留分支、补回 `tests/typography.test.ts` 标题字重断言、`bun.lock` 项目名改为 rainy-konbini-portfolio。
 - 02 记录：字形覆盖已改为读取真实文案；按 Review 意见把简介与四个方向断言改为精确比对。「不写 Cookie、不改地址栏」留到 10 的端到端用例验证。
+- 03 记录：主 Agent 修正测试 helper 还原 HTML 实体、失败提示改回普通文本（去掉 dangerouslySetInnerHTML）；去掉 `<dialog>` 的 `open` 属性以保证 `showModal()` 生效；按 Review 修复 fault 模式连按 Esc / 返回手势可关闭卡片的问题（监听 `close` 事件重新 `showModal()`，preview 模式被浏览器关闭时同步 `onClose`）；卡片显式滚动样式；补强断言（无 open 属性、提示在前、名字匹配 h1）。
+- 待办（10 端到端必须覆盖）：fault 卡片连按两次 Esc 仍打开；头像失败显示 F；中控屏父容器需给定高度使 `max-height:100%` 生效；中控屏内拖动不触发转头。
 
 原型参考：`.bb-spec/.cache/prototype/rainy-konbini.html`（不进 git）。
 ## 阻塞

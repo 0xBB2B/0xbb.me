@@ -1,0 +1,24 @@
+.profile-card {
+  background: #0d1430;
+  color: #e8eefc;
+  border: 1px solid #16a39a;
+  border-radius: 8px;
+  padding: 1.5rem;
+  max-width: 480px;
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  font-family: var(--font-sans);
+}
+
+.profile-card::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.profile-card-close {
+  background: transparent;
+  border: 1px solid #16a39a;
+  border-radius: 4px;
+  padding: 0.15rem 0.6rem;
+  color: #e8eefc;
+  margin-bottom: 1rem;
+}
