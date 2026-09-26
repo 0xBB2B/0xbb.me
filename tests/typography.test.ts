@@ -1,19 +1,10 @@
 import { expect, test } from 'bun:test';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { APP_DATA } from '../data';
-import { LIGHTHOUSE_COPY, SCENE_COPY, UI_COPY, npcPages } from '../portfolio/copy';
 
 const read = (file: string) => readFileSync(path.resolve(import.meta.dir, '..', file), 'utf8');
 const typography = read('typography.css');
-const hud = read('components/portfolio/WorldViewport.css');
 const families = ['noto-sans-sc', 'noto-serif-sc'];
-
-function rule(css: string, selector: string) {
-  const start = css.indexOf(`${selector} {`);
-  expect(start).toBeGreaterThanOrEqual(0);
-  return css.slice(start, css.indexOf('}', start) + 1);
-}
 
 test('shared typography uses bundled variable fonts instead of installed platform fonts', () => {
   expect(typography).toContain('--font-sans: "Noto Sans SC Variable", sans-serif');
@@ -32,6 +23,11 @@ test('shared typography uses bundled variable fonts instead of installed platfor
   }
 });
 
+test('display weight differs between English and Chinese headings', () => {
+  expect(typography).toMatch(/:root\s*{[^}]*--font-display-weight: 400/);
+  expect(typography).toMatch(/:root:lang\(zh\)\s*{[^}]*--font-display-weight: 600/);
+});
+
 test('initial HTML loads the font rules and preloads only the two small Latin subsets', () => {
   const html = read('index.html');
   expect(html).toContain('rel="stylesheet" href="./typography.css"');
@@ -45,34 +41,8 @@ test('initial HTML loads the font rules and preloads only the two small Latin su
   }
 });
 
-test('all UI font declarations use the shared sans and display families', () => {
-  const files = readdirSync(path.resolve(import.meta.dir, '../components/portfolio')).filter(file => file.endsWith('.css'));
-  for (const file of files) {
-    const css = read(`components/portfolio/${file}`);
-    expect(css, file).not.toMatch(/Georgia|Songti|PingFang|Segoe|YaHei|Consolas|IBM Plex|system-ui|monospace|--font-mono/);
-    for (const match of css.matchAll(/(?:font|font-family):\s*([^;]+);/g)) {
-      expect(match[1], file).toMatch(/var\(--font-(?:sans|display)\)|inherit/);
-    }
-  }
-});
-
-test('display text preserves the serif hierarchy in both languages', () => {
-  expect(rule(typography, ':root')).toContain('--font-display-weight: 400');
-  expect(rule(typography, ':root:lang(zh)')).toContain('--font-display-weight: 600');
-  for (const [file, selector] of [
-    ['WorldViewport', '.town-intro h1'], ['Dialogue', '.dialogue-content h2'],
-    ['BoardDetails', '.board-details-content h2'], ['Overview', '.overview-content h3'],
-    ['LoadingScreen', '.loading-content h1'],
-  ]) {
-    const heading = rule(read(`components/portfolio/${file}.css`), selector);
-    expect(heading).toContain('var(--font-display-weight)');
-    expect(heading).toContain('var(--font-display)');
-  }
-});
-
 test('the bundled character ranges cover bilingual content and interface symbols', () => {
-  const text = JSON.stringify([APP_DATA, UI_COPY, SCENE_COPY, LIGHTHOUSE_COPY, npcPages('greeter', 'en'), npcPages('greeter', 'zh')])
-    + 'f. ↗ ◎ ⇄ ← → × · …';
+  const text = 'Rainy Konbini — a little world, coming to life. 雨夜便利店：一个渐渐苏醒的小世界。f. ↗ ◎ ⇄ ← → × · …';
   for (const family of families) {
     const css = read(`node_modules/@fontsource-variable/${family}/wght.css`);
     const ranges = [...css.matchAll(/U\+([0-9a-f]+)(?:-([0-9a-f]+))?/gi)].map(([, from, to]) => [parseInt(from, 16), parseInt(to ?? from, 16)]);
@@ -84,13 +54,22 @@ test('the bundled character ranges cover bilingual content and interface symbols
   }
 });
 
-test('scene captions and small HUD labels stay opaque and use readable weights', () => {
-  for (const selector of ['.header-note', '.intro-caption']) {
-    const text = rule(hud, selector);
-    expect(text).toContain('font-weight: 600');
-    expect(text).not.toContain('opacity:');
+test('all UI font declarations use the shared sans and display families', () => {
+  const root = path.resolve(import.meta.dir, '..');
+  const files = ['index.css'];
+  const visit = (directory: string) => {
+    for (const entry of readdirSync(path.join(root, directory), { withFileTypes: true })) {
+      const file = path.join(directory, entry.name);
+      if (entry.isDirectory()) visit(file);
+      else if (file.endsWith('.css')) files.push(file);
+    }
+  };
+  if (existsSync(path.join(root, 'components'))) visit('components');
+  for (const file of files) {
+    const css = read(file);
+    expect(css, file).not.toMatch(/Georgia|Songti|PingFang|Segoe|YaHei|Consolas|IBM Plex|system-ui|monospace|--font-mono/);
+    for (const match of css.matchAll(/(?:font|font-family):\s*([^;]+);/g)) {
+      expect(match[1], file).toMatch(/var\(--font-(?:sans|display)\)|inherit/);
+    }
   }
-  expect(rule(hud, '.intro-caption')).toContain('font-size: 13px');
-  expect(rule(hud, '.eyebrow')).toContain('font: 600 11px/1.5 var(--font-sans)');
-  expect(rule(hud, '.keyboard-help')).toContain('font: 600 13px/1.5 var(--font-sans)');
 });

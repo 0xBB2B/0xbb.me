@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "mc2d-portfolio",
+      "name": "rainy-konbini-portfolio",
       "dependencies": {
         "@fontsource-variable/noto-sans-sc": "5.3.0",
         "@fontsource-variable/noto-serif-sc": "5.3.0",

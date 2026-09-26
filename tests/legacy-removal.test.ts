@@ -1,38 +1,41 @@
 import { expect, test } from 'bun:test';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 
 const root = path.resolve(import.meta.dir, '..');
-const removed = [
-  'game/index.html', 'game/main.tsx', 'game/audioAnalysis.ts', 'game/audioAnalysis.test.ts',
-  'game/chart.ts', 'game/chart.test.ts', 'game/judge.ts', 'game/judge.test.ts',
-  'game/scoring.ts', 'game/scoring.test.ts', 'game/chiptune.ts', 'game/types.ts',
-  'components/beat-saber/BeatSaberGame.tsx', 'components/beat-saber/BeatSaberPlaceholder.tsx',
-  'components/beat-saber/sceneAssets.ts', 'components/beat-saber/sceneAssets.test.ts',
-  'constants.tsx', 'types.ts', 'hooks/useMediaQuery.ts', 'lib/scrollToAnchor.ts', 'public/music.ogg',
-];
 
-test('the unused rhythm-game implementation, adapters and dedicated tests are deleted', () => {
-  for (const file of removed) expect(existsSync(path.join(root, file)), file).toBe(false);
+test('the legacy MC-2D site source and its dedicated tests are deleted', () => {
+  expect(existsSync(path.join(root, 'portfolio'))).toBe(false);
+  expect(existsSync(path.join(root, 'components/portfolio'))).toBe(false);
+  expect(existsSync(path.join(root, 'tests/model-fingerprint.ts'))).toBe(false);
+  const leftoverTests = readdirSync(path.join(root, 'tests')).filter(name => name.startsWith('portfolio-'));
+  expect(leftoverTests).toEqual([]);
 });
 
-test('the temporary design directory is removed while production models and the selected portrait remain', () => {
-  expect(existsSync(path.join(root, 'design-reference'))).toBe(false);
-  expect(existsSync(path.join(root, 'portfolio/models/player-voxel-black.ts'))).toBe(true);
-  expect(existsSync(path.join(root, 'portfolio/models/player-voxel.ts'))).toBe(false);
-  expect(existsSync(path.join(root, 'public/profile-full.png'))).toBe(true);
+test('only the approved profile photo remains published', () => {
+  expect(existsSync(path.join(root, 'public/profile.png'))).toBe(false);
+  expect(existsSync(path.join(root, 'public/profile-full.png'))).toBe(false);
+  expect(existsSync(path.join(root, 'public/site-card.svg'))).toBe(false);
+  const jpg = readFileSync(path.join(root, 'public/profile.jpg'));
+  expect(createHash('sha256').update(jpg).digest('hex')).toBe('c28ed9a1e2296e6b667212bd3758323b496791982f25b4e663d84ebbb2422543');
 });
 
-test('the application keeps its runtime dependencies but no longer carries motion or its private packages', () => {
+test('package.json declares only the rainy-konbini runtime dependencies', () => {
   const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
-  expect(Object.keys(pkg.dependencies).sort()).toEqual(['react', 'react-dom', 'three']);
+  expect(pkg.name).toBe('rainy-konbini-portfolio');
+  expect(Object.keys(pkg.dependencies).sort()).toEqual([
+    '@fontsource-variable/noto-sans-sc', '@fontsource-variable/noto-serif-sc', 'react', 'react-dom', 'three',
+  ]);
   expect(readFileSync(path.join(root, 'bun.lock'), 'utf8')).not.toMatch(/"(?:motion|framer-motion|motion-dom|motion-utils)"\s*:/);
 });
 
-test('the built public entry cannot load the removed game or music', () => {
+test('the built site has no trace of the old game entry or MC-2D branding', () => {
   expect(existsSync(path.join(root, 'dist/index.html'))).toBe(true);
   expect(existsSync(path.join(root, 'dist/game'))).toBe(false);
-  expect(existsSync(path.join(root, 'dist/music.ogg'))).toBe(false);
+  expect(existsSync(path.join(root, 'dist/profile.png'))).toBe(false);
+  expect(existsSync(path.join(root, 'dist/profile-full.png'))).toBe(false);
+  expect(existsSync(path.join(root, 'dist/site-card.svg'))).toBe(false);
   const html = readFileSync(path.join(root, 'dist/index.html'), 'utf8');
-  expect(html).not.toMatch(/RHYTHM_BLADE|BeatSaber|music\.ogg|href=["'][^"']*\/game\//i);
+  expect(html).not.toMatch(/\/game\/|MC-2D|RHYTHM_BLADE/);
 });

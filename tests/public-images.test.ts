@@ -4,12 +4,12 @@ import path from 'node:path';
 import { startHeadlessBrowser } from './headless-browser';
 
 const root = path.resolve(import.meta.dir, '..');
-const files = ['profile.png', 'profile.jpg', 'profile-full.png'];
+const files = ['profile.jpg'];
 
 test('published image URLs return the exact original files and decode in a windowless browser', async () => {
   const server = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch(request) {
     const pathname = new URL(request.url).pathname;
-    const match = pathname.match(/^\/(?:portfolio\/)?(profile(?:-full)?\.(?:png|jpg))$/);
+    const match = pathname.match(/^\/(?:portfolio\/)?(profile\.jpg)$/);
     if (!match || !files.includes(match[1])) return new Response('Not found', { status: 404 });
     return new Response(Bun.file(path.join(root, 'dist', match[1])));
   } });
@@ -19,7 +19,7 @@ test('published image URLs return the exact original files and decode in a windo
       const url = `http://127.0.0.1:${server.port}/${prefix}${file}`;
       const response = await fetch(url);
       expect(response.status).toBe(200);
-      expect(response.headers.get('content-type')).toContain(file.endsWith('.jpg') ? 'image/jpeg' : 'image/png');
+      expect(response.headers.get('content-type')).toContain('image/jpeg');
       expect(Buffer.from(await response.arrayBuffer()).equals(readFileSync(path.join(root, 'public', file)))).toBe(true);
       await browser.cdp('Page.navigate', { url });
       let decoded = false;
