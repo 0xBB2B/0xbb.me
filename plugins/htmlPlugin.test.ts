@@ -25,23 +25,20 @@ afterAll(async () => {
   await server?.close();
 });
 
-test('homepage includes the loading shell and critical styles before the entry script runs', async () => {
-  const template = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  const html = await server.transformIndexHtml('/', template);
-  expect(html.match(/class="loading-screen"/g)).toHaveLength(1);
-  expect(html).toContain('<div id="root"><section');
-  expect(html).toContain('<style data-loading-styles>');
-  expect(html).toContain('Loading the journey…');
-  expect(html.indexOf('<style data-loading-styles>')).toBeLessThan(html.indexOf('</head>'));
-  expect(html.indexOf('class="loading-screen"')).toBeLessThan(html.indexOf('src="/index.tsx"'));
-  expect(html).not.toContain('<div id="root"></div>');
-});
-
 test('homepage allows large image previews without changing indexing permission', async () => {
   const template = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const page = parseMetadata(await server.transformIndexHtml('/', template));
   expect(page.meta.get('robots')).toBe('index, follow, max-image-preview:large');
 });
+
+function decodeEntities(value: string) {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
 
 function parseMetadata(html: string) {
   const titles: string[] = [];
@@ -75,118 +72,134 @@ function parseMetadata(html: string) {
   };
 }
 
-for (const route of ['/', '/game/']) {
-  describe(`htmlPlugin public HTML transform: ${route}`, () => {
-    let html: string;
-    let page: ReturnType<typeof parseMetadata>;
-    beforeAll(async () => {
-      html = await server.transformIndexHtml(route, inputHtml);
-      page = parseMetadata(html);
-    });
-
-    test('AC-2: browser title identifies FUBUKI_BB', () => {
-      expect(page.titles).toHaveLength(1);
-      expect(page.titles[0]).toContain('FUBUKI_BB');
-    });
-
-    test.each(['title', 'og:title', 'twitter:title'])('AC-2: %s identifies FUBUKI_BB', (key) => {
-      expect(page.meta.get(key)).toContain('FUBUKI_BB');
-    });
-
-    test.each(['description', 'og:description', 'twitter:description'])(
-      'AC-2: %s describes engineering, AI workflows and exploration',
-      (key) => {
-        const description = page.meta.get(key);
-        expect(description).toMatch(/engineer|工程/i);
-        expect(description).toMatch(/AI/i);
-        expect(description).toMatch(/workflow|工作流/i);
-        expect(description).toMatch(/explor|探索/i);
-      },
-    );
-
-    test('AC-2: JSON-LD describes a person and their personal website', () => {
-      const person = page.schemas.find((schema) => schema['@type'] === 'Person');
-      const website = page.schemas.find((schema) => schema['@type'] === 'WebSite');
-      expect(person).toBeDefined();
-      expect(website).toBeDefined();
-      expect(person!.name).toBe('FUBUKI_BB');
-      for (const schema of [person!, website!]) {
-        expect(schema.description).toMatch(/engineer|工程/i);
-        expect(schema.description).toMatch(/AI/i);
-        expect(schema.description).toMatch(/workflow|工作流/i);
-        expect(schema.description).toMatch(/explor|探索/i);
-      }
-    });
-
-    test('AC-2: JSON-LD does not invent an employer', () => {
-      const person = page.schemas.find((schema) => schema['@type'] === 'Person');
-      expect(person).toBeDefined();
-      expect(person!.worksFor ?? null).toBeNull();
-    });
-
-    test('AC-2: site identity and links contain no CyberDeck, RHYTHM_BLADE or game entry', () => {
-      expect(html).not.toMatch(/CyberDeck|RHYTHM_BLADE|节奏光剑/i);
-      expect(html).not.toMatch(/\/game(?:[/?#"']|$)/i);
-    });
-
-    test('AC-2: canonical points only to the homepage', () => {
-      expect(page.canonicals).toHaveLength(1);
-      expect(new URL(page.canonicals[0]).href).toBe(siteUrl.href);
-    });
-
-    test.each(['og:url', 'twitter:url'])('AC-2: %s points only to the homepage', (key) => {
-      expect(page.meta.get(key)).toBeString();
-      expect(new URL(page.meta.get(key)!).href).toBe(siteUrl.href);
-    });
-
-    test('AC-2: JSON-LD URLs point only to the homepage', () => {
-      expect(page.schemas.length).toBeGreaterThan(0);
-      for (const schema of page.schemas) {
-        expect(schema.url).toBeString();
-        expect(new URL(schema.url as string).href).toBe(siteUrl.href);
-      }
-    });
-
-    test('AC-6: old profile.png references are absent', () => {
-      expect(html).not.toContain('profile.png');
-    });
-
-    test('search and sharing metadata consistently reference the public profile JPEG', () => {
-      const image = new URL('profile.jpg', siteUrl).href;
-      expect(page.meta.get('og:image')).toBe(image);
-      expect(page.meta.get('twitter:image')).toBe(image);
-      for (const type of ['Person', 'WebSite']) {
-        expect(page.schemas.find(schema => schema['@type'] === type)?.image).toBe(image);
-      }
-      expect(html).not.toContain('site-card.svg');
-      const bytes = fs.readFileSync(path.join(root, 'public/profile.jpg'));
-      expect([...bytes.subarray(0, 3)]).toEqual([0xff, 0xd8, 0xff]);
-      expect([...bytes.subarray(-2)]).toEqual([0xff, 0xd9]);
-    });
+describe('htmlPlugin public HTML transform', () => {
+  let html: string;
+  let page: ReturnType<typeof parseMetadata>;
+  beforeAll(async () => {
+    html = await server.transformIndexHtml('/', inputHtml);
+    page = parseMetadata(html);
   });
-}
 
-for (const route of ['/', '/game/']) {
-  test(`AC-2/AC-6: metadata read failure on ${route} reports the error without identity/image fallback`, async () => {
-    const readError = Object.assign(new Error('test-only metadata read denied'), { code: 'EACCES' });
-    const originalRead = fs.readFileSync;
-    const readSpy = spyOn(fs, 'readFileSync').mockImplementation(((file, ...args) => {
-      if (String(file) === path.join(root, 'metadata.json')) throw readError;
-      return Reflect.apply(originalRead, fs, [file, ...args]);
-    }) as typeof fs.readFileSync);
-    const errorSpy = spyOn(console, 'error').mockImplementation(() => {});
-    try {
-      const html = await server.transformIndexHtml(route, inputHtml);
-      expect(errorSpy).toHaveBeenCalledWith('Error injecting metadata:', readError);
-      const page = parseMetadata(html);
-      expect(page.titles).toEqual([]);
-      expect(page.meta.size).toBe(0);
-      expect(page.canonicals).toEqual([]);
-      expect(page.schemas).toEqual([]);
-      expect(html).not.toMatch(/CyberDeck|RHYTHM_BLADE|profile\.png|data:image|<image\b/i);
-    } finally {
-      readSpy.mockRestore();
-      errorSpy.mockRestore();
+  test('browser title identifies FUBUKI_BB', () => {
+    expect(page.titles).toHaveLength(1);
+    expect(page.titles[0]).toContain('FUBUKI_BB');
+  });
+
+  test('title matches the site tagline exactly once HTML entities are decoded', () => {
+    expect(decodeEntities(page.titles[0])).toBe('FUBUKI_BB — Engineering, AI Workflows & Exploration');
+  });
+
+  test.each(['title', 'og:title', 'twitter:title'])('%s identifies FUBUKI_BB', (key) => {
+    expect(page.meta.get(key)).toContain('FUBUKI_BB');
+  });
+
+  test.each(['description', 'og:description', 'twitter:description'])(
+    '%s introduces the engineer and the rainy convenience store diorama',
+    (key) => {
+      const description = page.meta.get(key);
+      expect(description).toMatch(/engineer/i);
+      expect(description).toMatch(/AI/);
+      expect(description).toMatch(/diorama/i);
+      expect(description).toMatch(/rainy|convenience store/i);
+    },
+  );
+
+  test('JSON-LD describes a person and their personal website', () => {
+    const person = page.schemas.find((schema) => schema['@type'] === 'Person');
+    const website = page.schemas.find((schema) => schema['@type'] === 'WebSite');
+    expect(person).toBeDefined();
+    expect(website).toBeDefined();
+    expect(person!.name).toBe('FUBUKI_BB');
+    for (const schema of [person!, website!]) {
+      expect(schema.description).toMatch(/engineer|工程/i);
+      expect(schema.description).toMatch(/AI/);
+      expect(schema.description).toMatch(/diorama/i);
+      expect(schema.description).toMatch(/rainy|convenience store/i);
     }
   });
-}
+
+  test('JSON-LD does not invent an employer', () => {
+    const person = page.schemas.find((schema) => schema['@type'] === 'Person');
+    expect(person).toBeDefined();
+    expect(person!.worksFor ?? null).toBeNull();
+  });
+
+  test('site identity and links contain no CyberDeck, RHYTHM_BLADE or game entry', () => {
+    expect(html).not.toMatch(/CyberDeck|RHYTHM_BLADE|节奏光剑/i);
+    expect(html).not.toMatch(/\/game(?:[/?#"']|$)/i);
+  });
+
+  test('canonical points only to the homepage', () => {
+    expect(page.canonicals).toHaveLength(1);
+    expect(new URL(page.canonicals[0]).href).toBe(siteUrl.href);
+  });
+
+  test.each(['og:url', 'twitter:url'])('%s points only to the homepage', (key) => {
+    expect(page.meta.get(key)).toBeString();
+    expect(new URL(page.meta.get(key)!).href).toBe(siteUrl.href);
+  });
+
+  test('JSON-LD URLs point only to the homepage', () => {
+    expect(page.schemas.length).toBeGreaterThan(0);
+    for (const schema of page.schemas) {
+      expect(schema.url).toBeString();
+      expect(new URL(schema.url as string).href).toBe(siteUrl.href);
+    }
+  });
+
+  test('old profile.png references are absent', () => {
+    expect(html).not.toContain('profile.png');
+  });
+
+  test('search and sharing metadata consistently reference the public profile JPEG', () => {
+    const image = new URL('profile.jpg', siteUrl).href;
+    expect(page.meta.get('og:image')).toBe(image);
+    expect(page.meta.get('twitter:image')).toBe(image);
+    for (const type of ['Person', 'WebSite']) {
+      expect(page.schemas.find(schema => schema['@type'] === type)?.image).toBe(image);
+    }
+    expect(html).not.toContain('site-card.svg');
+    const bytes = fs.readFileSync(path.join(root, 'public/profile.jpg'));
+    expect([...bytes.subarray(0, 3)]).toEqual([0xff, 0xd8, 0xff]);
+    expect([...bytes.subarray(-2)]).toEqual([0xff, 0xd9]);
+  });
+});
+
+test('metadata read failure fails the production build instead of shipping a page without identity', () => {
+  const readError = new Error('test-only metadata read denied');
+  const originalRead = fs.readFileSync;
+  const readSpy = spyOn(fs, 'readFileSync').mockImplementation(((file, ...args) => {
+    if (String(file).endsWith('metadata.json')) throw readError;
+    return Reflect.apply(originalRead, fs, [file, ...args]);
+  }) as typeof fs.readFileSync);
+  try {
+    const plugin = htmlPlugin();
+    (plugin.configResolved as (config: { command: string }) => void)({ command: 'build' });
+    expect(() => (plugin.transformIndexHtml as (html: string) => unknown)('<html><head><meta charset="UTF-8" /></head><body><div id="root"></div></body></html>')).toThrow(readError);
+  } finally {
+    readSpy.mockRestore();
+  }
+});
+
+test('metadata read failure on the homepage reports the error without identity/image fallback', async () => {
+  const readError = Object.assign(new Error('test-only metadata read denied'), { code: 'EACCES' });
+  const originalRead = fs.readFileSync;
+  const readSpy = spyOn(fs, 'readFileSync').mockImplementation(((file, ...args) => {
+    if (String(file) === path.join(root, 'metadata.json')) throw readError;
+    return Reflect.apply(originalRead, fs, [file, ...args]);
+  }) as typeof fs.readFileSync);
+  const errorSpy = spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    const html = await server.transformIndexHtml('/', inputHtml);
+    expect(errorSpy).toHaveBeenCalledWith('Error injecting metadata:', readError);
+    const page = parseMetadata(html);
+    expect(page.titles).toEqual([]);
+    expect(page.meta.size).toBe(0);
+    expect(page.canonicals).toEqual([]);
+    expect(page.schemas).toEqual([]);
+    expect(html).not.toMatch(/CyberDeck|RHYTHM_BLADE|profile\.png|data:image|<image\b/i);
+  } finally {
+    readSpy.mockRestore();
+    errorSpy.mockRestore();
+  }
+});

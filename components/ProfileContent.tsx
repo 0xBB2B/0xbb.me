@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { APP_DATA, type Language } from '../data';
 import { COPY, AVATAR_FALLBACK, rolesLine, locationLine } from '../copy';
-import './ProfileContent.css';
 
 interface ProfileContentProps {
   language: Language;
