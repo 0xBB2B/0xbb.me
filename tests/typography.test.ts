@@ -75,3 +75,11 @@ test('all UI font declarations use the shared sans and display families', () => 
     }
   }
 });
+
+test('the canvas signage fonts are bundled, pinned and credited in the notices', () => {
+  const dependencies = JSON.parse(read('package.json')).dependencies;
+  for (const family of ['dela-gothic-one', 'm-plus-rounded-1c']) {
+    expect(dependencies[`@fontsource/${family}`]).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(read('public/THIRD_PARTY_NOTICES.txt')).toContain(read(`node_modules/@fontsource/${family}/LICENSE`).trim());
+  }
+});

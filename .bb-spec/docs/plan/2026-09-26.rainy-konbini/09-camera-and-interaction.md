@@ -75,7 +75,7 @@ description: 视角状态机、镜头进出车动画与转头限制、悬停点�
 ### diorama/world.ts
 | 函数名 | 职责 |
 |---|---|
-| `mountDiorama` | 在容器中依次创建渲染器、展示台与场景、天气、湿地面、车与内饰、灯光、环境动效、镜头、交互、中控屏图层；返回 `ready`（首帧画出后 resolve）、`enterCar`、`setLanguage`、`onViewChange`、`onQualityChange`、`onContextLost`、`screenElement`、`dispose` |
+| `mountDiorama` | 先调用 06 的 `loadCanvasFonts()` 等待画布字体加载（超时 3 秒后照常继续），再在容器中依次创建渲染器、展示台与场景、天气、湿地面、车与内饰、灯光、环境动效、镜头、交互、中控屏图层；返回 `ready`（首帧画出后 resolve）、`enterCar`、`setLanguage`、`onViewChange`、`onQualityChange`、`onContextLost`、`screenElement`、`dispose` |
 | `renderLoop` | 每帧更新 `sharedTime`、环境动效、倒影时间、镜头序列、帧监视器，合成渲染并渲染中控屏图层 |
 
 ### components/EnterCarButton.tsx

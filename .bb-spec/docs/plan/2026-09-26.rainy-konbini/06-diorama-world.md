@@ -26,15 +26,30 @@ description: 搬移原型的展示台、铭牌、地面与标线、便利店及�
 - 关键物件设置稳定的 `name`，供测试查找：`pedestal`、`plaque`、`store`、`crosswalk-main`、`crosswalk-side`、`stop-marking-side`、`stop-marking-alley`、`stop-sign-side`、`signal-main`、`neighbor-building`。
 
 ## 涉及文件
-- 新建：`diorama/textures.ts`、`diorama/ground.ts`、`diorama/store.ts`、`diorama/street.ts`、`diorama/plaque.ts`、`diorama/lights.ts`
+- 新建：`diorama/fonts.ts`、`diorama/textures.ts`、`diorama/ground.ts`、`diorama/store.ts`、`diorama/street.ts`、`diorama/plaque.ts`、`diorama/lights.ts`
 - 新建：`tests/world.test.ts`、`tests/fake-canvas.ts`（测试用假画布：记录 `fillText` 调用，其余方法空实现）
+
+## 新增第三方依赖（2026-09-26 用户批准）
+| 库名 | 用途 | 版本策略 |
+|---|---|---|
+| `@fontsource/dela-gothic-one` | 招牌、海报、铭牌大字的画布字体（原型字体，打包进站点） | 最新稳定版（精确钉版本，与现有 fontsource 一致） |
+| `@fontsource/m-plus-rounded-1c` | 画布贴图的圆体中日文字体 | 最新稳定版（精确钉版本） |
+
+## 铭牌尺寸（2026-09-26 用户裁决）
+铭牌面板放大到约 9.85×1.6 米（画布 2400×390，三行 130/60/116px），三行重排字号（名字最大、第三行大于第二行），以满足默认视角下第三行可见字形高度（按字号 0.7 倍计）≥ 10 像素，且在第三行实际高度、面板左右两端都满足；对外导出 `PLAQUE_LAYOUT`（画布尺寸与每行字号/基线）与 `PLAQUE_PANEL`（面板物理宽高与中心位置）供测试投影计算。
 
 ## 函数清单
 ### diorama/textures.ts
 | 函数名 | 职责 |
 |---|---|
 | `createTextures` | 生成原型中的全部画布贴图（招牌、立牌、贩卖机、海报、烟草架、菜单、饮料柜/便当柜标题、公告栏、止まれ标志与路面字、地址牌、菱形标线、瓷砖、地板、格栅、地垫、门贴、卷帘、喫茶招牌、旗子、STAFF ONLY），返回按名称索引的对象 |
-| `drawPlaque` | 在给定画布上下文按语言绘制铭牌三行（黄铜渐变底、深色刻字），第一行大字、第三行小字 |
+| `drawPlaque` | 在给定画布上下文按 `PLAQUE_LAYOUT` 绘制铭牌三行（黄铜渐变底、深色刻字），第一行最大、第三行大于第二行，`fillText` 带最大宽度 |
+| `CANVAS_TEXT` | 所有画布贴图会画到的文字（招牌、海报、铭牌中英三行等），供字体预加载 |
+
+### diorama/fonts.ts
+| 函数名 | 职责 |
+|---|---|
+| `loadCanvasFonts` | 导入两款打包字体的 CSS，按完整字体栈 `FONT_D`/`FONT_R` 与 `CANVAS_TEXT` 调用 `document.fonts.load`（含 Noto 补字分片），3 秒超时后照常继续 |
 
 ### diorama/plaque.ts
 | 函数名 | 职责 |
@@ -79,4 +94,5 @@ description: 搬移原型的展示台、铭牌、地面与标线、便利店及�
   - 小路方向（`x` 在 5～11、`z < 5`）上空没有名为 `signal-*` 的车辆信号灯头。
   - 对假画布调用 `drawPlaque(ctx, 'zh')` 记录到的 `fillText` 文本依次为 `FUBUKI_BB`、`全栈工程师 · 系统架构师 · AI Agent开发者`、`点击红色跑车，坐进驾驶座`；`'en'` 时为英文三行。
 - [ ] 上述断言全部通过。
-- [ ] 铭牌第三行像素高度 ≥ 10 的检查放在 10 的端到端截图测试中（投影铭牌平面计算字高）。
+- [ ] 铭牌第三行字形投影高度 ≥ 10 像素（单元测试按默认镜头投影第三行实际高度与面板两端）。
+- [ ] 所有贴图画出的字符都包含在 `CANVAS_TEXT` 中。

@@ -40,7 +40,7 @@ export function noOutline<T extends THREE.Material>(material: T): T {
 
 let gradientMap: THREE.DataTexture | null = null;
 
-function toonGradientMap(): THREE.DataTexture {
+export function toonGradientMap(): THREE.DataTexture {
   if (!gradientMap) {
     gradientMap = new THREE.DataTexture(new Uint8Array([70, 150, 215, 255]), 4, 1, THREE.RedFormat);
     gradientMap.minFilter = gradientMap.magFilter = THREE.NearestFilter;

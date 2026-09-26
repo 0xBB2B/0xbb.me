@@ -25,8 +25,9 @@ test('package.json declares only the rainy-konbini runtime dependencies', () => 
   const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
   expect(pkg.name).toBe('rainy-konbini-portfolio');
   expect(Object.keys(pkg.dependencies).sort()).toEqual([
-    '@fontsource-variable/noto-sans-sc', '@fontsource-variable/noto-serif-sc', 'react', 'react-dom', 'three',
-  ]);
+    '@fontsource-variable/noto-sans-sc', '@fontsource-variable/noto-serif-sc', '@fontsource/dela-gothic-one',
+    '@fontsource/m-plus-rounded-1c', 'react', 'react-dom', 'three',
+  ].sort());
   expect(readFileSync(path.join(root, 'bun.lock'), 'utf8')).not.toMatch(/"(?:motion|framer-motion|motion-dom|motion-utils)"\s*:/);
 });
 
