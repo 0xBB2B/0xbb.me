@@ -1,6 +1,8 @@
 import { expect, test } from 'bun:test';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { APP_DATA } from '../data';
+import { COPY } from '../copy';
 
 const read = (file: string) => readFileSync(path.resolve(import.meta.dir, '..', file), 'utf8');
 const typography = read('typography.css');
@@ -42,7 +44,7 @@ test('initial HTML loads the font rules and preloads only the two small Latin su
 });
 
 test('the bundled character ranges cover bilingual content and interface symbols', () => {
-  const text = 'Rainy Konbini — a little world, coming to life. 雨夜便利店：一个渐渐苏醒的小世界。f. ↗ ◎ ⇄ ← → × · …';
+  const text = JSON.stringify([APP_DATA, COPY]) + 'f. ↗ ◎ ⇄ ← → × · …';
   for (const family of families) {
     const css = read(`node_modules/@fontsource-variable/${family}/wght.css`);
     const ranges = [...css.matchAll(/U\+([0-9a-f]+)(?:-([0-9a-f]+))?/gi)].map(([, from, to]) => [parseInt(from, 16), parseInt(to ?? from, 16)]);
