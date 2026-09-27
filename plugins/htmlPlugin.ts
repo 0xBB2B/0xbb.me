@@ -11,7 +11,7 @@ function injectShell(html: string): string {
     renderToStaticMarkup(createElement(LoadingShell)) + renderToStaticMarkup(createElement(StaticProfile));
   const shellStyles =
     fs.readFileSync(path.resolve(process.cwd(), 'components/LoadingShell.css'), 'utf8') +
-    fs.readFileSync(path.resolve(process.cwd(), 'components/ProfileContent.css'), 'utf8');
+    fs.readFileSync(path.resolve(process.cwd(), 'components/StorySections.css'), 'utf8');
   return html
     .replace('<div id="root"></div>', () => `<div id="root">${shellMarkup}</div>`)
     .replace(/<meta charset="[^"]*"\s*\/?>/i, (charset) => `${charset}<style data-shell-styles>${shellStyles}</style>`);

@@ -31,6 +31,14 @@ test('homepage allows large image previews without changing indexing permission'
   expect(page.meta.get('robots')).toBe('index, follow, max-image-preview:large');
 });
 
+test('内联样式来自资料段（story-sections）组件', async () => {
+  const template = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const html = await server.transformIndexHtml('/', template);
+  const styleMatch = html.match(/<style data-shell-styles>([\s\S]*?)<\/style>/);
+  expect(styleMatch).not.toBeNull();
+  expect(styleMatch![1]).toContain('.story-sections');
+});
+
 function decodeEntities(value: string) {
   return value
     .replace(/&amp;/g, '&')

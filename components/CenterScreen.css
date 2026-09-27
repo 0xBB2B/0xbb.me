@@ -1,9 +1,0 @@
-.center-screen {
-  background: rgba(13, 20, 48, 0.85);
-  backdrop-filter: blur(6px);
-  border-radius: 8px;
-  padding: 1.25rem;
-  overflow: auto;
-  user-select: text;
-  max-height: 100%;
-}

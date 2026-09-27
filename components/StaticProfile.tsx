@@ -1,11 +1,18 @@
-import { ProfileContent } from './ProfileContent';
+import { StorySections } from './StorySections';
 
 const noop = () => {};
 
 export function StaticProfile() {
   return (
     <div hidden data-static-profile="">
-      <ProfileContent language="en" onLanguageChange={noop} />
+      <StorySections
+        language="en"
+        active={false}
+        currentIndex={0}
+        failed={false}
+        opacity={1}
+        onLanguageChange={noop}
+      />
     </div>
   );
 }

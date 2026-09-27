@@ -71,6 +71,8 @@ describe('the full English profile ships as static fallback content', () => {
     ['the System Architect role', 'System Architect'],
     ['the AI Agent Developer role', 'AI Agent Developer'],
     ['the location line', 'Tokyo · Shanghai'],
+    ['the "Still open on a rainy night" heading', 'Still open on a rainy night'],
+    ["the \"Let's get going\" heading", "Let's get going"],
     ['the AI Workflows direction', 'AI Workflows'],
     ['the Scalable Backends direction', 'Scalable Backends'],
     ['the Game SDK Ecosystems direction', 'Game SDK Ecosystems'],
@@ -82,7 +84,7 @@ describe('the full English profile ships as static fallback content', () => {
   ];
 
   test.each(requiredTexts)('includes %s', (_label, text) => {
-    expect(hiddenText).toContain(text);
+    expect(hiddenText.replaceAll('&#x27;', "'")).toContain(text);
   });
 
   const requiredLinks = [
