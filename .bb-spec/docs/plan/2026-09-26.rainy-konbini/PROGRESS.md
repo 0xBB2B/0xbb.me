@@ -14,9 +14,9 @@
 | 11 | story-camera | done | 2026-09-27 |
 | 12 | world-and-interaction | done | 2026-09-27 |
 | 13 | app-shell | done | 2026-09-27 |
-| 14 | docs-and-release | pending | — |
+| 14 | docs-and-release | done | 2026-09-27 |
 ## 当前
-需求改为「点铭牌进入资料视角的滚动叙事」（spec 提交 012f6b6），原 08–11 作废，改为 08–14。准备执行 `14-docs-and-release.md`。
+需求改为「点铭牌进入资料视角的滚动叙事」（spec 提交 012f6b6），原 08–11 作废，改为 08–14。全部 14 步完成（全量 366 个用例通过，含 1440×900 旋转 30 秒帧率测试）。
 - 01 记录：主 Agent 修正 `public-assets.test.ts` 的图片引用豁免（原豁免已删除的 profile-full.png，改为豁免 spec 要求的分享图 /profile.jpg）；按 Review 意见清理 `tests/public-images.test.ts` 残留分支、补回 `tests/typography.test.ts` 标题字重断言、`bun.lock` 项目名改为 rainy-konbini-portfolio。
 - 02 记录：字形覆盖已改为读取真实文案；按 Review 意见把简介与四个方向断言改为精确比对。「不写 Cookie、不改地址栏」留到 13 的端到端用例验证。
 - 03 记录：主 Agent 修正测试 helper 还原 HTML 实体、失败提示改回普通文本（去掉 dangerouslySetInnerHTML）；去掉 `<dialog>` 的 `open` 属性以保证 `showModal()` 生效；按 Review 修复 fault 模式连按 Esc / 返回手势可关闭卡片的问题（监听 `close` 事件重新 `showModal()`，preview 模式被浏览器关闭时同步 `onClose`）；卡片显式滚动样式；补强断言（无 open 属性、提示在前、名字匹配 h1）。
@@ -35,6 +35,7 @@
 - 待办（13 必须做）：外壳收到上下文丢失后按 scene-failure 隐藏 canvas（world 已停循环）；`startStoryWithoutEntering` 不回调视图变化，外壳自行设 `data-view`。
 - 13 记录：端到端 29 + 失败 4 个用例全部通过（无窗口 Chrome 有硬件 WebGL）。主 Agent 核实并修正测试缺陷：视图追踪脚本在文档元素出现前抛错、`!!` 转布尔、进度点避开正中取整歧义、链接检查前滚入视口、读屏名字应为「查看资料」、失败用例显式设英文、就绪判定加 `aria-busy`、点「先看资料」前等 React 挂载。实现修复（含 Review 两轮）：加载页淡出定时器被 effect 清理导致永不移除；reachTop 副作用移出 state updater；滚动监听改用 ref 保存回调；背景改深蓝径向渐变（并去掉盖住它的 `#root` 背景）；「先看资料」时语言在场景就绪前切换，铭牌跟上；就绪后点「先看资料」同步场景；「先看资料」后停在 0 时场景就绪即退回整体视角；上下文丢失后清空句柄；`aria-busy` 与加载页同步；键盘按钮失效时失焦；`data-view` 始终发布；标题程序聚焦不显示焦点框。
 - 范围外修复（性能/鲁棒，已列简报）：新建 `diorama/story-scroll.ts`，把 `storyLayout`、`snapTarget` 从 `story-camera.ts` 移入并新增 `scrollProgress`，首屏入口脚本不再含 three（422KB→209KB，并加测试）；`StorySections.css` 段高改为 `var(--story-vh)`，与 `innerHeight` 计算一致。
+- 14 记录：发布检查与帧率测试写好即通过（行为已存在），仅 README 为 Red，改写后通过。主 Agent 修正加载页状态文字用例的轮询竞态（改为页面加载前注入 MutationObserver 记录每次文字变化）。
 
 原型参考：`.bb-spec/.cache/prototype/rainy-konbini.html`（不进 git）。
 ## 阻塞

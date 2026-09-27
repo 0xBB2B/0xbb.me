@@ -652,18 +652,25 @@ describe('加载页', () => {
       await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
       const ua = await js('navigator.userAgent');
       await cdp('Emulation.setUserAgentOverride', { userAgent: ua, acceptLanguage: 'zh-CN' });
+      await cdp('Page.addScriptToEvaluateOnNewDocument', { source: \`
+        window.__statuses = [];
+        window.__sceneBusySeen = false;
+        const record = () => {
+          const el = document.querySelector('[role="status"]');
+          const text = el ? el.textContent : null;
+          if (text && window.__statuses[window.__statuses.length - 1] !== text) window.__statuses.push(text);
+          if (document.querySelector('#scene')?.getAttribute('aria-busy') === 'true') window.__sceneBusySeen = true;
+        };
+        new MutationObserver(record).observe(document, { subtree: true, childList: true, characterData: true, attributes: true });
+      \` });
       await navigate(${JSON.stringify(BASE_URL)});
-      const statuses = [];
-      let sceneBusySeen = false;
       const deadline = Date.now() + 8000;
       while (Date.now() < deadline) {
-        const text = await js("(() => { const el = document.querySelector('[role=\\"status\\"]'); return el ? el.textContent : null; })()");
-        if (text && statuses[statuses.length - 1] !== text) statuses.push(text);
-        const busy = await js("(() => { const el = document.querySelector('#scene'); return el ? el.getAttribute('aria-busy') === 'true' : false; })()");
-        if (busy) sceneBusySeen = true;
         if (!(await js("!!document.querySelector('.loading-shell')"))) break;
         await wait(0.05);
       }
+      const statuses = await js('window.__statuses');
+      const sceneBusySeen = await js('window.__sceneBusySeen');
       cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ statuses, sceneBusySeen }));
     `);
     expect(result.statuses).toContain('正在加载代码…');
