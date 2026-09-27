@@ -5,7 +5,7 @@ import { Pass } from 'three/addons/postprocessing/Pass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ctex } from './materials';
-import { DEFAULT_CAMERA, portraitDistanceScale } from './layout';
+import { DEFAULT_CAMERA } from './layout';
 
 export class ToonPass extends Pass {
   private effect: OutlineEffect;
@@ -78,7 +78,6 @@ export function createRenderer(container: HTMLElement, pixelRatio: number): Dior
 
   const camera = new THREE.PerspectiveCamera(DEFAULT_CAMERA.fov, width / height, 0.5, 260);
   camera.position.set(...DEFAULT_CAMERA.position);
-  camera.position.multiplyScalar(portraitDistanceScale(width, height));
 
   renderer.setPixelRatio(pixelRatio);
   renderer.setSize(width, height);

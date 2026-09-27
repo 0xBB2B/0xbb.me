@@ -12,11 +12,11 @@
 | 09 | story-sections | done | 2026-09-27 |
 | 10 | car-exterior | done | 2026-09-27 |
 | 11 | story-camera | done | 2026-09-27 |
-| 12 | world-and-interaction | pending | — |
+| 12 | world-and-interaction | done | 2026-09-27 |
 | 13 | app-shell | pending | — |
 | 14 | docs-and-release | pending | — |
 ## 当前
-需求改为「点铭牌进入资料视角的滚动叙事」（spec 提交 012f6b6），原 08–11 作废，改为 08–14。准备执行 `12-world-and-interaction.md`。
+需求改为「点铭牌进入资料视角的滚动叙事」（spec 提交 012f6b6），原 08–11 作废，改为 08–14。准备执行 `13-app-shell.md`。
 - 01 记录：主 Agent 修正 `public-assets.test.ts` 的图片引用豁免（原豁免已删除的 profile-full.png，改为豁免 spec 要求的分享图 /profile.jpg）；按 Review 意见清理 `tests/public-images.test.ts` 残留分支、补回 `tests/typography.test.ts` 标题字重断言、`bun.lock` 项目名改为 rainy-konbini-portfolio。
 - 02 记录：字形覆盖已改为读取真实文案；按 Review 意见把简介与四个方向断言改为精确比对。「不写 Cookie、不改地址栏」留到 13 的端到端用例验证。
 - 03 记录：主 Agent 修正测试 helper 还原 HTML 实体、失败提示改回普通文本（去掉 dangerouslySetInnerHTML）；去掉 `<dialog>` 的 `open` 属性以保证 `showModal()` 生效；按 Review 修复 fault 模式连按 Esc / 返回手势可关闭卡片的问题（监听 `close` 事件重新 `showModal()`，preview 模式被浏览器关闭时同步 `onClose`）；卡片显式滚动样式；补强断言（无 open 属性、提示在前、名字匹配 h1）。
@@ -31,6 +31,8 @@
 - 09 记录：Impl 指出 3 处测试缺陷，主 Agent 核实后修正（顺序断言从上次命中位置后查找——「AI 工作流」也出现在简介里；静态文本解码 `&#x27;`；内联样式断言改用真实模板）并改为静态导入。Review 合规 10/12，主 Agent 自修：正方形视口改走宽屏（竖屏改 `aspect-ratio < 1`）；竖屏去掉 `max-height:45vh; overflow:hidden` 裁切，改紧凑排版并给 SCROLL 提示留底部空间；通用 `p` 规则不再覆盖小标签与提示；段 ref 回调用 `useMemo` 固定；段与文字框自带 `box-sizing: border-box`。补测试：进度点高亮类名、简介只有一段。浏览器实测 375×667（含失败提示）文字 382–611px、所在地完整；800×800 为左栏排版。
 - 待办（13 必须做）：端到端加 375×667 + 失败提示时所在地完整可见、800×800 走左栏排版；`sectionRef` 回调里只存元素不 setState，且须在激活（非 hidden）后再测段位置；`index.css` 重写时保留 `box-sizing: border-box`。
 - 11 记录：Review 合规 6/8，主 Agent 自修：第 3 停靠点改为 (2.5,3,14)→(-0.2,1,-1)，让店门与整车同时入画；第 1 停靠点改为 (10,5.5,36)→(-2,-0.8,4)，修竖屏铭牌左侧被裁；回拉区改为线性比例（spec 未允许缓动）；`enterSequence` 复制起终点避免调用方改写起点。补测试：三个停靠点在 1440×900 与 390×844 下主体包围盒完整入画、回拉区 25%/50%/75% 线性、竖屏 1.9 倍拉远、非适用事件保持原状态、测试改静态导入。竖屏第 1 停靠点左右余量约 10px，12 实景截图再确认。
+- 12 记录：用户裁决——竖屏时默认镜头距离与缩放上下限都乘以竖屏放大系数（已改 spec `scene/diorama-layout` 与 plan 12）。Review 发现并按 TDD 修复：进入前清 OrbitControls 阻尼余量（退出漂移 1.09 米→≤0.1）、进入完成时滚动位置设为第 1 段起点（防闪回）、离开整体视角复位悬停与光标、只认主指针左键且多指取消点击、竖屏距离上下限同比放大且与「先看资料」默认位姿一致、挂载中途失败清理、上下文丢失停循环、射线对象复用、初始低档不统计降档、`View` 类型与输入判定复用 view-state。句柄增加 `scene`、`camera` 供冒烟测试观测（已记入 plan 12）。主 Agent 删除 `renderer.ts` 里按原点缩放相机的旧竖屏逻辑（改由 world 以观察目标为锚点计算）。浏览器目测 1440×900 第 1、3 停靠点与 390×844 第 1 停靠点取景正常。
+- 待办（13 必须做）：外壳收到上下文丢失后按 scene-failure 隐藏 canvas（world 已停循环）；`startStoryWithoutEntering` 不回调视图变化，外壳自行设 `data-view`。
 
 原型参考：`.bb-spec/.cache/prototype/rainy-konbini.html`（不进 git）。
 ## 阻塞

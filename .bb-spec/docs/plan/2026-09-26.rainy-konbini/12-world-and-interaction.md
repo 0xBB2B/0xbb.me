@@ -8,7 +8,7 @@ description: 场景总装、渲染循环、画质降档串联、整体视角镜�
 把 05～11 的模块装成一个可挂载的三维场景：整体视角能转能缩放，铭牌能悬停能点击，资料视角下镜头听外壳传入的滚动位置。
 
 ## 业务规则（来源：spec scene/diorama-layout、scene/quality-tier、scene/ambient-motion、plaque/plaque-hint、story/enter-story-view、story/scroll-camera、story/exit-story-view）
-- 整体视角：左键拖动旋转、滚轮或双指缩放、右键或双指拖动平移；距离 16～80 米，仰角 0.2～1.4 弧度；默认镜头 `DEFAULT_CAMERA`，竖屏距离按 `portraitDistanceScale` 放大。
+- 整体视角：左键拖动旋转、滚轮或双指缩放、右键或双指拖动平移；距离 16～80 米，仰角 0.2～1.4 弧度；默认镜头 `DEFAULT_CAMERA`；竖屏时默认镜头距离与缩放上下限都乘以 `portraitDistanceScale(宽, 高)`（2026-09-27 用户裁决，避免默认镜头被 80 米上限截断）。
 - 铭牌悬停（仅整体视角、`hover: hover` 设备）：射线最先命中铭牌组才算，被遮挡不算；悬停时 canvas `cursor` 为 `pointer`、边框最亮；离开恢复默认光标与呼吸。
 - 铭牌点击：射线最先命中铭牌；按下到松开移动超过 5 像素视为拖动不触发；只在整体视角且就绪时有效。
 - 进入：记下当前镜头位置与观察目标，停用镜头操作，播放进入动画（≤ 1.5 秒），过渡中忽略所有输入；结束后通知进入完成。
@@ -25,7 +25,7 @@ description: 场景总装、渲染循环、画质降档串联、整体视角镜�
 ### diorama/world.ts
 | 名称 | 职责 |
 |---|---|
-| `mountDiorama` | 依次：`await loadCanvasFonts()`（3 秒超时后照常继续）→ 按画质档算初始像素比并 `createRenderer` → 用 RoomEnvironment 生成环境贴图 → `createTextures` → 展示台（传环境贴图）、地面、路面标线、便利店、街道、灯光、铭牌（传环境贴图）→ 雨、水花、滴水、湿地面 → `buildCar` 加入场景 → `createAmbient`（传车的双闪）→ `disableFogOnEmissive` → 创建交互与 `OrbitControls`；首帧画出后 resolve `ready`；返回 `ready`、`enterStory`、`startStoryWithoutEntering`（先看资料用）、`setScroll`、`exitToDiorama`、`setLanguage`、`onViewChange`、`onQualityChange`、`onContextLost`、`dispose` |
+| `mountDiorama` | 依次：`await loadCanvasFonts()`（3 秒超时后照常继续）→ 按画质档算初始像素比并 `createRenderer` → 用 RoomEnvironment 生成环境贴图 → `createTextures` → 展示台（传环境贴图）、地面、路面标线、便利店、街道、灯光、铭牌（传环境贴图）→ 雨、水花、滴水、湿地面 → `buildCar` 加入场景 → `createAmbient`（传车的双闪）→ `disableFogOnEmissive` → 创建交互与 `OrbitControls`；首帧画出后 resolve `ready`；返回 `ready`、`scene`、`camera`（供装配冒烟测试读取场景与镜头状态）、`enterStory`、`startStoryWithoutEntering`（先看资料用）、`setScroll`、`exitToDiorama`、`setLanguage`、`onViewChange`、`onQualityChange`、`onContextLost`、`dispose` |
 | `renderLoop` | 每帧：更新 `sharedTime`、环境动效、湿地面时间、铭牌呼吸（`setPlaqueGlow(plaqueGlow(t), hovered)`）、进入动画或滚动位姿、`framingOffset`、帧监视器；合成渲染 |
 | `applyTier` | 按档位设置渲染像素比、倒影开关、雨丝比例、水花像素比 |
 | `handleResize` | 视口宽或高为 0 时跳过；否则更新渲染器、湿地面、相机宽高比与取景偏移 |
