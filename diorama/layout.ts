@@ -46,7 +46,9 @@ export function isOnLot(x: number, z: number): boolean {
   return (x < 5 && z < 5) || z > 11 || (x > 11 && z < 5);
 }
 
-export function portraitDistanceScale(width: number, height: number): number {
-  if (width >= height) return 1;
-  return Math.min(1.9, Math.pow(height / width, 0.85));
+export function viewFov(width: number, height: number): number {
+  const aspect = width / height;
+  if (aspect >= 1.6) return DEFAULT_CAMERA.fov;
+  const halfFov = Math.atan((Math.tan((DEFAULT_CAMERA.fov / 2) * (Math.PI / 180)) * 1.6) / aspect);
+  return (halfFov * 2 * 180) / Math.PI;
 }

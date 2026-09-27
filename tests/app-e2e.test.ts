@@ -645,6 +645,43 @@ describe('资料段', () => {
   }, 90_000);
 });
 
+describe('资料段链接按钮换行不重叠', () => {
+  test('390×844 下第 3 段的链接按钮两两不重叠，且都是块级盒子', async () => {
+    const sectionStart2 = storyLayout(844).sectionStarts[2];
+    const result = await runBrowser<{ view: string | null; displays: string[]; overlaps: boolean }>(`
+      ${HELPERS}
+      await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: false });
+      await navigate(${JSON.stringify(BASE_URL)});
+      while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
+      await click('.loading-shell-button');
+      await js('window.scrollTo(0, ${sectionStart2})');
+      await wait(1.2);
+      const data = await js(\`(() => {
+        const links = Array.from(document.querySelectorAll('.story-links a'));
+        const displays = links.map(a => getComputedStyle(a).display);
+        const rects = links.map(a => a.getBoundingClientRect());
+        let overlaps = false;
+        for (let i = 0; i < rects.length; i++) {
+          for (let j = i + 1; j < rects.length; j++) {
+            const a = rects[i], b = rects[j];
+            const separate = a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top;
+            if (!separate) overlaps = true;
+          }
+        }
+        const rows = new Set(rects.map(r => Math.round(r.top))).size;
+        return { displays, overlaps, rows };
+      })()\`);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ view: await js('document.documentElement.dataset.view ?? null'), ...data }));
+    `);
+    expect(result.view).toBe('story');
+    for (const display of result.displays) {
+      expect(['inline-block', 'block', 'flex', 'inline-flex']).toContain(display);
+    }
+    expect(result.overlaps).toBe(false);
+    expect((result as { rows?: number }).rows).toBeGreaterThanOrEqual(2);
+  }, 90_000);
+});
+
 describe('加载页', () => {
   test('状态文字依次为「正在加载代码…」与「正在布置雨夜街角…」，#scene 加载期间 aria-busy=true', async () => {
     const result = await runBrowser<{ statuses: string[]; sceneBusySeen: boolean }>(`

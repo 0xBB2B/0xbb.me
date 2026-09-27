@@ -2,7 +2,7 @@ import { expect, test, describe } from 'bun:test';
 import * as storyCamera from '../diorama/story-camera';
 import * as storyScroll from '../diorama/story-scroll';
 import * as THREE from 'three';
-import { DEFAULT_CAMERA, portraitDistanceScale } from '../diorama/layout';
+import { CAR_CENTER, DEFAULT_CAMERA, viewFov } from '../diorama/layout';
 import { PLAQUE_PANEL } from '../diorama/plaque';
 
 type Pose = { position: THREE.Vector3; target: THREE.Vector3 };
@@ -13,10 +13,10 @@ function makePose(position: [number, number, number], target: [number, number, n
 
 function plaqueProjection(width: number, height: number) {
   const m = storyCamera;
-  const camera = new THREE.PerspectiveCamera(DEFAULT_CAMERA.fov, width / height, 0.5, 400);
+  const camera = new THREE.PerspectiveCamera(viewFov(width, height), width / height, 0.5, 400);
   const offset = m.framingOffset(width, height);
   camera.setViewOffset(width, height, offset.x, offset.y, width, height);
-  const pose = m.stopPose(0, width, height);
+  const pose = m.stopPose(0);
   camera.position.copy(pose.position);
   camera.lookAt(pose.target);
   camera.updateMatrixWorld();
@@ -52,8 +52,8 @@ describe('poseAtScroll 段内跟手', () => {
   for (const k of [0, 1, 2] as const) {
     test(`第 ${k} 段起点：镜头与观察目标贴合该停靠点，透明度为 1`, () => {
       const sectionStarts = storyScroll.storyLayout(900).sectionStarts;
-      const result = storyCamera.poseAtScroll(sectionStarts[k], 1440, 900, dioramaPose);
-      const stop = storyCamera.stopPose(k, 1440, 900);
+      const result = storyCamera.poseAtScroll(sectionStarts[k], 900, dioramaPose);
+      const stop = storyCamera.stopPose(k);
       expect(result.position.distanceTo(stop.position)).toBeLessThan(0.05);
       expect(result.target.distanceTo(stop.target)).toBeLessThan(0.05);
       expect(result.opacity).toBe(1);
@@ -61,9 +61,9 @@ describe('poseAtScroll 段内跟手', () => {
   }
 
   test('第 1、2 段起点正中间：镜头远离两侧停靠点，处于过渡中', () => {
-    const result = storyCamera.poseAtScroll(900, 1440, 900, dioramaPose);
-    const stop0 = storyCamera.stopPose(0, 1440, 900);
-    const stop1 = storyCamera.stopPose(1, 1440, 900);
+    const result = storyCamera.poseAtScroll(900, 900, dioramaPose);
+    const stop0 = storyCamera.stopPose(0);
+    const stop1 = storyCamera.stopPose(1);
     expect(result.position.distanceTo(stop0.position)).toBeGreaterThan(0.1);
     expect(result.position.distanceTo(stop1.position)).toBeGreaterThan(0.1);
   });
@@ -72,8 +72,8 @@ describe('poseAtScroll 段内跟手', () => {
 describe('poseAtScroll 回拉区', () => {
   test('回拉区中点：镜头介于第 1 停靠点与整体视角之间，透明度介于 0 和 1 之间', () => {
     const dioramaPose = makePose(DEFAULT_CAMERA.position, DEFAULT_CAMERA.target);
-    const result = storyCamera.poseAtScroll(225, 1440, 900, dioramaPose);
-    const stop0 = storyCamera.stopPose(0, 1440, 900);
+    const result = storyCamera.poseAtScroll(225, 900, dioramaPose);
+    const stop0 = storyCamera.stopPose(0);
     expect(result.position.distanceTo(stop0.position)).toBeGreaterThan(0.1);
     expect(result.position.distanceTo(dioramaPose.position)).toBeGreaterThan(0.1);
     expect(result.opacity).toBeGreaterThan(0);
@@ -82,14 +82,14 @@ describe('poseAtScroll 回拉区', () => {
 
   test('scrollY 为 0：镜头等于整体视角位姿（默认位姿），透明度为 0', () => {
     const dioramaPose = makePose(DEFAULT_CAMERA.position, DEFAULT_CAMERA.target);
-    const result = storyCamera.poseAtScroll(0, 1440, 900, dioramaPose);
+    const result = storyCamera.poseAtScroll(0, 900, dioramaPose);
     expect(result.position.distanceTo(dioramaPose.position)).toBeLessThan(0.1);
     expect(result.opacity).toBe(0);
   });
 
   test('scrollY 为 0：使用非默认整体视角位姿时，镜头跟随传入值而非硬编码默认值', () => {
     const customPose = makePose([-30, 20, 30], [1, 2, 3]);
-    const result = storyCamera.poseAtScroll(0, 1440, 900, customPose);
+    const result = storyCamera.poseAtScroll(0, 900, customPose);
     expect(result.position.distanceTo(customPose.position)).toBeLessThan(1e-6);
     expect(result.target.distanceTo(customPose.target)).toBeLessThan(1e-6);
   });
@@ -99,23 +99,23 @@ describe('poseAtScroll index', () => {
   const dioramaPose = makePose(DEFAULT_CAMERA.position, DEFAULT_CAMERA.target);
 
   test('回拉区内 → 0', () => {
-    expect(storyCamera.poseAtScroll(200, 1440, 900, dioramaPose).index).toBe(0);
+    expect(storyCamera.poseAtScroll(200, 900, dioramaPose).index).toBe(0);
   });
 
   test('第 2 段起点 → 1', () => {
-    expect(storyCamera.poseAtScroll(1350, 1440, 900, dioramaPose).index).toBe(1);
+    expect(storyCamera.poseAtScroll(1350, 900, dioramaPose).index).toBe(1);
   });
 
   test('第 3 段起点 → 2', () => {
-    expect(storyCamera.poseAtScroll(2250, 1440, 900, dioramaPose).index).toBe(2);
+    expect(storyCamera.poseAtScroll(2250, 900, dioramaPose).index).toBe(2);
   });
 
   test('段间更靠近第 1 段起点 → 0', () => {
-    expect(storyCamera.poseAtScroll(700, 1440, 900, dioramaPose).index).toBe(0);
+    expect(storyCamera.poseAtScroll(700, 900, dioramaPose).index).toBe(0);
   });
 
   test('段间更靠近第 2 段起点 → 1', () => {
-    expect(storyCamera.poseAtScroll(1300, 1440, 900, dioramaPose).index).toBe(1);
+    expect(storyCamera.poseAtScroll(1300, 900, dioramaPose).index).toBe(1);
   });
 });
 
@@ -208,10 +208,10 @@ const PLAQUE_BOX = new THREE.Box3(
 );
 
 function stopCamera(index: number, width: number, height: number) {
-  const camera = new THREE.PerspectiveCamera(DEFAULT_CAMERA.fov, width / height, 0.5, 400);
+  const camera = new THREE.PerspectiveCamera(viewFov(width, height), width / height, 0.5, 400);
   const offset = storyCamera.framingOffset(width, height);
   camera.setViewOffset(width, height, offset.x, offset.y, width, height);
-  const pose = storyCamera.stopPose(index, width, height);
+  const pose = storyCamera.stopPose(index);
   camera.position.copy(pose.position);
   camera.lookAt(pose.target);
   camera.updateMatrixWorld();
@@ -219,18 +219,27 @@ function stopCamera(index: number, width: number, height: number) {
   return camera;
 }
 
-function boxInFrame(box: THREE.Box3, camera: THREE.PerspectiveCamera, width: number, height: number): boolean {
+function boxScreenBounds(box: THREE.Box3, camera: THREE.PerspectiveCamera, width: number, height: number) {
+  let left = Infinity, right = -Infinity, top = Infinity, bottom = -Infinity, inFrame = true;
   for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
     const ndc = new THREE.Vector3(x, y, z).project(camera);
     const px = ((ndc.x + 1) / 2) * width;
     const py = ((1 - ndc.y) / 2) * height;
-    if (px < 0 || px > width || py < 0 || py > height || ndc.z > 1) return false;
+    if (px < 0 || px > width || py < 0 || py > height || ndc.z > 1) inFrame = false;
+    left = Math.min(left, px);
+    right = Math.max(right, px);
+    top = Math.min(top, py);
+    bottom = Math.max(bottom, py);
   }
-  return true;
+  return { left, right, top, bottom, inFrame };
+}
+
+function boxInFrame(box: THREE.Box3, camera: THREE.PerspectiveCamera, width: number, height: number): boolean {
+  return boxScreenBounds(box, camera, width, height).inFrame;
 }
 
 describe('停靠点取景：主体完整入画', () => {
-  const viewports: [number, number][] = [[1440, 900], [390, 844]];
+  const viewports: [number, number][] = [[1440, 900], [390, 844], [375, 667], [800, 800]];
   test.each(viewports)('%ix%i：第 1 停靠点铭牌与店头招牌完整入画', (w, h) => {
     const camera = stopCamera(0, w, h);
     expect(boxInFrame(PLAQUE_BOX, camera, w, h)).toBe(true);
@@ -244,33 +253,42 @@ describe('停靠点取景：主体完整入画', () => {
     expect(boxInFrame(CAR_BOX, camera, w, h)).toBe(true);
     expect(boxInFrame(DOOR_BOX, camera, w, h)).toBe(true);
   });
+  test.each(viewports.filter(([w, h]) => w / h >= 1))('%ix%i：宽屏第 3 停靠点整车左边缘超过视口宽的 0.4 倍', (w, h) => {
+    const { left } = boxScreenBounds(CAR_BOX, stopCamera(2, w, h), w, h);
+    expect(left).toBeGreaterThan(w * 0.4);
+  });
+  test.each(viewports.filter(([w, h]) => w / h < 1))('%ix%i：竖屏第 3 停靠点整车下边缘低于视口高的 0.55 倍', (w, h) => {
+    const { bottom } = boxScreenBounds(CAR_BOX, stopCamera(2, w, h), w, h);
+    expect(bottom).toBeLessThan(h * 0.55);
+  });
+});
+
+describe('第 3 停靠点位置：从车侧前方较低处看车', () => {
+  test('镜头在车身前方、偏离车中心 x 超过 2 米、高度低于 2.5 米', () => {
+    const pose = storyCamera.stopPose(2);
+    expect(pose.position.z).toBeGreaterThan(CAR_BOX.max.z);
+    expect(Math.abs(pose.position.x - CAR_CENTER[0])).toBeGreaterThan(2);
+    expect(pose.position.y).toBeLessThan(2.5);
+  });
 });
 
 describe('回拉区比例与滚入深度成正比', () => {
   test.each([0.25, 0.5, 0.75])('滚入 %p 时不透明度等于该比例，镜头到整体视角的距离占全程同一比例', (ratio) => {
     const diorama = makePose([33, 23, 40], [0, -1.4, -0.5]);
-    const stop0 = storyCamera.stopPose(0, 1440, 900);
+    const stop0 = storyCamera.stopPose(0);
     const total = diorama.position.distanceTo(stop0.position);
-    const result = storyCamera.poseAtScroll(450 * ratio, 1440, 900, diorama);
+    const result = storyCamera.poseAtScroll(450 * ratio, 900, diorama);
     expect(result.opacity).toBeCloseTo(ratio, 6);
     expect(result.position.distanceTo(diorama.position) / total).toBeCloseTo(ratio, 6);
   });
 });
 
-describe('竖屏停靠点按 portraitDistanceScale 拉远', () => {
-  test('390×844 下镜头到观察目标的距离是宽屏的 portraitDistanceScale 倍，观察目标不变', () => {
-    for (const index of [0, 1, 2]) {
-      const wide = storyCamera.stopPose(index, 1440, 900);
-      const tall = storyCamera.stopPose(index, 390, 844);
-      expect(tall.target.distanceTo(wide.target)).toBeLessThan(1e-9);
-      const ratio = tall.position.distanceTo(tall.target) / wide.position.distanceTo(wide.target);
-      expect(ratio).toBeCloseTo(portraitDistanceScale(390, 844), 6);
-    }
-  });
-  test('宽屏停靠点等于 CAMERA_STOPS 原值', () => {
+describe('停靠点与视口无关', () => {
+  test('停靠点等于 CAMERA_STOPS 原值', () => {
     storyCamera.CAMERA_STOPS.forEach((stop, index) => {
-      const pose = storyCamera.stopPose(index, 1440, 900);
+      const pose = storyCamera.stopPose(index);
       pose.position.toArray().forEach((value, axis) => expect(value).toBeCloseTo(stop.position[axis], 9));
+      pose.target.toArray().forEach((value, axis) => expect(value).toBeCloseTo(stop.target[axis], 9));
     });
   });
 });
@@ -290,7 +308,7 @@ describe('enterSequence 不受调用方后续修改起点影响', () => {
 describe('scrollProgress 与 poseAtScroll 的不透明度和段序号一致', () => {
   test.each([0, 1, 225, 449, 450, 700, 900, 990, 1350, 1800, 2250, 3000])('scrollY=%i', (scrollY) => {
     const diorama = makePose([33, 23, 40], [0, -1.4, -0.5]);
-    const pose = storyCamera.poseAtScroll(scrollY, 1440, 900, diorama);
+    const pose = storyCamera.poseAtScroll(scrollY, 900, diorama);
     expect(storyScroll.scrollProgress(scrollY, 900)).toEqual({ opacity: pose.opacity, index: pose.index });
   });
 });

@@ -8,7 +8,8 @@ declare global {
     viewTimes?: number[];
     ready?: boolean;
     mountError?: string;
-    projectToScreen?: (world: [number, number, number]) => { x: number; y: number } | null;
+    projectToScreen?: (world: [number, number, number]) => { x: number; y: number; z: number } | null;
+    objectBox?: (name: string) => { min: [number, number, number]; max: [number, number, number] } | null;
   }
 }
 
@@ -36,7 +37,13 @@ async function boot(): Promise<void> {
     if (!camera) return null;
     camera.updateMatrixWorld();
     const ndc = new THREE.Vector3(...world).project(camera);
-    return { x: ((ndc.x + 1) / 2) * innerWidth, y: ((1 - ndc.y) / 2) * innerHeight };
+    return { x: ((ndc.x + 1) / 2) * innerWidth, y: ((1 - ndc.y) / 2) * innerHeight, z: ndc.z };
+  };
+  window.objectBox = (name) => {
+    const object = handle.scene.getObjectByName(name);
+    if (!object) return null;
+    const box = new THREE.Box3().setFromObject(object);
+    return { min: box.min.toArray() as [number, number, number], max: box.max.toArray() as [number, number, number] };
   };
   window.ready = true;
 }

@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { portraitDistanceScale } from './layout';
 import { storyLayout, scrollProgress } from './story-scroll';
 
 export interface Pose {
@@ -15,7 +14,7 @@ interface CameraStop {
 export const CAMERA_STOPS: CameraStop[] = [
   { position: [10, 5.5, 36], target: [-2, -0.8, 4] },
   { position: [3, 5.5, 20], target: [-1, 2.2, -2] },
-  { position: [2.5, 3, 14], target: [-0.2, 1, -1] },
+  { position: [-6.35, 1.5, 10.68], target: [-0.85, 0.7, 1.2] },
 ];
 
 export function framingOffset(width: number, height: number): { x: number; y: number } {
@@ -23,13 +22,9 @@ export function framingOffset(width: number, height: number): { x: number; y: nu
   return { x: 0, y: 0.15 * height };
 }
 
-export function stopPose(index: number, width: number, height: number): Pose {
+export function stopPose(index: number): Pose {
   const stop = CAMERA_STOPS[index];
-  const target = new THREE.Vector3(...stop.target);
-  const basePosition = new THREE.Vector3(...stop.position);
-  const scale = portraitDistanceScale(width, height);
-  const position = target.clone().add(basePosition.clone().sub(target).multiplyScalar(scale));
-  return { position, target };
+  return { position: new THREE.Vector3(...stop.position), target: new THREE.Vector3(...stop.target) };
 }
 
 function smoothstep(t: number): number {
@@ -39,7 +34,6 @@ function smoothstep(t: number): number {
 
 export function poseAtScroll(
   scrollY: number,
-  width: number,
   height: number,
   dioramaPose: Pose,
 ): { position: THREE.Vector3; target: THREE.Vector3; opacity: number; index: number } {
@@ -52,7 +46,7 @@ export function poseAtScroll(
 
   if (scrollY < pullBack) {
     const t = scrollY / pullBack;
-    const stop0 = stopPose(0, width, height);
+    const stop0 = stopPose(0);
     return {
       position: dioramaPose.position.clone().lerp(stop0.position, t),
       target: dioramaPose.target.clone().lerp(stop0.target, t),
@@ -63,15 +57,15 @@ export function poseAtScroll(
 
   const lastIndex = sectionStarts.length - 1;
   if (scrollY >= sectionStarts[lastIndex]) {
-    const last = stopPose(lastIndex, width, height);
+    const last = stopPose(lastIndex);
     return { position: last.position, target: last.target, opacity, index };
   }
 
   for (let i = 0; i < lastIndex; i++) {
     if (scrollY >= sectionStarts[i] && scrollY < sectionStarts[i + 1]) {
       const t = smoothstep((scrollY - sectionStarts[i]) / (sectionStarts[i + 1] - sectionStarts[i]));
-      const stopA = stopPose(i, width, height);
-      const stopB = stopPose(i + 1, width, height);
+      const stopA = stopPose(i);
+      const stopB = stopPose(i + 1);
       return {
         position: stopA.position.lerp(stopB.position, t),
         target: stopA.target.lerp(stopB.target, t),
@@ -81,7 +75,7 @@ export function poseAtScroll(
     }
   }
 
-  const last = stopPose(lastIndex, width, height);
+  const last = stopPose(lastIndex);
   return { position: last.position, target: last.target, opacity, index };
 }
 

@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer, type ViteDevServer } from 'vite';
 import react from '@vitejs/plugin-react';
 import * as THREE from 'three';
-import { DEFAULT_CAMERA, portraitDistanceScale } from '../diorama/layout';
+import { DEFAULT_CAMERA, viewFov } from '../diorama/layout';
 import { PLAQUE_PANEL, PLAQUE_GLOW } from '../diorama/plaque';
 import { stopPose } from '../diorama/story-camera';
 import { storyLayout } from '../diorama/story-scroll';
@@ -220,7 +220,7 @@ describe('资料视角退出镜头位姿', () => {
   test('规则2: 进入动画结束的瞬间镜头已停在第 1 停靠点，不闪回进入前的位置', async () => {
     const px = PLAQUE_PIXEL.x;
     const py = PLAQUE_PIXEL.y;
-    const stop0 = stopPose(0, 1440, 900);
+    const stop0 = stopPose(0);
     const result = await runBrowser<{ ready: boolean; views: string[]; distance: number }>(`
       ${BOOT}
       await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: ${px}, y: ${py} });
@@ -298,37 +298,70 @@ describe('铭牌右键点击', () => {
   }, 60_000);
 });
 
-describe('竖屏镜头距离', () => {
-  test('规则5: 竖屏默认镜头距离按 portraitDistanceScale 缩放，不被截到 80 米', async () => {
-    const result = await runBrowser<{ ready: boolean; distance: number }>(`
+describe('竖屏下的视场角与整体默认镜头', () => {
+  test('390×844 下相机 fov 等于 viewFov，镜头到默认观察目标的距离与宽屏相同', async () => {
+    const result = await runBrowser<{ ready: boolean; fov: number; distance: number }>(`
       ${bootScript(390, 844)}
+      const fov = await js("(() => { const camera = window.handle && window.handle.camera; return camera ? camera.fov : -1; })()");
       const distance = await js("(() => { const camera = window.handle && window.handle.camera; return camera ? camera.position.distanceTo({ x: 0, y: -1.4, z: -0.5 }) : -1; })()");
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, distance }));
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, fov, distance }));
     `);
     expect(result.ready).toBe(true);
-    const expected = DEFAULT_DISTANCE * portraitDistanceScale(390, 844);
-    expect(Math.abs(result.distance - expected)).toBeLessThan(0.5);
-    expect(result.distance).toBeGreaterThan(80);
+    expect(Math.abs(result.fov - viewFov(390, 844))).toBeLessThan(0.5);
+    expect(Math.abs(result.distance - DEFAULT_DISTANCE)).toBeLessThan(0.5);
   }, 60_000);
 
-  test('规则6: 竖屏下先看资料后滚到顶退出，镜头保持在默认镜头位姿', async () => {
+  test('从 1440×900 改为 390×844 后，fov 随之变为 viewFov', async () => {
+    const result = await runBrowser<{ ready: boolean; fovBefore: number; fovAfter: number }>(`
+      ${bootScript(1440, 900)}
+      const fovBefore = await js('window.handle.camera.fov');
+      await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: false });
+      await wait(0.5);
+      const fovAfter = await js('window.handle.camera.fov');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, fovBefore, fovAfter }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.fovBefore).toBeCloseTo(viewFov(1440, 900), 3);
+    expect(Math.abs(result.fovAfter - viewFov(390, 844))).toBeLessThan(0.5);
+  }, 60_000);
+
+  test('390×844 下展示台（pedestal）与铭牌（plaque）包围盒完整在画面内', async () => {
+    const result = await runBrowser<{ ready: boolean; inFrame: boolean }>(`
+      ${bootScript(390, 844)}
+      const inFrame = await js(\`(() => {
+        const check = (name) => {
+          const box = window.objectBox(name);
+          if (!box) return false;
+          const { min, max } = box;
+          for (const x of [min[0], max[0]]) for (const y of [min[1], max[1]]) for (const z of [min[2], max[2]]) {
+            const p = window.projectToScreen([x, y, z]);
+            if (!p || p.x < 0 || p.x > innerWidth || p.y < 0 || p.y > innerHeight || p.z > 1) return false;
+          }
+          return true;
+        };
+        return check('pedestal') && check('plaque');
+      })()\`);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, inFrame }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.inFrame).toBe(true);
+  }, 60_000);
+
+  test('竖屏下先看资料后滚到顶退出，镜头回到默认位姿', async () => {
     const sectionStart0 = storyLayout(844).sectionStarts[0];
-    const result = await runBrowser<{ ready: boolean; moveDistance: number; targetDistance: number }>(`
+    const result = await runBrowser<{ ready: boolean; distance: number }>(`
       ${bootScript(390, 844)}
       await js('window.handle.startStoryWithoutEntering()');
       await js('window.handle.setScroll(${sectionStart0})');
       await wait(0.5);
       await js('window.handle.setScroll(0)');
       await wait(0.3);
-      await js("window.__recordedPose = (() => { const c = window.handle && window.handle.camera; return c ? { x: c.position.x, y: c.position.y, z: c.position.z } : null; })()");
       await js('window.handle.exitToDiorama()');
       await wait(1);
-      const moveDistance = await js("(() => { const camera = window.handle && window.handle.camera; const recorded = window.__recordedPose; return (camera && recorded) ? Math.hypot(camera.position.x - recorded.x, camera.position.y - recorded.y, camera.position.z - recorded.z) : 9999; })()");
-      const targetDistance = await js("(() => { const camera = window.handle && window.handle.camera; return camera ? camera.position.distanceTo({ x: 0, y: -1.4, z: -0.5 }) : -1; })()");
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, moveDistance, targetDistance }));
+      const distance = await js("(() => { const camera = window.handle && window.handle.camera; return camera ? camera.position.distanceTo({ x: ${DEFAULT_CAMERA.position[0]}, y: ${DEFAULT_CAMERA.position[1]}, z: ${DEFAULT_CAMERA.position[2]} }) : 9999; })()");
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, distance }));
     `);
     expect(result.ready).toBe(true);
-    expect(result.moveDistance).toBeLessThanOrEqual(0.1);
-    expect(result.targetDistance).toBeGreaterThan(80);
+    expect(result.distance).toBeLessThanOrEqual(0.1);
   }, 60_000);
 });

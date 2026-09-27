@@ -17,17 +17,11 @@ import { buildCar } from './car';
 import { createAmbient } from './ambient';
 import { plaqueGlow } from './rhythm';
 import { sharedTime } from './materials';
-import { DEFAULT_CAMERA, ORBIT_LIMITS, portraitDistanceScale } from './layout';
+import { DEFAULT_CAMERA, ORBIT_LIMITS, viewFov } from './layout';
 import { poseAtScroll, enterSequence, stopPose, framingOffset, type Pose } from './story-camera';
 import { storyLayout } from './story-scroll';
 import { createInteraction } from './interaction';
 import { acceptsSceneInput, type View } from './view-state';
-
-function defaultCameraPosition(width: number, height: number): THREE.Vector3 {
-  const target = new THREE.Vector3(...DEFAULT_CAMERA.target);
-  const offset = new THREE.Vector3(...DEFAULT_CAMERA.position).sub(target).multiplyScalar(portraitDistanceScale(width, height));
-  return target.add(offset);
-}
 
 export interface DioramaHandle {
   ready: Promise<void>;
@@ -55,7 +49,9 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
 
   let width = container.clientWidth || 1;
   let height = container.clientHeight || 1;
-  camera.position.copy(defaultCameraPosition(width, height));
+  camera.position.set(...DEFAULT_CAMERA.position);
+  camera.fov = viewFov(width, height);
+  camera.updateProjectionMatrix();
 
   let wetGround: ReturnType<typeof createWetGround> | undefined;
   let handleResize: () => void = () => {};
@@ -103,13 +99,8 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
     controls.target.set(...DEFAULT_CAMERA.target);
     controls.minPolarAngle = ORBIT_LIMITS.minPolarAngle;
     controls.maxPolarAngle = ORBIT_LIMITS.maxPolarAngle;
-
-    function applyOrbitDistanceLimits(): void {
-      const scale = portraitDistanceScale(width, height);
-      controls.minDistance = ORBIT_LIMITS.minDistance * scale;
-      controls.maxDistance = ORBIT_LIMITS.maxDistance * scale;
-    }
-    applyOrbitDistanceLimits();
+    controls.minDistance = ORBIT_LIMITS.minDistance;
+    controls.maxDistance = ORBIT_LIMITS.maxDistance;
     controls.update();
 
     let view: View = 'diorama';
@@ -155,7 +146,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
         return;
       }
       if (view === 'story' && savedPose) {
-        const result = poseAtScroll(scrollY, width, height, savedPose);
+        const result = poseAtScroll(scrollY, height, savedPose);
         camera.position.copy(result.position);
         camera.lookAt(result.target);
         setFraming(result.opacity);
@@ -172,12 +163,12 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       interaction.clearHover();
       view = 'entering';
       emitView('entering');
-      enterAnim = { seq: enterSequence(savedPose, stopPose(0, width, height)), startT: clock.elapsedTime };
+      enterAnim = { seq: enterSequence(savedPose, stopPose(0)), startT: clock.elapsedTime };
     }
 
     function startStoryWithoutEntering(): void {
       savedPose = {
-        position: defaultCameraPosition(width, height),
+        position: new THREE.Vector3(...DEFAULT_CAMERA.position),
         target: new THREE.Vector3(...DEFAULT_CAMERA.target),
       };
       controls.enabled = false;
@@ -242,8 +233,9 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       width = w;
       height = h;
       resize(w, h);
+      camera.fov = viewFov(w, h);
+      camera.updateProjectionMatrix();
       wetGround!.resize(w, h, pixelRatio);
-      applyOrbitDistanceLimits();
       if (view !== 'diorama') updateCamera(clock.elapsedTime);
     };
     window.addEventListener('resize', handleResize);

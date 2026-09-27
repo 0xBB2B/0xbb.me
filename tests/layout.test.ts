@@ -1,5 +1,5 @@
 import { expect, test, describe } from 'bun:test';
-import { BASE_HALF, DEFAULT_CAMERA, ORBIT_LIMITS, CAR_CENTER, isOnLot, portraitDistanceScale } from '../diorama/layout';
+import { BASE_HALF, DEFAULT_CAMERA, ORBIT_LIMITS, CAR_CENTER, isOnLot, viewFov } from '../diorama/layout';
 
 describe('layout constants', () => {
   test('BASE_HALF is 13', () => {
@@ -47,20 +47,35 @@ describe('isOnLot', () => {
   });
 });
 
-describe('portraitDistanceScale', () => {
-  test('landscape viewport (width > height) has no extra scale', () => {
-    expect(portraitDistanceScale(1440, 900)).toBe(1);
+describe('viewFov', () => {
+  test('宽高比 1.6（1440x900）竖直视场角为 28 度', () => {
+    expect(viewFov(1440, 900)).toBe(28);
   });
 
-  test('square viewport (width === height) has no extra scale', () => {
-    expect(portraitDistanceScale(800, 800)).toBe(1);
+  test('宽高比 1.78（1920x1080）竖直视场角为 28 度', () => {
+    expect(viewFov(1920, 1080)).toBe(28);
   });
 
-  test('portrait viewport scales by (height/width)^0.85', () => {
-    expect(portraitDistanceScale(390, 780)).toBeCloseTo(Math.pow(780 / 390, 0.85), 2);
+  test('宽高比恰为 1.6（1600x1000）竖直视场角为 28 度', () => {
+    expect(viewFov(1600, 1000)).toBe(28);
   });
 
-  test('extreme portrait viewport is capped at 1.9', () => {
-    expect(portraitDistanceScale(300, 1200)).toBe(1.9);
+  test('方屏（800x800）竖直视场角约 43.5 度，水平视野与宽屏 1.6 时一致', () => {
+    expect(viewFov(800, 800)).toBeCloseTo(43.5, 0);
+  });
+
+  test('竖屏（390x844）竖直视场角约 81.6 度，水平视野与宽屏 1.6 时一致', () => {
+    expect(viewFov(390, 844)).toBeCloseTo(81.6, 0);
+  });
+
+  test('宽高比越小，竖直视场角越大（单调不减）', () => {
+    const aspects = [2, 1.78, 1.6, 1.33, 1, 0.75, 390 / 844];
+    let prevFov = -Infinity;
+    for (const aspect of aspects) {
+      const fov = viewFov(1000, 1000 / aspect);
+      expect(fov).toBeGreaterThanOrEqual(prevFov);
+      prevFov = fov;
+    }
   });
 });
+
