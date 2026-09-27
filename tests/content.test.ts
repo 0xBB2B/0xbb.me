@@ -2,6 +2,15 @@ import { expect, test, describe } from 'bun:test';
 import { APP_DATA } from '../data';
 import { COPY, AVATAR_FALLBACK, rolesLine, locationLine } from '../copy';
 
+function flattenCopyValues(obj: Record<string, unknown>): string[] {
+  const out: string[] = [];
+  for (const value of Object.values(obj)) {
+    if (Array.isArray(value)) out.push(...(value as string[]));
+    else out.push(value as string);
+  }
+  return out;
+}
+
 describe('APP_DATA.profile', () => {
   test('name is FUBUKI_BB', () => {
     expect(APP_DATA.profile.name).toBe('FUBUKI_BB');
@@ -66,8 +75,6 @@ describe('copy', () => {
   });
 
   test('COPY has matching zh/en interface strings', () => {
-    expect(COPY.zh.plaqueHint).toBe('点击红色跑车，坐进驾驶座');
-    expect(COPY.en.plaqueHint).toBe("Tap the red car to take the driver's seat");
     expect(COPY.zh.loadingCode).toBe('正在加载代码…');
     expect(COPY.en.loadingCode).toBe('Loading code…');
     expect(COPY.zh.loadingScene).toBe('正在布置雨夜街角…');
@@ -76,7 +83,43 @@ describe('copy', () => {
     expect(COPY.en.readFirst).toBe('Read the profile first');
     expect(COPY.zh.sceneFailed).toBe('3D 场景无法加载');
     expect(COPY.en.sceneFailed).toBe("The 3D scene couldn't load");
-    expect(COPY.zh.enterCar).toBe('进入驾驶座');
-    expect(COPY.en.enterCar).toBe("Take the driver's seat");
+  });
+
+  test('COPY no longer exposes the plaqueHint, closeCard, or enterCar keys', () => {
+    for (const lang of ['zh', 'en'] as const) {
+      const keys = Object.keys(COPY[lang]);
+      expect(keys).not.toContain('plaqueHint');
+      expect(keys).not.toContain('closeCard');
+      expect(keys).not.toContain('enterCar');
+    }
+  });
+
+  test('COPY values no longer contain the retired tap-the-car / driver-seat / close copy', () => {
+    for (const lang of ['zh', 'en'] as const) {
+      const values = flattenCopyValues(COPY[lang] as Record<string, unknown>);
+      expect(values).not.toContain('点击红色跑车，坐进驾驶座');
+      expect(values).not.toContain("Tap the red car to take the driver's seat");
+      expect(values).not.toContain('进入驾驶座');
+      expect(values).not.toContain("Take the driver's seat");
+      expect(values).not.toContain('关闭');
+      expect(values).not.toContain('Close');
+    }
+  });
+
+  test('COPY carries the keyboard button and story-section copy under their keys', () => {
+    expect(COPY.zh.viewProfile).toBe('查看资料');
+    expect(COPY.en.viewProfile).toBe('View profile');
+    expect(COPY.zh.aboutTitle).toBe('雨夜里还亮着的店');
+    expect(COPY.en.aboutTitle).toBe('Still open on a rainy night');
+    expect(COPY.zh.linksTitle).toBe('一起出发');
+    expect(COPY.en.linksTitle).toBe("Let's get going");
+    expect(COPY.zh.scrollHint).toBe('SCROLL ↓');
+    expect(COPY.en.scrollHint).toBe('SCROLL ↓');
+  });
+
+  test('the three story section tags are identical and ordered in both languages', () => {
+    const tags = ['01 · WHO', '02 · ABOUT', '03 · FOCUS & LINKS'];
+    expect(COPY.zh.sectionLabels).toEqual(tags);
+    expect(COPY.en.sectionLabels).toEqual(tags);
   });
 });

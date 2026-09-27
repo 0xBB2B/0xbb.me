@@ -6,6 +6,8 @@ import {
   nextDoorDelay,
   DOOR_OPEN_SECONDS,
   nextFlicker,
+  plaqueGlow,
+  PLAQUE_GLOW_PERIOD,
 } from '../diorama/rhythm';
 
 describe('hazardOn', () => {
@@ -127,6 +129,33 @@ describe('nextFlicker', () => {
     const flicker = nextFlicker(0.5, 0.5);
     expect(flicker.wait).toBeCloseTo(6.5, 5);
     expect(flicker.duration).toBeCloseTo(0.425, 5);
+  });
+});
+
+describe('plaqueGlow', () => {
+  test('PLAQUE_GLOW_PERIOD is 2.4 seconds', () => {
+    expect(PLAQUE_GLOW_PERIOD).toBe(2.4);
+  });
+
+  test('repeats every 2.4 seconds', () => {
+    for (const t of [0, 0.5, 1.1, 2.0, 5.3]) {
+      expect(Math.abs(plaqueGlow(t) - plaqueGlow(t + 2.4))).toBeLessThan(1e-9);
+    }
+  });
+
+  test('stays above zero, swings by at least 0.3, tops out at 1, and never jumps between adjacent samples', () => {
+    const samples: number[] = [];
+    for (let i = 0; i < 240; i++) {
+      samples.push(plaqueGlow((i / 240) * 2.4));
+    }
+    const min = Math.min(...samples);
+    const max = Math.max(...samples);
+    expect(min).toBeGreaterThan(0);
+    expect(max).toBeLessThanOrEqual(1);
+    expect(max - min).toBeGreaterThanOrEqual(0.3);
+    for (let i = 1; i < samples.length; i++) {
+      expect(Math.abs(samples[i] - samples[i - 1])).toBeLessThan(0.05);
+    }
   });
 });
 

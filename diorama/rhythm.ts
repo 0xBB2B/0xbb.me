@@ -39,3 +39,13 @@ export interface Flicker {
 export function nextFlicker(waitRandom: number, durationRandom: number): Flicker {
   return { wait: 4 + 5 * waitRandom, duration: 0.25 + 0.35 * durationRandom };
 }
+
+export const PLAQUE_GLOW_PERIOD = 2.4;
+
+export function plaqueGlow(t: number): number {
+  const floor = 0.1;
+  const peak = 1;
+  const mid = (floor + peak) / 2;
+  const amplitude = (peak - floor) / 2;
+  return mid + amplitude * Math.cos((t / PLAQUE_GLOW_PERIOD) * Math.PI * 2);
+}

@@ -6,7 +6,7 @@ import { buildPedestal, buildGround, buildRoadMarkings } from '../diorama/ground
 import { buildStore } from '../diorama/store';
 import { buildStreet } from '../diorama/street';
 import { buildLights } from '../diorama/lights';
-import { createPlaque, setPlaqueLanguage, PLAQUE_PANEL } from '../diorama/plaque';
+import { createPlaque, setPlaqueLanguage, setPlaqueGlow, PLAQUE_PANEL } from '../diorama/plaque';
 import { DEFAULT_CAMERA } from '../diorama/layout';
 import type { FakeCanvas } from './fake-canvas';
 import { createFakeCanvas, createFakeCanvasFactory } from './fake-canvas';
@@ -26,8 +26,8 @@ const REQUIRED_NAMES = [
   'neighbor-building',
 ];
 
-const ZH_LINES = ['FUBUKI_BB', '全栈工程师 · 系统架构师 · AI Agent开发者', '点击红色跑车，坐进驾驶座'];
-const EN_LINES = ['FUBUKI_BB', 'Full Stack Engineer · System Architect · AI Agent Developer', "Tap the red car to take the driver's seat"];
+const ZH_LINES = ['FUBUKI_BB', '全栈工程师 · 系统架构师 · AI Agent开发者', 'Tokyo · Shanghai'];
+const EN_LINES = ['FUBUKI_BB', 'Full Stack Engineer · System Architect · AI Agent Developer', 'Tokyo · Shanghai'];
 
 function assembleScene(): THREE.Scene {
   const scene = new THREE.Scene();
@@ -174,7 +174,7 @@ describe('pedestal and plaque dimensions', () => {
     expect(z).toBeGreaterThan(14);
   });
 
-  test('the plaque hint glyphs (cap height ~0.7em) are at least 10px tall across the whole line in the default 1440x900 view', () => {
+  test('the plaque location line glyphs (cap height ~0.7em) are at least 10px tall across the whole line in the default 1440x900 view', () => {
     const camera = new THREE.PerspectiveCamera(DEFAULT_CAMERA.fov, 1440 / 900, 0.5, 260);
     camera.position.set(...DEFAULT_CAMERA.position);
     camera.lookAt(new THREE.Vector3(...DEFAULT_CAMERA.target));
@@ -202,9 +202,77 @@ describe('pedestal and plaque dimensions', () => {
     expect(canvas.fillTextCalls.slice(-3)).toEqual([
       'FUBUKI_BB',
       'Full Stack Engineer · System Architect · AI Agent Developer',
-      "Tap the red car to take the driver's seat",
+      'Tokyo · Shanghai',
     ]);
     expect(plaque.texture.version).toBeGreaterThan(version);
+  });
+});
+
+describe('the plaque border and face are named objects inside the plaque group', () => {
+  test('plaque-border and plaque-face each exist exactly once, nested under the plaque group', () => {
+    const scene = assembleScene();
+    const group = scene.getObjectByName('plaque')!;
+    expect(namedObjects(scene, 'plaque-border')).toHaveLength(1);
+    expect(namedObjects(scene, 'plaque-face')).toHaveLength(1);
+    for (const name of ['plaque-border', 'plaque-face']) {
+      let ancestor = scene.getObjectByName(name)!.parent;
+      let insideGroup = false;
+      while (ancestor) {
+        if (ancestor === group) insideGroup = true;
+        ancestor = ancestor.parent;
+      }
+      expect(insideGroup).toBe(true);
+    }
+  });
+});
+
+function borderBrightness(scene: THREE.Scene): number {
+  const mesh = scene.getObjectByName('plaque-border') as THREE.Mesh;
+  const material = mesh.material as THREE.MeshStandardMaterial;
+  const emissive = material.emissive;
+  return material.emissiveIntensity * Math.max(emissive.r, emissive.g, emissive.b);
+}
+
+function glowingPlaque() {
+  const scene = new THREE.Scene();
+  const plaque = createPlaque(scene, 'zh', null);
+  return { scene, plaque };
+}
+
+describe('the plaque border breathes with a hover-boosted glow', () => {
+  test('at the darkest point of the breathing cycle the border still glows above zero', () => {
+    const { scene, plaque } = glowingPlaque();
+    setPlaqueGlow(plaque, 0, false);
+    expect(borderBrightness(scene)).toBeGreaterThan(0);
+  });
+
+  test('border brightness rises monotonically as the breathing coefficient goes from 0 to 1', () => {
+    const { scene, plaque } = glowingPlaque();
+    let previous = -Infinity;
+    for (const x of [0, 0.25, 0.5, 0.75, 1]) {
+      setPlaqueGlow(plaque, x, false);
+      const current = borderBrightness(scene);
+      expect(current).toBeGreaterThanOrEqual(previous);
+      previous = current;
+    }
+  });
+
+  test('hovering boosts border brightness above the unhovered breathing maximum', () => {
+    const { scene, plaque } = glowingPlaque();
+    setPlaqueGlow(plaque, 1, false);
+    const maxBreathing = borderBrightness(scene);
+    setPlaqueGlow(plaque, 0.5, true);
+    expect(borderBrightness(scene)).toBeGreaterThan(maxBreathing);
+  });
+
+  test('the plaque face itself never glows', () => {
+    const { scene, plaque } = glowingPlaque();
+    setPlaqueGlow(plaque, 1, true);
+    const face = scene.getObjectByName('plaque-face') as THREE.Mesh;
+    const material = face.material as THREE.MeshStandardMaterial;
+    const emissive = material.emissive;
+    const faceBrightness = emissive ? material.emissiveIntensity * Math.max(emissive.r, emissive.g, emissive.b) : 0;
+    expect(faceBrightness).toBe(0);
   });
 });
 

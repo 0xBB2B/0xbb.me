@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ctex, roundRect } from './materials';
 import { rand, pick } from './primitives';
-import { COPY, rolesLine } from '../copy';
+import { COPY, rolesLine, locationLine } from '../copy';
 import { APP_DATA, type Language } from '../data';
 
 export const FONT_D = '"Dela Gothic One", "Noto Sans SC Variable", sans-serif';
@@ -526,5 +526,5 @@ export function drawPlaque(ctx: CanvasRenderingContext2D, language: Language): v
   ctx.font = `800 ${lines[1].fontPx}px ${FONT_R}`;
   ctx.fillText(rolesLine(language), width / 2, lines[1].y, maxWidth);
   ctx.font = `500 ${lines[2].fontPx}px ${FONT_R}`;
-  ctx.fillText(COPY[language].plaqueHint, width / 2, lines[2].y, maxWidth);
+  ctx.fillText(locationLine(), width / 2, lines[2].y, maxWidth);
 }
