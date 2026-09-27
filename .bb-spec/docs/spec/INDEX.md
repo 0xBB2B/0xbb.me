@@ -2,22 +2,14 @@
 
 > 每条一行。读者先扫此页判断相关性，再打开具体文件。
 
-## cabin
-
-- [car-hover-hint](cabin/car-hover-hint.md) — 整体视角下鼠标悬停在保时捷上时的光标与车身轮廓提示
-- [driver-look](cabin/driver-look.md) — 驾驶位视角下拖动转头的角度范围与缩放限制
-- [enter-driver-view](cabin/enter-driver-view.md) — 点击保时捷后从整体视角进入驾驶位视角的过程、时长、输入屏蔽与最终镜头
-- [exit-driver-view](cabin/exit-driver-view.md) — 从驾驶位视角退回整体视角的三种方式、过程与视角恢复
-
 ## plaque
 
+- [plaque-hint](plaque/plaque-hint.md) — 整体视角下铭牌边框的呼吸微光，以及鼠标悬停时变亮与手形光标
 - [plaque-text](plaque/plaque-text.md) — 展示台正面铭牌的三行文字内容及随语言切换的规则
 
 ## profile
 
-- [cabin-displays](profile/cabin-displays.md) — 驾驶位中控屏与仪表盘显示的个人资料内容、呈现方式与可见性
-- [language](profile/language.md) — 初始语言按浏览器语言判定，中控屏与简介卡片可切换，切换后全站文字同步
-- [profile-card](profile/profile-card.md) — 不依赖三维画面的网页版简介卡片：内容、弹出时机与能否关闭
+- [language](profile/language.md) — 初始语言按浏览器语言判定，只能在资料视角右上角切换，切换后全站文字同步
 
 ## scene
 
@@ -29,4 +21,12 @@
 
 - [favicon](site/favicon.md) — 网站图标为红色 911 侧身剪影 SVG
 - [loading-shell](site/loading-shell.md) — 脚本下载前就可显示的雨夜风格加载页、「先看资料」入口与退出时机
+- [scene-failure](site/scene-failure.md) — 三维场景加载或运行失败时，移除加载页并直接进入无 3D 的资料视角
 - [static-profile-html](site/static-profile-html.md) — 构建产物不执行脚本即可读到的个人信息，以及搜索、分享元信息与站点地图
+
+## story
+
+- [enter-story-view](story/enter-story-view.md) — 点击铭牌或键盘隐藏按钮后，从整体视角进入资料视角的过程、时长、输入屏蔽与落点
+- [exit-story-view](story/exit-story-view.md) — 资料视角下往上滚过第 1 段上方的回拉区到顶，镜头跟手退回并回到整体视角
+- [scroll-camera](story/scroll-camera.md) — 资料视角下镜头随页面滚动在 3 个停靠点间连续移动、松手吸附，以及各停靠点的取景
+- [story-sections](story/story-sections.md) — 资料视角下 3 段资料的内容、中英文文案、排版、进度点、滚动提示与语言开关
