@@ -1,0 +1,17 @@
+.scene-viewport {
+  position: fixed;
+  inset: 0;
+}
+
+.scene-viewport--hidden {
+  display: none;
+}
+
+.scene-viewport canvas {
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+
+.scene-viewport--ready canvas {
+  opacity: 1;
+}

@@ -121,3 +121,10 @@ test('public/THIRD_PARTY_NOTICES.txt opens with the rainy konbini portfolio titl
   const notices = readFileSync(path.resolve(root, 'public/THIRD_PARTY_NOTICES.txt'), 'utf8');
   expect(notices.split('\n')[0]).toBe('0xbb.me — Rainy Konbini Portfolio');
 });
+
+test('首屏入口脚本不含 three.js 渲染器（三维代码只在动态分块里）', () => {
+  const entry = html.match(/<script[^>]+type="module"[^>]+src="\.?\/?([^"]+)"/);
+  expect(entry).not.toBeNull();
+  const code = readFileSync(path.resolve(root, 'dist', entry![1]), 'utf8');
+  expect(code).not.toContain('WebGLRenderer');
+});

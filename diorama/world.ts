@@ -18,7 +18,8 @@ import { createAmbient } from './ambient';
 import { plaqueGlow } from './rhythm';
 import { sharedTime } from './materials';
 import { DEFAULT_CAMERA, ORBIT_LIMITS, portraitDistanceScale } from './layout';
-import { poseAtScroll, enterSequence, stopPose, storyLayout, framingOffset, type Pose } from './story-camera';
+import { poseAtScroll, enterSequence, stopPose, framingOffset, type Pose } from './story-camera';
+import { storyLayout } from './story-scroll';
 import { createInteraction } from './interaction';
 import { acceptsSceneInput, type View } from './view-state';
 

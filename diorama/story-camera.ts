@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { portraitDistanceScale } from './layout';
+import { storyLayout, scrollProgress } from './story-scroll';
 
 export interface Pose {
   position: THREE.Vector3;
@@ -31,14 +32,6 @@ export function stopPose(index: number, width: number, height: number): Pose {
   return { position, target };
 }
 
-export function storyLayout(viewportHeight: number): { pullBack: number; sectionStarts: [number, number, number] } {
-  const pullBack = viewportHeight / 2;
-  return {
-    pullBack,
-    sectionStarts: [pullBack, pullBack + viewportHeight, pullBack + 2 * viewportHeight],
-  };
-}
-
 function smoothstep(t: number): number {
   const c = Math.min(1, Math.max(0, t));
   return c * c * (3 - 2 * c);
@@ -51,9 +44,10 @@ export function poseAtScroll(
   dioramaPose: Pose,
 ): { position: THREE.Vector3; target: THREE.Vector3; opacity: number; index: number } {
   const { pullBack, sectionStarts } = storyLayout(height);
+  const { opacity, index } = scrollProgress(scrollY, height);
 
   if (scrollY <= 0) {
-    return { position: dioramaPose.position.clone(), target: dioramaPose.target.clone(), opacity: 0, index: 0 };
+    return { position: dioramaPose.position.clone(), target: dioramaPose.target.clone(), opacity, index };
   }
 
   if (scrollY < pullBack) {
@@ -62,15 +56,15 @@ export function poseAtScroll(
     return {
       position: dioramaPose.position.clone().lerp(stop0.position, t),
       target: dioramaPose.target.clone().lerp(stop0.target, t),
-      opacity: t,
-      index: 0,
+      opacity,
+      index,
     };
   }
 
   const lastIndex = sectionStarts.length - 1;
   if (scrollY >= sectionStarts[lastIndex]) {
     const last = stopPose(lastIndex, width, height);
-    return { position: last.position, target: last.target, opacity: 1, index: lastIndex };
+    return { position: last.position, target: last.target, opacity, index };
   }
 
   for (let i = 0; i < lastIndex; i++) {
@@ -81,31 +75,14 @@ export function poseAtScroll(
       return {
         position: stopA.position.lerp(stopB.position, t),
         target: stopA.target.lerp(stopB.target, t),
-        opacity: 1,
-        index: t < 0.5 ? i : i + 1,
+        opacity,
+        index,
       };
     }
   }
 
   const last = stopPose(lastIndex, width, height);
-  return { position: last.position, target: last.target, opacity: 1, index: lastIndex };
-}
-
-export function snapTarget(scrollY: number, viewportHeight: number): number {
-  const { pullBack, sectionStarts } = storyLayout(viewportHeight);
-  const lastIndex = sectionStarts.length - 1;
-
-  if (scrollY <= 0) return 0;
-  if (scrollY < pullBack) return sectionStarts[0];
-  if (scrollY >= sectionStarts[lastIndex]) return sectionStarts[lastIndex];
-
-  for (let i = 0; i < lastIndex; i++) {
-    if (scrollY >= sectionStarts[i] && scrollY < sectionStarts[i + 1]) {
-      const mid = (sectionStarts[i] + sectionStarts[i + 1]) / 2;
-      return scrollY < mid ? sectionStarts[i] : sectionStarts[i + 1];
-    }
-  }
-  return sectionStarts[lastIndex];
+  return { position: last.position, target: last.target, opacity, index };
 }
 
 const ENTER_DURATION = 1.2;

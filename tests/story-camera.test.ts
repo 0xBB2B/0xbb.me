@@ -1,5 +1,6 @@
 import { expect, test, describe } from 'bun:test';
 import * as storyCamera from '../diorama/story-camera';
+import * as storyScroll from '../diorama/story-scroll';
 import * as THREE from 'three';
 import { DEFAULT_CAMERA, portraitDistanceScale } from '../diorama/layout';
 import { PLAQUE_PANEL } from '../diorama/plaque';
@@ -26,11 +27,11 @@ function plaqueProjection(width: number, height: number) {
 
 describe('storyLayout', () => {
   test('900 高视口：回拉区 450，三段起点 450/1350/2250', () => {
-    expect(storyCamera.storyLayout(900)).toEqual({ pullBack: 450, sectionStarts: [450, 1350, 2250] });
+    expect(storyScroll.storyLayout(900)).toEqual({ pullBack: 450, sectionStarts: [450, 1350, 2250] });
   });
 
   test('1200 高视口：回拉区随视口高度线性缩放', () => {
-    expect(storyCamera.storyLayout(1200)).toEqual({ pullBack: 600, sectionStarts: [600, 1800, 3000] });
+    expect(storyScroll.storyLayout(1200)).toEqual({ pullBack: 600, sectionStarts: [600, 1800, 3000] });
   });
 });
 
@@ -50,7 +51,7 @@ describe('poseAtScroll 段内跟手', () => {
 
   for (const k of [0, 1, 2] as const) {
     test(`第 ${k} 段起点：镜头与观察目标贴合该停靠点，透明度为 1`, () => {
-      const sectionStarts = storyCamera.storyLayout(900).sectionStarts;
+      const sectionStarts = storyScroll.storyLayout(900).sectionStarts;
       const result = storyCamera.poseAtScroll(sectionStarts[k], 1440, 900, dioramaPose);
       const stop = storyCamera.stopPose(k, 1440, 900);
       expect(result.position.distanceTo(stop.position)).toBeLessThan(0.05);
@@ -120,25 +121,25 @@ describe('poseAtScroll index', () => {
 
 describe('snapTarget', () => {
   test('第 1、2 段之间超过 50%（60%）→ 吸附到第 2 段起点', () => {
-    expect(storyCamera.snapTarget(990, 900)).toBe(1350);
+    expect(storyScroll.snapTarget(990, 900)).toBe(1350);
   });
 
   test('第 1、2 段之间不足 50%（40%）→ 吸附到第 1 段起点', () => {
-    expect(storyCamera.snapTarget(810, 900)).toBe(450);
+    expect(storyScroll.snapTarget(810, 900)).toBe(450);
   });
 
   test('回拉区内（>0）一律吸附到第 1 段起点', () => {
-    expect(storyCamera.snapTarget(1, 900)).toBe(450);
-    expect(storyCamera.snapTarget(225, 900)).toBe(450);
-    expect(storyCamera.snapTarget(449, 900)).toBe(450);
+    expect(storyScroll.snapTarget(1, 900)).toBe(450);
+    expect(storyScroll.snapTarget(225, 900)).toBe(450);
+    expect(storyScroll.snapTarget(449, 900)).toBe(450);
   });
 
   test('超过最后一段起点 → 吸附到第 3 段起点', () => {
-    expect(storyCamera.snapTarget(3000, 900)).toBe(2250);
+    expect(storyScroll.snapTarget(3000, 900)).toBe(2250);
   });
 
   test('正好在顶部（0）→ 不吸附，停在 0', () => {
-    expect(storyCamera.snapTarget(0, 900)).toBe(0);
+    expect(storyScroll.snapTarget(0, 900)).toBe(0);
   });
 });
 
@@ -283,5 +284,13 @@ describe('enterSequence 不受调用方后续修改起点影响', () => {
     from.position.set(0, 0, 0);
     from.target.set(9, 9, 9);
     expect(sequence.sample(sequence.duration / 3).position.distanceTo(before)).toBeLessThan(1e-9);
+  });
+});
+
+describe('scrollProgress 与 poseAtScroll 的不透明度和段序号一致', () => {
+  test.each([0, 1, 225, 449, 450, 700, 900, 990, 1350, 1800, 2250, 3000])('scrollY=%i', (scrollY) => {
+    const diorama = makePose([33, 23, 40], [0, -1.4, -0.5]);
+    const pose = storyCamera.poseAtScroll(scrollY, 1440, 900, diorama);
+    expect(storyScroll.scrollProgress(scrollY, 900)).toEqual({ opacity: pose.opacity, index: pose.index });
   });
 });

@@ -11,7 +11,7 @@
 .story-section {
   box-sizing: border-box;
   position: relative;
-  min-height: 100vh;
+  height: var(--story-vh, 100vh);
   display: flex;
   align-items: center;
 }
@@ -222,4 +222,8 @@
   .story-section::before {
     background: linear-gradient(0deg, rgba(5, 8, 20, 0.85) 0%, rgba(5, 8, 20, 0.4) 45%, transparent 75%);
   }
+}
+
+.story-section h1[tabindex='-1']:focus {
+  outline: none;
 }

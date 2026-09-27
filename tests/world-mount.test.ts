@@ -5,7 +5,8 @@ import react from '@vitejs/plugin-react';
 import * as THREE from 'three';
 import { DEFAULT_CAMERA, portraitDistanceScale } from '../diorama/layout';
 import { PLAQUE_PANEL, PLAQUE_GLOW } from '../diorama/plaque';
-import { stopPose, storyLayout } from '../diorama/story-camera';
+import { stopPose } from '../diorama/story-camera';
+import { storyLayout } from '../diorama/story-scroll';
 import { runBrowser } from './browser';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
