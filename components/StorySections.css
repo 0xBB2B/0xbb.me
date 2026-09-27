@@ -181,7 +181,7 @@
   }
 
   .story-section::before {
-    background: linear-gradient(90deg, rgba(5, 8, 20, 0.85) 0%, rgba(5, 8, 20, 0.4) 45%, transparent 75%);
+    background: linear-gradient(90deg, rgba(5, 8, 20, 0.92) 0%, rgba(5, 8, 20, 0.7) 45%, transparent 75%);
   }
 }
 

@@ -33,11 +33,11 @@ export function buildGround(scene: THREE.Scene, textures: Textures): void {
   box(scene, 18, 0.15, 18, lotMat, -4, 0, -4);
   box(scene, 26, 0.15, 2, walkMat, 0, 0, 12);
   box(scene, 2, 0.15, 18, walkMat, 12, 0, -4);
-  box(scene, 18, 0.18, 0.22, curbMat, -4, 0, 4.89);
-  box(scene, 0.22, 0.18, 17.78, curbMat, 4.89, 0, -4.11);
-  box(scene, 26, 0.18, 0.22, curbMat, 0, 0, 11.11);
-  box(scene, 0.22, 0.18, 17.78, curbMat, 11.11, 0, -4.11);
-  box(scene, 2, 0.18, 0.22, curbMat, 12, 0, 4.89);
+  box(scene, 18, 0.18, 0.22, curbMat, -3.99, 0, 4.9);
+  box(scene, 0.22, 0.18, 17.78, curbMat, 4.9, 0, -4.1);
+  box(scene, 25.98, 0.18, 0.22, curbMat, 0, 0, 11.1);
+  box(scene, 0.22, 0.18, 17.78, curbMat, 11.1, 0, -4.1);
+  box(scene, 2.0, 0.18, 0.22, curbMat, 11.99, 0, 4.9);
 
   function tileBand(w: number, d: number, x: number, z: number, y = 0.156): void {
     const t = textures.tile.clone();
@@ -45,8 +45,8 @@ export function buildGround(scene: THREE.Scene, textures: Textures): void {
     t.repeat.set(w / 0.9, d / 0.9);
     flat(scene, w, d, new THREE.MeshStandardMaterial({ map: t, roughness: 0.45, metalness: 0.05 }), x, y, z);
   }
-  tileBand(17.78, 1.08, -4.11, 4.24);
-  tileBand(1.08, 16.7, 4.24, -4.65);
+  tileBand(17.79, 1.09, -4.105, 4.245);
+  tileBand(1.09, 16.7, 4.245, -4.65);
   tileBand(9.9, 1.6, -1.25, -2.2);
 }
 

@@ -95,6 +95,17 @@ describe('hazard lights: front and rear point lights start off', () => {
     expect(car.hazardLights.length).toBe(2);
   });
 
+  test('the hazard point lights sit about 0.6m beyond the nose and tail, low enough to light the ground', () => {
+    const { car } = buildScene();
+    const xs = car.hazardLights.map((light) => light.position.x).sort((a, b) => a - b);
+    expect(xs[0]).toBeCloseTo(-2.9, 6);
+    expect(xs[1]).toBeCloseTo(2.9, 6);
+    for (const light of car.hazardLights) {
+      expect(light.position.y).toBeCloseTo(0.5, 6);
+      expect(light.distance).toBeGreaterThan(light.position.y + CAR_CENTER[1]);
+    }
+  });
+
   test('both start at zero intensity', () => {
     const { car } = buildScene();
     for (const light of car.hazardLights) {
@@ -165,12 +176,23 @@ function worldBox(mesh: THREE.Mesh): THREE.Box3 {
 }
 
 describe('the car faces the main road with its tail toward the store', () => {
-  test('white daytime running lights sit on the +z side of the car center', () => {
+  test('each headlight lens keeps a large oval footprint (not a slit)', () => {
+    const { car } = buildScene();
+    const lenses = meshesWhere(car, (_, m) => m instanceof THREE.MeshToonMaterial && m.color.r > 0.6 && m.color.g > 0.6 && m.color.b > 0.6);
+    expect(lenses.length).toBe(2);
+    for (const lens of lenses) {
+      const size = worldBox(lens).getSize(new THREE.Vector3());
+      expect(size.x).toBeGreaterThanOrEqual(0.24);
+      expect(Math.max(size.y, size.z)).toBeGreaterThanOrEqual(0.2);
+    }
+  });
+
+  test('pale headlight lenses sit on the +z side of the car center', () => {
     const { scene, car } = buildScene();
     const centerZ = carBox(scene).getCenter(new THREE.Vector3()).z;
-    const drls = meshesWhere(car, (_, m) => m instanceof THREE.MeshBasicMaterial && m.color.r > 0.9 && m.color.g > 0.9 && m.color.b > 0.9);
-    expect(drls.length).toBeGreaterThanOrEqual(2);
-    for (const drl of drls) expect(worldBox(drl).getCenter(new THREE.Vector3()).z).toBeGreaterThan(centerZ + 1);
+    const lenses = meshesWhere(car, (_, m) => m instanceof THREE.MeshToonMaterial && m.color.r > 0.6 && m.color.g > 0.6 && m.color.b > 0.6);
+    expect(lenses.length).toBeGreaterThanOrEqual(2);
+    for (const lens of lenses) expect(worldBox(lens).getCenter(new THREE.Vector3()).z).toBeGreaterThan(centerZ + 1);
   });
 
   test('the full-width red tail light bar sits on the -z side', () => {
@@ -203,5 +225,236 @@ describe('the car faces the main road with its tail toward the store', () => {
     const { car } = buildScene();
     const paint = meshesWhere(car, (_, m) => m instanceof THREE.MeshToonMaterial && m.color.r > 0.5 && m.color.g < 0.25 && m.color.b < 0.25);
     expect(paint.length).toBeGreaterThan(0);
+  });
+});
+
+describe('the car is parked with the engine off: headlights dark, only hazards blink', () => {
+  test('no mesh uses a near-white glowing MeshBasicMaterial (a lit headlight/DRL)', () => {
+    const { car } = buildScene();
+    const litWhite = meshesWhere(car, (_, m) => m instanceof THREE.MeshBasicMaterial && m.color.r > 0.85 && m.color.g > 0.85 && m.color.b > 0.85);
+    expect(litWhite).toEqual([]);
+  });
+
+  test('every pale toon/standard mesh (headlight housings) has zero effective emissive', () => {
+    const { car } = buildScene();
+    const paleMeshes = meshesWhere(
+      car,
+      (_, m) =>
+        (m instanceof THREE.MeshToonMaterial || m instanceof THREE.MeshStandardMaterial) &&
+        m.color.r > 0.6 &&
+        m.color.g > 0.6 &&
+        m.color.b > 0.6,
+    );
+    expect(paleMeshes.length).toBeGreaterThan(0);
+    for (const mesh of paleMeshes) {
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const material of materials as (THREE.MeshToonMaterial | THREE.MeshStandardMaterial)[]) {
+        const emissive = material.emissive;
+        const maxComponent = Math.max(emissive.r, emissive.g, emissive.b);
+        expect(maxComponent * material.emissiveIntensity).toBe(0);
+      }
+    }
+  });
+});
+
+function raycastFirst(origin: THREE.Vector3, direction: THREE.Vector3, targets: THREE.Object3D[]): THREE.Intersection | undefined {
+  const raycaster = new THREE.Raycaster(origin, direction.clone().normalize());
+  return raycaster.intersectObjects(targets, false)[0];
+}
+
+function bodyPaintMeshes(car: Car): THREE.Mesh[] {
+  return meshesWhere(car, (_, m) => m instanceof THREE.MeshToonMaterial && m.color.r > 0.5 && m.color.g < 0.25 && m.color.b < 0.25);
+}
+
+function allCarMeshes(car: Car): THREE.Mesh[] {
+  const meshes: THREE.Mesh[] = [];
+  car.group.traverse((obj) => {
+    const mesh = obj as THREE.Mesh;
+    if (mesh.isMesh) meshes.push(mesh);
+  });
+  return meshes;
+}
+
+function tailLightMeshes(car: Car): THREE.Mesh[] {
+  return meshesWhere(car, (_, m) => m instanceof THREE.MeshBasicMaterial && m.color.r > 0.5 && m.color.g < 0.3 && m.color.b < 0.3);
+}
+
+function outwardHorizontalDirection(point: THREE.Vector3, center: THREE.Vector3): THREE.Vector3 {
+  return new THREE.Vector3(point.x - center.x, 0, point.z - center.z).normalize();
+}
+
+function wheelGroups(car: Car): THREE.Group[] {
+  const groups: THREE.Group[] = [];
+  for (const child of car.group.children) {
+    if (!(child instanceof THREE.Group)) continue;
+    const hasTire = child.children.some((c) => {
+      const mesh = c as THREE.Mesh;
+      if (!mesh.isMesh) return false;
+      const geo = mesh.geometry as THREE.CylinderGeometry;
+      return geo.type === 'CylinderGeometry' && Math.abs(geo.parameters.radiusTop - 0.34) < 0.01;
+    });
+    if (hasTire) groups.push(child);
+  }
+  return groups;
+}
+
+function paleLensMeshes(car: Car): THREE.Mesh[] {
+  return meshesWhere(car, (_, m) => m instanceof THREE.MeshToonMaterial && m.color.r > 0.6 && m.color.g > 0.6 && m.color.b > 0.6);
+}
+
+function allLightMeshes(car: Car): THREE.Mesh[] {
+  return [...hazardMeshes(car), ...tailLightMeshes(car), ...paleLensMeshes(car)];
+}
+
+function worldTriangles(meshes: THREE.Mesh[]): THREE.Triangle[] {
+  const triangles: THREE.Triangle[] = [];
+  for (const mesh of meshes) {
+    mesh.updateWorldMatrix(true, false);
+    const geo = mesh.geometry as THREE.BufferGeometry;
+    const pos = geo.attributes.position;
+    const index = geo.index;
+    const count = index ? index.count : pos.count;
+    for (let i = 0; i < count; i += 3) {
+      const ia = index ? index.getX(i) : i;
+      const ib = index ? index.getX(i + 1) : i + 1;
+      const ic = index ? index.getX(i + 2) : i + 2;
+      const a = new THREE.Vector3().fromBufferAttribute(pos, ia).applyMatrix4(mesh.matrixWorld);
+      const b = new THREE.Vector3().fromBufferAttribute(pos, ib).applyMatrix4(mesh.matrixWorld);
+      const c = new THREE.Vector3().fromBufferAttribute(pos, ic).applyMatrix4(mesh.matrixWorld);
+      triangles.push(new THREE.Triangle(a, b, c));
+    }
+  }
+  return triangles;
+}
+
+function worldVertices(mesh: THREE.Mesh): THREE.Vector3[] {
+  mesh.updateWorldMatrix(true, false);
+  const pos = (mesh.geometry as THREE.BufferGeometry).attributes.position;
+  const verts: THREE.Vector3[] = [];
+  for (let i = 0; i < pos.count; i++) {
+    verts.push(new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld));
+  }
+  return verts;
+}
+
+function sortedByHorizontalDistance(mesh: THREE.Mesh, center: THREE.Vector3): THREE.Vector3[] {
+  return worldVertices(mesh)
+    .map((v) => ({ v, d: Math.hypot(v.x - center.x, v.z - center.z) }))
+    .sort((a, b) => a.d - b.d)
+    .map((x) => x.v);
+}
+
+function innerHalfVertices(mesh: THREE.Mesh, center: THREE.Vector3): THREE.Vector3[] {
+  const sorted = sortedByHorizontalDistance(mesh, center);
+  return sorted.slice(0, Math.max(1, Math.floor(sorted.length / 2)));
+}
+
+function outermostVertex(mesh: THREE.Mesh, center: THREE.Vector3): THREE.Vector3 {
+  const sorted = sortedByHorizontalDistance(mesh, center);
+  return sorted[sorted.length - 1];
+}
+
+function isInsideBody(point: THREE.Vector3, bodyMeshes: THREE.Mesh[]): boolean {
+  const ray = new THREE.Ray(point, new THREE.Vector3(0.57, 0.61, 0.55).normalize());
+  const hit = new THREE.Vector3();
+  return bodyMeshes.some((mesh) => {
+    let crossings = 0;
+    for (const tri of worldTriangles([mesh])) {
+      if (ray.intersectTriangle(tri.a, tri.b, tri.c, false, hit)) crossings++;
+    }
+    return crossings % 2 === 1;
+  });
+}
+
+function distanceToBody(point: THREE.Vector3, bodyMeshes: THREE.Mesh[], bodyTriangles: THREE.Triangle[]): number {
+  if (isInsideBody(point, bodyMeshes)) return 0;
+  const closest = new THREE.Vector3();
+  let min = Infinity;
+  for (const tri of bodyTriangles) {
+    tri.closestPointToPoint(point, closest);
+    const d = closest.distanceTo(point);
+    if (d < min) min = d;
+  }
+  return min;
+}
+
+describe('every car light sits on the body surface, neither floating nor buried', () => {
+  test('the inward-facing back of every light mesh sits within 2cm of the red body surface', () => {
+    const { scene, car } = buildScene();
+    const centerWorld = carBox(scene).getCenter(new THREE.Vector3());
+    const body = bodyPaintMeshes(car);
+    const bodyTriangles = worldTriangles(body);
+    const lights = allLightMeshes(car);
+    expect(lights.length).toBeGreaterThan(0);
+    for (const light of lights) {
+      for (const point of innerHalfVertices(light, centerWorld)) {
+        expect(distanceToBody(point, body, bodyTriangles)).toBeLessThanOrEqual(0.02);
+      }
+    }
+  });
+
+  test('no light mesh is buried in the body: from outside (level or looking down) the light is the first thing hit', () => {
+    const { scene, car } = buildScene();
+    const centerWorld = carBox(scene).getCenter(new THREE.Vector3());
+    const all = allCarMeshes(car);
+    const lights = allLightMeshes(car);
+    expect(lights.length).toBeGreaterThan(0);
+    for (const light of lights) {
+      const c = worldBox(light).getCenter(new THREE.Vector3());
+      const d = outwardHorizontalDirection(c, centerWorld);
+      const visible = [0, Math.PI / 6, Math.PI / 3].some((tilt) => {
+        const dir = d.clone().multiplyScalar(Math.cos(tilt)).add(new THREE.Vector3(0, Math.sin(tilt), 0)).normalize();
+        const hit = raycastFirst(c.clone().addScaledVector(dir, 1), dir.clone().negate(), all);
+        return hit?.object === light;
+      });
+      expect(visible).toBe(true);
+    }
+  });
+
+  test('no light mesh juts out more than 3cm past the body surface', () => {
+    const { scene, car } = buildScene();
+    const centerWorld = carBox(scene).getCenter(new THREE.Vector3());
+    const body = bodyPaintMeshes(car);
+    const bodyTriangles = worldTriangles(body);
+    const lights = allLightMeshes(car);
+    expect(lights.length).toBeGreaterThan(0);
+    for (const light of lights) {
+      const outer = outermostVertex(light, centerWorld);
+      expect(distanceToBody(outer, body, bodyTriangles)).toBeLessThanOrEqual(0.03);
+    }
+  });
+});
+
+describe('each wheel is only a tire and a single-color rim', () => {
+  test('there are exactly 4 wheel groups (one per corner)', () => {
+    const { car } = buildScene();
+    expect(wheelGroups(car).length).toBe(4);
+  });
+
+  test('each wheel group has exactly 2 meshes: tire and rim, no spokes/cap/caliper', () => {
+    const { car } = buildScene();
+    for (const wheel of wheelGroups(car)) {
+      expect(wheel.children.length).toBe(2);
+    }
+  });
+});
+
+describe('the body does not overhang the outer face of the tires', () => {
+  test('a ray from above and outboard of each wheel, aimed inward, hits the wheel before the red body', () => {
+    const { scene, car } = buildScene();
+    const centerWorld = carBox(scene).getCenter(new THREE.Vector3());
+    const body = bodyPaintMeshes(car);
+    const groups = wheelGroups(car);
+    expect(groups.length).toBeGreaterThan(0);
+    for (const wheel of groups) {
+      const wheelCenter = new THREE.Vector3();
+      wheel.getWorldPosition(wheelCenter);
+      const d = outwardHorizontalDirection(wheelCenter, centerWorld);
+      const origin = wheelCenter.clone().addScaledVector(d, 1);
+      origin.y += 0.22;
+      const wheelMeshes = wheel.children.filter((c) => (c as THREE.Mesh).isMesh) as THREE.Mesh[];
+      const hit = raycastFirst(origin, d.clone().negate(), [...wheelMeshes, ...body]);
+      expect(hit && wheelMeshes.includes(hit.object as THREE.Mesh)).toBe(true);
+    }
   });
 });

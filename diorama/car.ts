@@ -39,7 +39,7 @@ export function buildCar(): CarBuild {
 
   for (const sz of [-1, 1]) {
     const hip = add(car, new THREE.SphereGeometry(1, 24, 14), red, -1.15, 0.6, sz * 0.72);
-    hip.scale.set(0.95, 0.24, 0.26);
+    hip.scale.set(0.95, 0.24, 0.2);
   }
 
   const gh = new THREE.Shape();
@@ -76,20 +76,22 @@ export function buildCar(): CarBuild {
   slab([-1.62, 0.95], [-0.85, 1.19], 0.96, 0.09);
 
   for (const sz of [-1, 1]) {
-    const hl = add(car, new THREE.SphereGeometry(1, 20, 14), toon('#dfe8f5', { glow: 0.5 }), 1.88, 0.66, sz * 0.62);
-    hl.scale.set(0.2, 0.1, 0.16); hl.rotation.z = -0.35;
-    const drl = add(car, new THREE.SphereGeometry(0.05, 10, 8), glow('#ffffff', 2.2, { noOutline: true }), 1.99, 0.67, sz * 0.62);
-    drl.scale.set(0.6, 0.8, 1.2);
-    add(car, new THREE.SphereGeometry(0.035, 8, 6), hazardMaterial, 1.92, 0.64, sz * 0.77);
-    add(car, new THREE.BoxGeometry(0.06, 0.035, 0.1), hazardMaterial, 1.5, 0.64, sz * 0.99);
+    const hl = add(car, new THREE.SphereGeometry(1, 20, 14), toon('#dfe8f5'), 2.085, 0.66, sz * 0.6);
+    hl.scale.set(0.12, 0.02, 0.13);
+    hl.rotation.z = -0.375;
+    add(car, new THREE.SphereGeometry(0.018, 8, 6), hazardMaterial, 1.9, 0.71, sz * 0.8);
+    add(car, new THREE.BoxGeometry(0.06, 0.035, 0.02), hazardMaterial, 1.5, 0.64, sz * 0.915);
   }
 
   box(car, 0.08, 0.12, 0.5, black, 2.22, 0.3, -0.55);
   box(car, 0.08, 0.12, 0.5, black, 2.22, 0.3, 0.55);
   box(car, 0.08, 0.1, 0.5, black, 2.25, 0.3, 0);
 
-  box(car, 0.05, 0.06, 1.5, glow('#ff1f35', 1.6), -2.37, 0.66, 0);
-  for (const sz of [-1, 1]) add(car, new THREE.BoxGeometry(0.05, 0.07, 0.16), hazardMaterial, -2.36, 0.69, sz * 0.83);
+  const TAIL_TILT = -25 * (Math.PI / 180);
+  box(car, 0.03, 0.06, 1.42, glow('#ff1f35', 1.6), -2.26, 0.66, 0).rotation.z = TAIL_TILT;
+  for (const sz of [-1, 1]) {
+    add(car, new THREE.BoxGeometry(0.02, 0.05, 0.1), hazardMaterial, -2.24, 0.69, sz * 0.77).rotation.z = TAIL_TILT;
+  }
   box(car, 0.06, 0.08, 0.6, black, -2.3, 0.5, 0);
 
   box(car, 0.34, 0.02, 0.8, black, -1.96, 0.9, 0);
@@ -118,18 +120,12 @@ export function buildCar(): CarBuild {
     const wg = new THREE.Group(); wg.position.set(wx, 0.34, sz * 0.8); car.add(wg);
     add(wg, tireGeo, black).rotation.x = Math.PI / 2;
     const rim = add(wg, rimGeo, toon('#3d434f'), 0, 0, sz * 0.14); rim.rotation.x = Math.PI / 2;
-    for (let i = 0; i < 5; i++) {
-      const sp = add(wg, new THREE.BoxGeometry(0.05, 0.22, 0.02), toon('#aab2be'), 0, 0, sz * 0.155);
-      sp.rotation.z = i * Math.PI * 2 / 5; sp.translateY(0.11);
-    }
-    const cap = add(wg, new THREE.CylinderGeometry(0.04, 0.04, 0.03, 12), toon('#1a1a1a'), 0, 0, sz * 0.16); cap.rotation.x = Math.PI / 2;
-    box(wg, 0.16, 0.08, 0.05, toon('#e0162f'), 0.12, 0.08, sz * 0.09);
   }
 
   const hazardLights: THREE.PointLight[] = [];
-  for (const lx of [2.35, -2.35]) {
+  for (const lx of [2.9, -2.9]) {
     const light = new THREE.PointLight('#ffa025', 0, 5.5, 1.5);
-    light.position.set(lx, 0.65, 0);
+    light.position.set(lx, 0.5, 0);
     car.add(light);
     hazardLights.push(light);
   }
