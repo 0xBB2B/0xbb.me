@@ -27,6 +27,6 @@
 ## story
 
 - [enter-story-view](story/enter-story-view.md) — 点击铭牌或键盘隐藏按钮后，从整体视角进入资料视角的过程、时长、输入屏蔽与落点
-- [exit-story-view](story/exit-story-view.md) — 资料视角下往上滚过第 1 段上方的回拉区到顶，镜头跟手退回并回到整体视角
-- [scroll-camera](story/scroll-camera.md) — 资料视角下镜头随页面滚动在 3 个停靠点间连续移动、松手吸附，以及各停靠点的取景
+- [exit-story-view](story/exit-story-view.md) — 资料视角下按 Esc 或点左上角「返回全景」按钮，镜头动画退回并回到整体视角
+- [scroll-camera](story/scroll-camera.md) — 资料视角下一次滚动翻一段：镜头约 1 秒动画移到下一停靠点，动画期间不再响应滚动，以及各停靠点的取景
 - [story-sections](story/story-sections.md) — 资料视角下 3 段资料的内容、中英文文案、排版、进度点、滚动提示与语言开关

@@ -17,6 +17,7 @@ export const COPY = {
     locationLabel: 'Based in',
     directionsLabel: 'Focus',
     linksLabel: 'Links',
+    backToOverview: 'Back to overview',
   },
   zh: {
     loadingCode: '正在加载代码…',
@@ -34,6 +35,7 @@ export const COPY = {
     locationLabel: '所在地',
     directionsLabel: '方向',
     linksLabel: '链接',
+    backToOverview: '返回全景',
   },
 } satisfies Record<Language, Record<string, string | string[]>>;
 

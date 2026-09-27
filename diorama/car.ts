@@ -123,11 +123,13 @@ export function buildCar(): CarBuild {
   }
 
   const hazardLights: THREE.PointLight[] = [];
-  for (const lx of [2.9, -2.9]) {
-    const light = new THREE.PointLight('#ffa025', 0, 5.5, 1.5);
-    light.position.set(lx, 0.5, 0);
-    car.add(light);
-    hazardLights.push(light);
+  for (const lx of [2.5, -2.5]) {
+    for (const lz of [0.85, -0.85]) {
+      const light = new THREE.PointLight('#ffa025', 0, 5.5, 1.5);
+      light.position.set(lx, 0.45, lz);
+      car.add(light);
+      hazardLights.push(light);
+    }
   }
 
   car.position.set(...CAR_CENTER);

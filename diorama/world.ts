@@ -108,6 +108,9 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
     let savedPose: Pose | null = null;
     let scrollY = 0;
     let enterAnim: { seq: ReturnType<typeof enterSequence>; startT: number } | null = null;
+    let exitAnim: { seq: ReturnType<typeof enterSequence>; startT: number; fromRatio: number } | null = null;
+    let framingRatio = 0;
+    let currentPose: Pose = { position: camera.position.clone(), target: controls.target.clone() };
 
     const viewListeners: ((view: View) => void)[] = [];
     const qualityListeners: ((tier: Tier) => void)[] = [];
@@ -117,8 +120,15 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
     }
 
     function setFraming(ratio: number): void {
+      framingRatio = ratio;
       const offset = framingOffset(width, height);
       camera.setViewOffset(width, height, offset.x * ratio, offset.y * ratio, width, height);
+    }
+
+    function applyPose(pose: Pose): void {
+      camera.position.copy(pose.position);
+      camera.lookAt(pose.target);
+      currentPose = pose;
     }
 
     function updateCamera(t: number): void {
@@ -129,9 +139,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       if (view === 'entering' && enterAnim) {
         const seconds = t - enterAnim.startT;
         if (seconds >= enterAnim.seq.duration) {
-          const finalPose = enterAnim.seq.sample(enterAnim.seq.duration);
-          camera.position.copy(finalPose.position);
-          camera.lookAt(finalPose.target);
+          applyPose(enterAnim.seq.sample(enterAnim.seq.duration));
           setFraming(1);
           enterAnim = null;
           view = 'story';
@@ -139,17 +147,34 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
           emitView('story');
           return;
         }
-        const pose = enterAnim.seq.sample(seconds);
-        camera.position.copy(pose.position);
-        camera.lookAt(pose.target);
+        applyPose(enterAnim.seq.sample(seconds));
         setFraming(seconds / enterAnim.seq.duration);
         return;
       }
-      if (view === 'story' && savedPose) {
-        const result = poseAtScroll(scrollY, height, savedPose);
-        camera.position.copy(result.position);
-        camera.lookAt(result.target);
-        setFraming(result.opacity);
+      if (view === 'story') {
+        const result = poseAtScroll(scrollY, height);
+        applyPose({ position: result.position, target: result.target });
+        setFraming(1);
+        return;
+      }
+      if (view === 'exiting' && exitAnim) {
+        const seconds = t - exitAnim.startT;
+        if (seconds >= exitAnim.seq.duration) {
+          camera.position.copy(savedPose!.position);
+          controls.target.copy(savedPose!.target);
+          camera.clearViewOffset();
+          controls.enableDamping = false;
+          controls.update();
+          controls.enableDamping = true;
+          controls.enabled = true;
+          currentPose = { position: savedPose!.position.clone(), target: savedPose!.target.clone() };
+          exitAnim = null;
+          view = 'diorama';
+          emitView('diorama');
+          return;
+        }
+        applyPose(exitAnim.seq.sample(seconds));
+        setFraming(exitAnim.fromRatio * (1 - seconds / exitAnim.seq.duration));
       }
     }
 
@@ -183,17 +208,9 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
 
     function exitToDiorama(): void {
       if (view !== 'story') return;
-      if (savedPose) {
-        camera.position.copy(savedPose.position);
-        controls.target.copy(savedPose.target);
-      }
-      camera.clearViewOffset();
-      controls.enableDamping = false;
-      controls.update();
-      controls.enableDamping = true;
-      controls.enabled = true;
-      view = 'diorama';
-      emitView('diorama');
+      view = 'exiting';
+      emitView('exiting');
+      exitAnim = { seq: enterSequence(currentPose, savedPose!), startT: clock.elapsedTime, fromRatio: framingRatio };
     }
 
     const interaction = createInteraction({

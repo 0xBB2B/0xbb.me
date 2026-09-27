@@ -1,7 +1,7 @@
 import { expect, test, describe } from 'bun:test';
 import * as viewState from '../diorama/view-state';
 
-type ViewState = { view: 'diorama' | 'entering' | 'story'; ready: boolean; failed: boolean };
+type ViewState = { view: 'diorama' | 'entering' | 'story' | 'exiting'; ready: boolean; failed: boolean };
 
 function state(view: ViewState['view'], ready = false, failed = false): ViewState {
   return { view, ready, failed };
@@ -28,28 +28,46 @@ describe('entering', () => {
     expect(result).toEqual(state('entering', true, false));
   });
 
-  test('entering 期间滚到顶被忽略', () => {
-    const result = viewState.transition(state('entering', true, false), 'reachTop');
+  test('entering 期间 exit 被忽略', () => {
+    const result = viewState.transition(state('entering', true, false), 'exit');
     expect(result).toEqual(state('entering', true, false));
   });
 });
 
-describe('story + reachTop', () => {
-  test('3D 就绪且未失败：滚到顶回到 diorama', () => {
-    expect(viewState.transition(state('story', true, false), 'reachTop').view).toBe('diorama');
+describe('story + exit', () => {
+  test('3D 就绪且未失败：exit 进入 exiting', () => {
+    expect(viewState.transition(state('story', true, false), 'exit').view).toBe('exiting');
   });
 
-  test('3D 未就绪：滚到顶仍停在 story', () => {
-    expect(viewState.transition(state('story', false, false), 'reachTop').view).toBe('story');
+  test('3D 未就绪：exit 无效，仍停在 story', () => {
+    const result = viewState.transition(state('story', false, false), 'exit');
+    expect(result).toEqual(state('story', false, false));
   });
 
-  test('3D 已失败：滚到顶仍停在 story', () => {
-    expect(viewState.transition(state('story', true, true), 'reachTop').view).toBe('story');
+  test('3D 已失败：exit 无效，仍停在 story', () => {
+    const result = viewState.transition(state('story', true, true), 'exit');
+    expect(result).toEqual(state('story', true, true));
+  });
+});
+
+describe('exiting + exitDone', () => {
+  test('exitDone 后回到 diorama', () => {
+    expect(viewState.transition(state('exiting', true, false), 'exitDone').view).toBe('diorama');
+  });
+
+  test('exiting 期间 clickPlaque 被忽略', () => {
+    const before = state('exiting', true, false);
+    expect(viewState.transition(before, 'clickPlaque')).toEqual(before);
+  });
+
+  test('exiting 期间 exit 被忽略', () => {
+    const before = state('exiting', true, false);
+    expect(viewState.transition(before, 'exit')).toEqual(before);
   });
 });
 
 describe('任意状态 + 先看资料 → story', () => {
-  for (const view of ['diorama', 'entering', 'story'] as const) {
+  for (const view of ['diorama', 'entering', 'story', 'exiting'] as const) {
     test(`${view} + readFirst → story`, () => {
       expect(viewState.transition(state(view), 'readFirst').view).toBe('story');
     });
@@ -57,7 +75,7 @@ describe('任意状态 + 先看资料 → story', () => {
 });
 
 describe('任意状态 + 三维失败 → story 且标记失败', () => {
-  for (const view of ['diorama', 'entering', 'story'] as const) {
+  for (const view of ['diorama', 'entering', 'story', 'exiting'] as const) {
     test(`${view} + sceneFailed → story 且 failed 为 true`, () => {
       const result = viewState.transition(state(view, true, false), 'sceneFailed');
       expect(result.view).toBe('story');
@@ -71,6 +89,7 @@ describe('sceneReady', () => {
     expect(viewState.transition(state('diorama', false), 'sceneReady')).toEqual(state('diorama', true));
     expect(viewState.transition(state('entering', false), 'sceneReady').view).toBe('entering');
     expect(viewState.transition(state('story', false), 'sceneReady').view).toBe('story');
+    expect(viewState.transition(state('exiting', false), 'sceneReady').view).toBe('exiting');
   });
 });
 
@@ -98,14 +117,19 @@ describe('acceptsSceneInput', () => {
   test('story 时为假', () => {
     expect(viewState.acceptsSceneInput(state('story', true))).toBe(false);
   });
+
+  test('exiting 时为假', () => {
+    expect(viewState.acceptsSceneInput(state('exiting', true))).toBe(false);
+  });
 });
 
 describe('不适用的事件保持原状态', () => {
   test.each([
     ['diorama', 'enterDone'],
-    ['diorama', 'reachTop'],
+    ['diorama', 'exit'],
     ['story', 'clickPlaque'],
     ['story', 'enterDone'],
+    ['exiting', 'enterDone'],
   ] as const)('%s + %s 保持不变', (view, event) => {
     const before = state(view, true, false);
     expect(viewState.transition(before, event)).toEqual(before);

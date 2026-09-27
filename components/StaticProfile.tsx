@@ -10,7 +10,6 @@ export function StaticProfile() {
         active={false}
         currentIndex={0}
         failed={false}
-        opacity={1}
         onLanguageChange={noop}
       />
     </div>

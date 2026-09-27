@@ -7,9 +7,19 @@ interface StorySectionsProps {
   active: boolean;
   currentIndex: 0 | 1 | 2;
   failed: boolean;
-  opacity: number;
+  leaving?: boolean;
   onLanguageChange: (language: Language) => void;
   sectionRef?: (index: number, element: HTMLElement | null) => void;
+  showBack?: boolean;
+  onBack?: () => void;
+}
+
+export function StoryBackButton({ language, onBack }: { language: Language; onBack?: () => void }) {
+  return (
+    <button type="button" className="story-back-button" onClick={onBack}>
+      {COPY[language].backToOverview}
+    </button>
+  );
 }
 
 export function StoryAvatar({ language }: { language: Language }) {
@@ -48,14 +58,12 @@ export function StoryLinks({ language }: { language: Language }) {
 export function ProgressDots({
   language,
   currentIndex,
-  opacity,
 }: {
   language: Language;
   currentIndex: 0 | 1 | 2;
-  opacity: number;
 }) {
   return (
-    <div className="story-dots" style={{ opacity }} aria-label={COPY[language].progressLabel}>
+    <div className="story-dots" aria-label={COPY[language].progressLabel}>
       {([0, 1, 2] as const).map((index) => (
         <span
           key={index}
@@ -69,15 +77,13 @@ export function ProgressDots({
 
 export function LanguageToggle({
   language,
-  opacity,
   onLanguageChange,
 }: {
   language: Language;
-  opacity: number;
   onLanguageChange: (language: Language) => void;
 }) {
   return (
-    <div className="story-language" style={{ opacity }} aria-label={COPY[language].languageLabel}>
+    <div className="story-language" aria-label={COPY[language].languageLabel}>
       <button type="button" aria-pressed={language === 'en'} onClick={() => onLanguageChange('en')}>
         EN
       </button>
@@ -93,9 +99,11 @@ export function StorySections({
   active,
   currentIndex,
   failed,
-  opacity,
+  leaving = false,
   onLanguageChange,
   sectionRef,
+  showBack = false,
+  onBack,
 }: StorySectionsProps) {
   const copy = COPY[language];
   const sectionRefs = useMemo(
@@ -103,10 +111,15 @@ export function StorySections({
     [sectionRef],
   );
   return (
-    <div className="story-sections" hidden={!active} inert={!active}>
-      <LanguageToggle language={language} opacity={opacity} onLanguageChange={onLanguageChange} />
-      <ProgressDots language={language} currentIndex={currentIndex} opacity={opacity} />
-      <div className="story-sections-content" style={{ opacity }}>
+    <div
+      className={`story-sections${leaving ? ' story-sections--leaving' : ''}`}
+      hidden={!active && !leaving}
+      inert={!active}
+    >
+      {showBack && <StoryBackButton language={language} onBack={onBack} />}
+      <LanguageToggle language={language} onLanguageChange={onLanguageChange} />
+      <ProgressDots language={language} currentIndex={currentIndex} />
+      <div className="story-sections-content">
         <section className="story-section" ref={sectionRefs[0]}>
           <div className="story-text">
             <p className="story-kicker">{copy.sectionLabels[0]}</p>

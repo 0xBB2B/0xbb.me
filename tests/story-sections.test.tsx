@@ -21,7 +21,6 @@ function renderStorySections(overrides: Partial<StorySectionsProps> = {}): strin
     active: true,
     currentIndex: 0,
     failed: false,
-    opacity: 1,
     onLanguageChange: noop,
     ...overrides,
   };

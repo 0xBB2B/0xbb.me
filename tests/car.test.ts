@@ -89,31 +89,20 @@ describe('hazard lights: shared amber material on all four corner markers', () =
   });
 });
 
-describe('hazard lights: front and rear point lights start off', () => {
-  test('exactly 2 hazard point lights are returned', () => {
+describe('hazard lights: four corner markers start off', () => {
+  test('exactly 4 hazard point lights are returned', () => {
     const { car } = buildScene();
-    expect(car.hazardLights.length).toBe(2);
+    expect(car.hazardLights.length).toBe(4);
   });
 
-  test('the hazard point lights sit about 0.6m beyond the nose and tail, low enough to light the ground', () => {
-    const { car } = buildScene();
-    const xs = car.hazardLights.map((light) => light.position.x).sort((a, b) => a - b);
-    expect(xs[0]).toBeCloseTo(-2.9, 6);
-    expect(xs[1]).toBeCloseTo(2.9, 6);
-    for (const light of car.hazardLights) {
-      expect(light.position.y).toBeCloseTo(0.5, 6);
-      expect(light.distance).toBeGreaterThan(light.position.y + CAR_CENTER[1]);
-    }
-  });
-
-  test('both start at zero intensity', () => {
+  test('all four start at zero intensity', () => {
     const { car } = buildScene();
     for (const light of car.hazardLights) {
       expect(light.intensity).toBe(0);
     }
   });
 
-  test('both lights are amber-tinted (r > g > b)', () => {
+  test('all four are amber-tinted (r > g > b)', () => {
     const { car } = buildScene();
     for (const light of car.hazardLights) {
       expect(light.color.r).toBeGreaterThan(light.color.g);
@@ -121,7 +110,7 @@ describe('hazard lights: front and rear point lights start off', () => {
     }
   });
 
-  test('one light sits ahead of the car center and the other sits behind it', () => {
+  test('two lights sit ahead of the car center (world z) and two sit behind it', () => {
     const { scene, car } = buildScene();
     const centerZ = carBox(scene).getCenter(new THREE.Vector3()).z;
     const zs = car.hazardLights.map((light) => {
@@ -129,8 +118,27 @@ describe('hazard lights: front and rear point lights start off', () => {
       light.getWorldPosition(position);
       return position.z;
     });
-    expect(zs.some((z) => z > centerZ)).toBe(true);
-    expect(zs.some((z) => z < centerZ)).toBe(true);
+    expect(zs.filter((z) => z > centerZ).length).toBe(2);
+    expect(zs.filter((z) => z < centerZ).length).toBe(2);
+  });
+
+  test('every light sits at least 0.7m from the car center along the width axis (world x)', () => {
+    const { scene, car } = buildScene();
+    const centerX = carBox(scene).getCenter(new THREE.Vector3()).x;
+    for (const light of car.hazardLights) {
+      const position = new THREE.Vector3();
+      light.getWorldPosition(position);
+      expect(Math.abs(position.x - centerX)).toBeGreaterThanOrEqual(0.7);
+    }
+  });
+
+  test('every light sits low on the body, below the roofline (local y)', () => {
+    const { scene, car } = buildScene();
+    const box = carBox(scene);
+    const localRoofY = box.max.y - CAR_CENTER[1];
+    for (const light of car.hazardLights) {
+      expect(light.position.y).toBeLessThan(localRoofY);
+    }
   });
 });
 

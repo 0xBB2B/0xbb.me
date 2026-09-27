@@ -2,6 +2,11 @@
   position: relative;
   color: #e8eefc;
   font-family: var(--font-sans);
+  transition: opacity 1s;
+}
+
+.story-sections--leaving {
+  opacity: 0;
 }
 
 .story-sections-content {
@@ -168,6 +173,20 @@
   background: #f3d9a0;
   color: #0d1430;
   border-color: #f3d9a0;
+}
+
+.story-back-button {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid #9fb1e0;
+  border-radius: 4px;
+  color: #e8eefc;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  z-index: 2;
 }
 
 @media (min-aspect-ratio: 1/1) {

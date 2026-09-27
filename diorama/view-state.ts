@@ -1,4 +1,4 @@
-export type View = 'diorama' | 'entering' | 'story';
+export type View = 'diorama' | 'entering' | 'story' | 'exiting';
 
 export interface ViewState {
   view: View;
@@ -6,7 +6,7 @@ export interface ViewState {
   failed: boolean;
 }
 
-export type ViewEvent = 'clickPlaque' | 'enterDone' | 'reachTop' | 'readFirst' | 'sceneReady' | 'sceneFailed';
+export type ViewEvent = 'clickPlaque' | 'enterDone' | 'exit' | 'exitDone' | 'readFirst' | 'sceneReady' | 'sceneFailed';
 
 export function transition(state: ViewState, event: ViewEvent): ViewState {
   if (event === 'readFirst') return { view: 'story', ready: state.ready, failed: state.failed };
@@ -19,8 +19,11 @@ export function transition(state: ViewState, event: ViewEvent): ViewState {
   if (state.view === 'entering' && event === 'enterDone') {
     return { view: 'story', ready: state.ready, failed: state.failed };
   }
-  if (state.view === 'story' && event === 'reachTop') {
-    return state.ready && !state.failed ? { view: 'diorama', ready: state.ready, failed: state.failed } : { ...state };
+  if (state.view === 'story' && event === 'exit') {
+    return state.ready && !state.failed ? { view: 'exiting', ready: state.ready, failed: state.failed } : { ...state };
+  }
+  if (state.view === 'exiting' && event === 'exitDone') {
+    return { view: 'diorama', ready: state.ready, failed: state.failed };
   }
 
   return { ...state };

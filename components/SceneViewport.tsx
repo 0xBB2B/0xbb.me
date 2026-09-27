@@ -21,11 +21,13 @@ interface SceneViewportProps {
   onFailed: () => void;
   onEntering: () => void;
   onStoryEntered: () => void;
+  onExiting: () => void;
+  onExitDone: () => void;
   onQualityChange: (tier: Tier) => void;
 }
 
 export const SceneViewport = forwardRef<SceneViewportHandle, SceneViewportProps>(function SceneViewport(
-  { language, view, loading, onStageChange, onReady, onFailed, onEntering, onStoryEntered, onQualityChange },
+  { language, view, loading, onStageChange, onReady, onFailed, onEntering, onStoryEntered, onExiting, onExitDone, onQualityChange },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -76,6 +78,8 @@ export const SceneViewport = forwardRef<SceneViewportHandle, SceneViewportProps>
       handle.onViewChange((next) => {
         if (next === 'entering') onEntering();
         else if (next === 'story') onStoryEntered();
+        else if (next === 'exiting') onExiting();
+        else if (next === 'diorama') onExitDone();
       });
       handle.onQualityChange(onQualityChange);
       handle.onContextLost(() => {

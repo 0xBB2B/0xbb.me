@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { preview, type PreviewServer } from 'vite';
 import { runBrowser } from './browser';
-import { plaquePoint } from './scene-helpers';
+import { plaquePoint, roadPoint } from './scene-helpers';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const PORT = 4203;
@@ -31,6 +31,10 @@ afterAll(async () => {
 const HELPERS = `
   async function settle() {
     await js('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+  }
+  async function pressKey(key, code, vk, text) {
+    await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: vk, ...(text ? { text } : {}) });
+    await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: vk });
   }
 `;
 
@@ -92,8 +96,8 @@ describe('三维场景加载失败', () => {
     expect(result.linksClickable).toBe(true);
   }, 90_000);
 
-  test('WebGL 创建失败时显示失败提示，滚到 0 仍停留在 story', async () => {
-    const result = await runBrowser<{ view: string | null; shellGone: boolean; alertText: string | null; canvasCount: number; viewAfterScrollTop: string | null }>(`
+  test('WebGL 创建失败时显示失败提示，无可见返回按钮，按 Esc 后仍停留在 story', async () => {
+    const result = await runBrowser<{ view: string | null; shellGone: boolean; alertText: string | null; canvasCount: number; backButtonVisible: boolean; viewAfterEscape: string | null }>(`
       ${HELPERS}
       await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
       await cdp('Page.addScriptToEvaluateOnNewDocument', { source: ${JSON.stringify(GETCONTEXT_NULL_SCRIPT)} });
@@ -108,16 +112,49 @@ describe('三维场景加载失败', () => {
       const shellGone = await js("!document.querySelector('.loading-shell')");
       const alertText = await js("(() => { const el = document.querySelector('[role=\\"alert\\"]'); return el ? el.textContent : null; })()");
       const canvasCount = await js("document.querySelectorAll('#scene canvas').length");
-      await js('window.scrollTo(0, 0)');
+      const backButtonVisible = await js(\`(() => {
+        const btn = document.querySelector('.story-back-button');
+        if (!btn) return false;
+        const r = btn.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      })()\`);
+      await pressKey('Escape', 'Escape', 27);
       await settle();
-      const viewAfterScrollTop = await js('document.documentElement.dataset.view ?? null');
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ view, shellGone, alertText, canvasCount, viewAfterScrollTop }));
+      const viewAfterEscape = await js('document.documentElement.dataset.view ?? null');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ view, shellGone, alertText, canvasCount, backButtonVisible, viewAfterEscape }));
     `);
     expect(result.view).toBe('story');
     expect(result.shellGone).toBe(true);
     expect(result.alertText).toContain("The 3D scene couldn't load");
     expect(result.canvasCount).toBe(0);
-    expect(result.viewAfterScrollTop).toBe('story');
+    expect(result.backButtonVisible).toBe(false);
+    expect(result.viewAfterEscape).toBe('story');
+  }, 90_000);
+
+  test('三维失败后滚动照常翻到下一段', async () => {
+    const road = roadPoint(1440, 900);
+    const result = await runBrowser<{ view: string | null; alertText: string | null; scrollBefore: number; scrollAfter: number }>(`
+      ${HELPERS}
+      await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+      await cdp('Page.addScriptToEvaluateOnNewDocument', { source: ${JSON.stringify(GETCONTEXT_NULL_SCRIPT)} });
+      await cdp('Emulation.setUserAgentOverride', { userAgent: await js('navigator.userAgent'), acceptLanguage: 'en-US' });
+      await navigate(${JSON.stringify(BASE_URL)});
+      const deadline = Date.now() + 15000;
+      while (Date.now() < deadline) {
+        if (await js("document.documentElement.dataset.view === 'story'")) break;
+        await wait(0.1);
+      }
+      const alertText = await js("(() => { const el = document.querySelector('[role=\\"alert\\"]'); return el ? el.textContent : null; })()");
+      const scrollBefore = await js('window.scrollY');
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
+      await wait(1.3);
+      const scrollAfter = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ view: await js('document.documentElement.dataset.view ?? null'), alertText, scrollBefore, scrollAfter }));
+    `);
+    expect(result.view).toBe('story');
+    expect(result.alertText).toContain("The 3D scene couldn't load");
+    expect(result.scrollBefore).toBe(0);
+    expect(result.scrollAfter).toBe(900);
   }, 90_000);
 
   test('运行中 WebGL 上下文丢失后显示失败提示', async () => {

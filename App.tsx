@@ -39,9 +39,18 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [loadingLeaving]);
 
+  const showBack = (viewState.view === 'story' || viewState.view === 'exiting') && viewState.ready && !viewState.failed;
+  const canExitRef = useRef(false);
+  canExitRef.current = viewState.view === 'story' && viewState.ready && !viewState.failed;
+
   useEffect(() => {
-    if (viewState.ready && viewState.view === 'story' && window.scrollY === 0) handleReachTop();
-  }, [viewState.ready, viewState.view]);
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape' || !canExitRef.current) return;
+      sceneRef.current?.exitToDiorama();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   function dispatch(event: ViewEvent) {
     setViewState((prev) => transition(prev, event));
@@ -58,11 +67,9 @@ export default function App() {
     dispatch('sceneFailed');
   }
 
-  function handleReachTop() {
-    const next = transition(viewState, 'reachTop');
-    if (next.view === viewState.view) return;
+  function handleExit() {
+    if (!canExitRef.current) return;
     sceneRef.current?.exitToDiorama();
-    setViewState(next);
   }
 
   return (
@@ -77,14 +84,17 @@ export default function App() {
         onFailed={handleSceneFailed}
         onEntering={() => dispatch('clickPlaque')}
         onStoryEntered={() => dispatch('enterDone')}
+        onExiting={() => dispatch('exit')}
+        onExitDone={() => dispatch('exitDone')}
         onQualityChange={setQuality}
       />
       <StoryScroller
         language={language}
         view={viewState.view}
         failed={viewState.failed}
+        showBack={showBack}
         onScrollChange={(scrollY) => sceneRef.current?.setScroll(scrollY)}
-        onReachTop={handleReachTop}
+        onBack={handleExit}
         onLanguageChange={setLanguage}
       />
       <EnterStoryButton

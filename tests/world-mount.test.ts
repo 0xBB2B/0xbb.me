@@ -6,7 +6,6 @@ import * as THREE from 'three';
 import { DEFAULT_CAMERA, viewFov } from '../diorama/layout';
 import { PLAQUE_PANEL, PLAQUE_GLOW } from '../diorama/plaque';
 import { stopPose } from '../diorama/story-camera';
-import { storyLayout } from '../diorama/story-scroll';
 import { runBrowser } from './browser';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -184,10 +183,10 @@ describe('dispose', () => {
 });
 
 describe('资料视角退出镜头位姿', () => {
-  test('规则1: 退出资料视角后镜头回到进入前记录的位姿，即使进入前刚拖动旋转过仍有惯性', async () => {
+  test('规则1: exitToDiorama 后依次经过 exiting、diorama，间隔不超过 1.2 秒，1 秒后镜头回到进入前记录的位姿', async () => {
     const px = ROAD_PIXEL.x;
     const py = ROAD_PIXEL.y;
-    const result = await runBrowser<{ ready: boolean; views: string[]; distance: number }>(`
+    const result = await runBrowser<{ ready: boolean; views: string[]; times: number[]; distance: number }>(`
       ${BOOT}
       await js('window.handle.onViewChange((view) => { if (view === "entering" && window.handle.camera) window.__enterPos = { x: window.handle.camera.position.x, y: window.handle.camera.position.y, z: window.handle.camera.position.z }; })');
       await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: ${px}, y: ${py} });
@@ -208,12 +207,23 @@ describe('资料视角退出镜头位姿', () => {
         await wait(0.05);
       }
       await js('window.handle.exitToDiorama()');
+      const exitDeadline = Date.now() + 3000;
+      while (Date.now() < exitDeadline) {
+        views = await js('window.views ?? []');
+        if (views.lastIndexOf('diorama') > views.indexOf('exiting')) break;
+        await wait(0.05);
+      }
       await wait(1);
       const distance = await js("(() => { const enter = window.__enterPos; const camera = window.handle && window.handle.camera; if (!enter || !camera) return 9999; return Math.hypot(camera.position.x - enter.x, camera.position.y - enter.y, camera.position.z - enter.z); })()");
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, views, distance }));
+      const times = await js('window.viewTimes ?? []');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, views, times, distance }));
     `);
     expect(result.ready).toBe(true);
-    expect(result.views).toContain('story');
+    const exitingIndex = result.views.indexOf('exiting');
+    const dioramaIndex = result.views.indexOf('diorama', exitingIndex + 1);
+    expect(exitingIndex).toBeGreaterThanOrEqual(0);
+    expect(dioramaIndex).toBeGreaterThan(exitingIndex);
+    expect(result.times[dioramaIndex] - result.times[exitingIndex]).toBeLessThanOrEqual(1200);
     expect(result.distance).toBeLessThanOrEqual(0.1);
   }, 60_000);
 
@@ -347,14 +357,10 @@ describe('竖屏下的视场角与整体默认镜头', () => {
     expect(result.inFrame).toBe(true);
   }, 60_000);
 
-  test('竖屏下先看资料后滚到顶退出，镜头回到默认位姿', async () => {
-    const sectionStart0 = storyLayout(844).sectionStarts[0];
+  test('竖屏下先看资料后退出，镜头回到默认位姿', async () => {
     const result = await runBrowser<{ ready: boolean; distance: number }>(`
       ${bootScript(390, 844)}
       await js('window.handle.startStoryWithoutEntering()');
-      await js('window.handle.setScroll(${sectionStart0})');
-      await wait(0.5);
-      await js('window.handle.setScroll(0)');
       await wait(0.3);
       await js('window.handle.exitToDiorama()');
       await wait(1);

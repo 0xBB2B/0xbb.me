@@ -7,7 +7,7 @@ import { runBrowser } from './browser';
 import { plaquePoint, roadPoint } from './scene-helpers';
 import { DEFAULT_CAMERA } from '../diorama/layout';
 import { PLAQUE_PANEL } from '../diorama/plaque';
-import { storyLayout, snapTarget } from '../diorama/story-scroll';
+import { storyLayout } from '../diorama/story-scroll';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const PORT = 4202;
@@ -27,14 +27,6 @@ const HELPERS = `
   async function pressKey(key, code, vk, text) {
     await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: vk, ...(text ? { text } : {}) });
     await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: vk });
-  }
-  async function wheelScroll(x, y, totalDeltaY, steps) {
-    const n = steps || 12;
-    const step = totalDeltaY / n;
-    for (let i = 0; i < n; i++) {
-      await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x, y, deltaX: 0, deltaY: step });
-      await wait(0.02);
-    }
   }
   async function settle() {
     await js('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
@@ -337,85 +329,193 @@ describe('进入', () => {
 });
 
 describe('资料视角', () => {
-  test('滚动时画面随之变化', async () => {
+  test('一次滚轮翻到下一段：约 0.5 秒时介于两段之间，约 1.2 秒内到位且进度点为第 2 个', async () => {
     const p = plaquePoint(1440, 900);
     const road = roadPoint(1440, 900);
-    const result = await runBrowser<{ views: string[]; same: boolean }>(`
+    const result = await runBrowser<{ views: string[]; scrollAfterEnter: number; scrollMid: number; scrollFinal: number; activeFinal: number | null }>(`
       ${HELPERS}
       ${boot(1440, 900)}
       await click([${p.x}, ${p.y}]);
       const deadline = Date.now() + 5000;
       while (Date.now() < deadline) {
         if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      const scrollAfterEnter = await js('window.scrollY');
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
+      await wait(0.5);
+      const scrollMid = await js('window.scrollY');
+      await wait(0.7);
+      const scrollFinal = await js('window.scrollY');
+      const activeFinal = await js("Array.from(document.querySelectorAll('.story-dot')).findIndex(d => d.getAttribute('aria-current') === 'true')");
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ views: await js('window.__views'), scrollAfterEnter, scrollMid, scrollFinal, activeFinal }));
+    `);
+    expect(result.views).toContain('story');
+    expect(result.scrollAfterEnter).toBe(0);
+    expect(result.scrollMid).toBeGreaterThan(0);
+    expect(result.scrollMid).toBeLessThan(900);
+    expect(result.scrollFinal).toBe(900);
+    expect(result.activeFinal).toBe(1);
+  }, 90_000);
+
+  test('连续 5 次滚轮（间隔 50 毫秒）只翻一段', async () => {
+    const p = plaquePoint(1440, 900);
+    const road = roadPoint(1440, 900);
+    const result = await runBrowser<{ views: string[]; scrollY: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      for (let i = 0; i < 5; i++) {
+        await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
+        await wait(0.05);
+      }
+      await wait(1.6);
+      const scrollY = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ views: await js('window.__views'), scrollY }));
+    `);
+    expect(result.views).toContain('story');
+    expect(result.scrollY).toBe(900);
+  }, 90_000);
+
+  test('第 1 段向上滚动没有反应', async () => {
+    const p = plaquePoint(1440, 900);
+    const road = roadPoint(1440, 900);
+    const result = await runBrowser<{ views: string[]; scrollY: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: -120 });
+      await wait(0.8);
+      const scrollY = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ views: await js('window.__views'), scrollY }));
+    `);
+    expect(result.views[result.views.length - 1]).toBe('story');
+    expect(result.scrollY).toBe(0);
+  }, 90_000);
+
+  test.each([
+    ['PageDown', 'PageDown', 34, ''],
+    ['ArrowDown', 'ArrowDown', 40, ''],
+    [' ', 'Space', 32, ' '],
+  ] as const)('键盘翻页：%s 翻到下一段', async (key, code, vk, text) => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ views: string[]; scrollY: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await pressKey(${JSON.stringify(key)}, ${JSON.stringify(code)}, ${vk}, ${JSON.stringify(text)});
+      await wait(1.3);
+      const scrollY = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ views: await js('window.__views'), scrollY }));
+    `);
+    expect(result.views).toContain('story');
+    expect(result.scrollY).toBe(900);
+  }, 90_000);
+
+  test('Esc 退出：data-view 依次 exiting、diorama，间隔不超过 1.2 秒，之后滚轮改变镜头距离且 scrollY 为 0', async () => {
+    const p = plaquePoint(1440, 900);
+    const road = roadPoint(1440, 900);
+    const result = await runBrowser<{ views: string[]; times: number[]; scrollY: number; before: string; after: string }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await pressKey('Escape', 'Escape', 27);
+      const exitDeadline = Date.now() + 3000;
+      while (Date.now() < exitDeadline) {
+        if (await js("(() => { const v = window.__views; const e = v.lastIndexOf('exiting'); return e >= 0 && v.indexOf('diorama', e + 1) > e; })()")) break;
         await wait(0.05);
       }
       await settle();
       const before = await screenshot();
-      await wheelScroll(${road.x}, ${road.y}, 400);
-      await wait(0.3);
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 200 });
+      await wait(0.4);
       const after = await screenshot();
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ views: await js('window.__views'), same: before === after }));
+      const scrollY = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ views: await js('window.__views'), times: await js('window.__viewTimes'), scrollY, before, after }));
     `);
-    expect(result.views).toContain('story');
-    expect(result.same).toBe(false);
+    const exitingIndex = result.views.indexOf('exiting');
+    const dioramaIndex = result.views.indexOf('diorama', exitingIndex + 1);
+    expect(exitingIndex).toBeGreaterThanOrEqual(0);
+    expect(dioramaIndex).toBeGreaterThan(exitingIndex);
+    expect(result.times[dioramaIndex] - result.times[exitingIndex]).toBeLessThanOrEqual(1200);
+    expect(result.before).not.toBe(result.after);
+    expect(result.scrollY).toBe(0);
   }, 90_000);
 
-  test('停止滚动 150 毫秒后平滑吸附到最近一段起点', async () => {
+  test('点击「返回全景」按钮同样退出', async () => {
     const p = plaquePoint(1440, 900);
-    const road = roadPoint(1440, 900);
-    const height = 900;
-    const result = await runBrowser<{ views: string[]; raw: number; settled: number }>(`
+    const result = await runBrowser<{ views: string[] }>(`
       ${HELPERS}
-      ${boot(1440, height)}
+      ${boot(1440, 900)}
       await click([${p.x}, ${p.y}]);
       const deadline = Date.now() + 5000;
       while (Date.now() < deadline) {
         if ((await js('window.__views')).includes('story')) break;
         await wait(0.05);
       }
-      await settle();
-      await wheelScroll(${road.x}, ${road.y}, 300);
-      const raw = await js('window.scrollY');
-      await wait(1.2);
-      const settled = await js('window.scrollY');
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ views: await js('window.__views'), raw, settled }));
+      await click('.story-back-button');
+      const exitDeadline = Date.now() + 3000;
+      while (Date.now() < exitDeadline) {
+        if (await js("(() => { const v = window.__views; const e = v.lastIndexOf('exiting'); return e >= 0 && v.indexOf('diorama', e + 1) > e; })()")) break;
+        await wait(0.05);
+      }
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ views: await js('window.__views') }));
     `);
-    expect(result.views).toContain('story');
-    const expected = snapTarget(result.raw, height);
-    expect(Math.abs(result.settled - expected)).toBeLessThan(3);
+    const exitingIndex = result.views.indexOf('exiting');
+    expect(exitingIndex).toBeGreaterThanOrEqual(0);
+    expect(result.views.indexOf('diorama', exitingIndex + 1)).toBeGreaterThan(exitingIndex);
   }, 90_000);
 
-  test('回拉区中途停手弹回第 1 段', async () => {
+  test('语言切到 EN 后「返回全景」按钮文字为 Back to overview，中文为「返回全景」', async () => {
     const p = plaquePoint(1440, 900);
-    const road = roadPoint(1440, 900);
-    const height = 900;
-    const sectionStart0 = storyLayout(height).sectionStarts[0];
-    const result = await runBrowser<{ views: string[]; raw: number; settled: number }>(`
+    const result = await runBrowser<{ zhText: string; enText: string }>(`
       ${HELPERS}
-      ${boot(1440, height)}
+      ${boot(1440, 900, { lang: 'zh-CN' })}
       await click([${p.x}, ${p.y}]);
       const deadline = Date.now() + 5000;
       while (Date.now() < deadline) {
         if ((await js('window.__views')).includes('story')) break;
         await wait(0.05);
       }
+      const zhText = await js("document.querySelector('.story-back-button')?.textContent ?? ''");
+      await click('.story-language button');
       await settle();
-      await wheelScroll(${road.x}, ${road.y}, -${sectionStart0 * 0.5});
-      const raw = await js('window.scrollY');
-      await wait(1.2);
-      const settled = await js('window.scrollY');
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ views: await js('window.__views'), raw, settled }));
+      const enText = await js("document.querySelector('.story-back-button')?.textContent ?? ''");
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ zhText, enText }));
     `);
-    expect(result.views).toContain('story');
-    expect(result.raw).toBeGreaterThan(0);
-    expect(result.raw).toBeLessThan(sectionStart0);
-    expect(result.settled).toBe(sectionStart0);
+    expect(result.zhText).toBe('返回全景');
+    expect(result.enText).toBe('Back to overview');
   }, 90_000);
 
-  test('滚到 0 且 3D 就绪后回到 diorama，页面恢复不可滚动、资料段隐藏且 inert', async () => {
+  test('退出动画进行中 Esc 与滚轮不改变状态', async () => {
     const p = plaquePoint(1440, 900);
     const road = roadPoint(1440, 900);
-    const result = await runBrowser<{ views: string[]; sectionsHidden: boolean; sectionsInert: boolean; scrollAfterWheel: number }>(`
+    const result = await runBrowser<{ duringExit: string | null; stillExiting: string | null }>(`
       ${HELPERS}
       ${boot(1440, 900)}
       await click([${p.x}, ${p.y}]);
@@ -425,27 +525,17 @@ describe('资料视角', () => {
         await wait(0.05);
       }
       await settle();
-      await wheelScroll(${road.x}, ${road.y}, -3000, 20);
-      const dioramaDeadline = Date.now() + 5000;
-      while (Date.now() < dioramaDeadline) {
-        if ((await js('window.__views')).includes('diorama')) break;
-        await wait(0.05);
-      }
-      await wait(0.3);
-      const data = await js(\`(() => {
-        const s = document.querySelector('.story-sections');
-        return { sectionsHidden: !!s && s.hidden, sectionsInert: !!s && s.inert };
-      })()\`);
+      await pressKey('Escape', 'Escape', 27);
+      await wait(0.2);
+      const duringExit = await js('document.documentElement.dataset.view ?? null');
+      await pressKey('Escape', 'Escape', 27);
       await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 200 });
       await wait(0.2);
-      const scrollAfterWheel = await js('window.scrollY');
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ views: await js('window.__views'), ...data, scrollAfterWheel }));
+      const stillExiting = await js('document.documentElement.dataset.view ?? null');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ duringExit, stillExiting }));
     `);
-    expect(result.views).toContain('story');
-    expect(result.views[result.views.length - 1]).toBe('diorama');
-    expect(result.sectionsHidden).toBe(true);
-    expect(result.sectionsInert).toBe(true);
-    expect(result.scrollAfterWheel).toBe(0);
+    expect(result.duringExit).toBe('exiting');
+    expect(result.stillExiting).toBe('exiting');
   }, 90_000);
 
   test('整体视角下拖动与滚轮都会改变画面', async () => {
@@ -469,6 +559,655 @@ describe('资料视角', () => {
     expect(result.view).toBe('diorama');
     expect(result.dragChanged).toBe(true);
     expect(result.wheelChanged).toBe(true);
+  }, 90_000);
+});
+
+describe('资料段高度与视口', () => {
+  test('每段高度等于视口高度', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ view: string | null; heights: number[]; innerHeight: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      const heights = await js("Array.from(document.querySelectorAll('.story-section')).map(s => s.offsetHeight)");
+      const innerHeight = await js('window.innerHeight');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ view: await js('document.documentElement.dataset.view ?? null'), heights, innerHeight }));
+    `);
+    expect(result.view).toBe('story');
+    for (const h of result.heights) {
+      expect(Math.abs(h - result.innerHeight)).toBeLessThanOrEqual(1);
+    }
+  }, 90_000);
+
+  test('翻到第 2 段后改变视口高度，滚动位置与段高随之更新', async () => {
+    const p = plaquePoint(1440, 900);
+    const road = roadPoint(1440, 900);
+    const result = await runBrowser<{ view: string | null; scrollY: number; activeIndex: number | null; sectionHeight: number; innerHeight: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
+      await wait(1.3);
+      await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 700, deviceScaleFactor: 1, mobile: false });
+      await wait(0.3);
+      const scrollY = await js('window.scrollY');
+      const activeIndex = await js("Array.from(document.querySelectorAll('.story-dot')).findIndex(d => d.getAttribute('aria-current') === 'true')");
+      const sectionHeight = await js("document.querySelectorAll('.story-section')[1].offsetHeight");
+      const innerHeight = await js('window.innerHeight');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ view: await js('document.documentElement.dataset.view ?? null'), scrollY, activeIndex, sectionHeight, innerHeight }));
+    `);
+    expect(result.view).toBe('story');
+    expect(Math.abs(result.scrollY - result.innerHeight)).toBeLessThanOrEqual(1);
+    expect(result.activeIndex).toBe(1);
+    expect(Math.abs(result.sectionHeight - result.innerHeight)).toBeLessThanOrEqual(1);
+  }, 90_000);
+
+  test('翻页动画进行中改变视口高度，动画结束后滚动位置与段高按新视口对齐', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ scrollY: number; heights: number[]; innerHeight: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await pressKey('PageDown', 'PageDown', 34, '');
+      await wait(0.3);
+      await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 700, deviceScaleFactor: 1, mobile: false });
+      await wait(1.5);
+      const scrollY = await js('window.scrollY');
+      const heights = await js("Array.from(document.querySelectorAll('.story-section')).map(s => s.offsetHeight)");
+      const innerHeight = await js('window.innerHeight');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ scrollY, heights, innerHeight }));
+    `);
+    expect(Math.abs(result.scrollY - 1 * result.innerHeight)).toBeLessThanOrEqual(1);
+    for (const h of result.heights) {
+      expect(Math.abs(h - result.innerHeight)).toBeLessThanOrEqual(1);
+    }
+  }, 90_000);
+});
+
+describe('退出时资料段淡出', () => {
+  test('exiting 期间资料段容器仍渲染且 inert', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ duringExit: string | null; hidden: boolean; inert: boolean; width: number; height: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await pressKey('Escape', 'Escape', 27);
+      await wait(0.2);
+      const duringExit = await js('document.documentElement.dataset.view ?? null');
+      const data = await js(\`(() => {
+        const el = document.querySelector('.story-sections');
+        if (!el) return { hidden: true, inert: true, width: 0, height: 0 };
+        return { hidden: el.hidden, inert: el.inert, width: el.offsetWidth, height: el.offsetHeight };
+      })()\`);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ duringExit, ...data }));
+    `);
+    expect(result.duringExit).toBe('exiting');
+    expect(result.hidden).toBe(false);
+    expect(result.inert).toBe(true);
+    expect(result.width).toBeGreaterThan(0);
+    expect(result.height).toBeGreaterThan(0);
+  }, 90_000);
+
+  test('从第 3 段退出，exiting 期间 scrollY 不跳回 0，到 diorama 后归零', async () => {
+    const p = plaquePoint(1440, 900);
+    const road = roadPoint(1440, 900);
+    const result = await runBrowser<{ scrollBeforeExit: number; scrollDuringExit: number; views: string[]; scrollFinal: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      for (let i = 0; i < 2; i++) {
+        await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
+        await wait(1.3);
+      }
+      const scrollBeforeExit = await js('window.scrollY');
+      await pressKey('Escape', 'Escape', 27);
+      await wait(0.2);
+      const scrollDuringExit = await js('window.scrollY');
+      const exitDeadline = Date.now() + 3000;
+      while (Date.now() < exitDeadline) {
+        if (await js("(() => { const v = window.__views; const e = v.lastIndexOf('exiting'); return e >= 0 && v.indexOf('diorama', e + 1) > e; })()")) break;
+        await wait(0.05);
+      }
+      const scrollFinal = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ scrollBeforeExit, scrollDuringExit, views: await js('window.__views'), scrollFinal }));
+    `);
+    expect(result.scrollBeforeExit).toBe(1800);
+    expect(result.scrollDuringExit).not.toBe(0);
+    const exitingIndex = result.views.indexOf('exiting');
+    expect(exitingIndex).toBeGreaterThanOrEqual(0);
+    expect(result.views.indexOf('diorama', exitingIndex + 1)).toBeGreaterThan(exitingIndex);
+    expect(result.scrollFinal).toBe(0);
+  }, 90_000);
+
+  test('到 diorama 后资料段 hidden 且 inert，连按 Tab 10 次焦点不落在其内部链接上', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ hidden: boolean; inert: boolean; focusedInside: boolean }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await pressKey('Escape', 'Escape', 27);
+      const exitDeadline = Date.now() + 3000;
+      while (Date.now() < exitDeadline) {
+        if (await js("(() => { const v = window.__views; const e = v.lastIndexOf('exiting'); return e >= 0 && v.indexOf('diorama', e + 1) > e; })()")) break;
+        await wait(0.05);
+      }
+      await settle();
+      const before = await js(\`(() => {
+        const el = document.querySelector('.story-sections');
+        return { hidden: !!el && el.hidden, inert: !!el && el.inert };
+      })()\`);
+      let focusedInside = false;
+      for (let i = 0; i < 10; i++) {
+        await pressKey('Tab', 'Tab', 9);
+        await settle();
+        const inside = await js("!!(document.activeElement && document.activeElement.closest('.story-sections'))");
+        if (inside) focusedInside = true;
+      }
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ hidden: before.hidden, inert: before.inert, focusedInside }));
+    `);
+    expect(result.hidden).toBe(true);
+    expect(result.inert).toBe(true);
+    expect(result.focusedInside).toBe(false);
+  }, 90_000);
+
+  test('exiting 期间返回按钮仍在 DOM 内、随资料段一起变暗且处于 inert 祖先内，到 diorama 后不可见', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ present: boolean; opacity: number | null; insideInert: boolean; afterExitVisible: boolean }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await pressKey('Escape', 'Escape', 27);
+      await wait(0.2);
+      const duringExit = await js(\`(() => {
+        const btn = document.querySelector('.story-back-button');
+        if (!btn) return { present: false, opacity: null, insideInert: false };
+        const container = btn.closest('.story-sections') || btn;
+        return { present: true, opacity: parseFloat(getComputedStyle(container).opacity), insideInert: !!btn.closest('[inert]') };
+      })()\`);
+      const exitDeadline = Date.now() + 3000;
+      while (Date.now() < exitDeadline) {
+        if (await js("(() => { const v = window.__views; const e = v.lastIndexOf('exiting'); return e >= 0 && v.indexOf('diorama', e + 1) > e; })()")) break;
+        await wait(0.05);
+      }
+      await settle();
+      const afterExitVisible = await js(\`(() => {
+        const btn = document.querySelector('.story-back-button');
+        if (!btn) return false;
+        const r = btn.getBoundingClientRect();
+        const style = getComputedStyle(btn);
+        return r.width > 0 && r.height > 0 && style.visibility !== 'hidden' && style.display !== 'none' && !btn.closest('[hidden]');
+      })()\`);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ...duringExit, afterExitVisible }));
+    `);
+    expect(result.present).toBe(true);
+    expect(result.opacity).toBeLessThan(1);
+    expect(result.insideInert).toBe(true);
+    expect(result.afterExitVisible).toBe(false);
+  }, 90_000);
+
+  test('exiting 期间 story-sections 带 leaving 类，约 500 毫秒时透明度已在淡出中', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ hasLeavingClass: boolean; opacity: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await pressKey('Escape', 'Escape', 27);
+      await wait(0.5);
+      const data = await js(\`(() => {
+        const el = document.querySelector('.story-sections');
+        if (!el) return { hasLeavingClass: false, opacity: 1 };
+        return { hasLeavingClass: el.classList.contains('story-sections--leaving'), opacity: parseFloat(getComputedStyle(el).opacity) };
+      })()\`);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify(data));
+    `);
+    expect(result.hasLeavingClass).toBe(true);
+    expect(result.opacity < 1 || result.opacity < 0.9).toBe(true);
+  }, 90_000);
+
+  test('退出到 diorama 后再次进入：story-sections 不带 leaving 类，透明度复原为 1，返回按钮可见', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ leavingClassAfterReenter: boolean; opacityAfterReenter: number; backButtonVisible: boolean }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await pressKey('Escape', 'Escape', 27);
+      const exitDeadline = Date.now() + 3000;
+      while (Date.now() < exitDeadline) {
+        if (await js("(() => { const v = window.__views; const e = v.lastIndexOf('exiting'); return e >= 0 && v.indexOf('diorama', e + 1) > e; })()")) break;
+        await wait(0.05);
+      }
+      await settle();
+      await click([${p.x}, ${p.y}]);
+      const reenterDeadline = Date.now() + 5000;
+      while (Date.now() < reenterDeadline) {
+        const views = await js('window.__views');
+        if (views.lastIndexOf('story') > views.lastIndexOf('exiting')) break;
+        await wait(0.05);
+      }
+      await wait(1.2);
+      const data = await js(\`(() => {
+        const el = document.querySelector('.story-sections');
+        const btn = document.querySelector('.story-back-button');
+        const r = btn ? btn.getBoundingClientRect() : null;
+        const style = btn ? getComputedStyle(btn) : null;
+        return {
+          leavingClassAfterReenter: !!el && el.classList.contains('story-sections--leaving'),
+          opacityAfterReenter: el ? parseFloat(getComputedStyle(el).opacity) : 0,
+          backButtonVisible: !!btn && !!r && r.width > 0 && r.height > 0 && style.visibility !== 'hidden' && style.display !== 'none',
+        };
+      })()\`);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify(data));
+    `);
+    expect(result.leavingClassAfterReenter).toBe(false);
+    expect(result.opacityAfterReenter).toBeGreaterThanOrEqual(0.99);
+    expect(result.backButtonVisible).toBe(true);
+  }, 90_000);
+});
+
+describe('资料视角 Tab 聚焦对齐', () => {
+  test('聚焦第 3 段链接后自动对齐，随后 ArrowUp 回到第 2 段', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ scrollAfterFocus: number; activeAfterFocus: number | null; scrollAfterUp: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await js(\`document.querySelector('.story-sections a[href="https://github.com/0xBB2b"]').focus()\`);
+      await wait(0.5);
+      const scrollAfterFocus = await js('window.scrollY');
+      const activeAfterFocus = await js("Array.from(document.querySelectorAll('.story-dot')).findIndex(d => d.getAttribute('aria-current') === 'true')");
+      await pressKey('ArrowUp', 'ArrowUp', 38);
+      await wait(1.3);
+      const scrollAfterUp = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ scrollAfterFocus, activeAfterFocus, scrollAfterUp }));
+    `);
+    expect(result.scrollAfterFocus).toBe(1800);
+    expect(result.activeAfterFocus).toBe(2);
+    expect(result.scrollAfterUp).toBe(900);
+  }, 90_000);
+
+  test('翻页动画进行中聚焦第 3 段链接：动画结束后停在第 3 段，随后 ArrowUp 回到第 2 段', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ scrollAfterSettle: number; activeAfterSettle: number | null; scrollAfterUp: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await pressKey('PageDown', 'PageDown', 34, '');
+      await wait(0.2);
+      await js(\`document.querySelector('.story-sections a[href="https://github.com/0xBB2b"]').focus()\`);
+      await wait(1.5);
+      const scrollAfterSettle = await js('window.scrollY');
+      const activeAfterSettle = await js("Array.from(document.querySelectorAll('.story-dot')).findIndex(d => d.getAttribute('aria-current') === 'true')");
+      await pressKey('ArrowUp', 'ArrowUp', 38);
+      await wait(1.3);
+      const scrollAfterUp = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ scrollAfterSettle, activeAfterSettle, scrollAfterUp }));
+    `);
+    expect(Math.abs(result.scrollAfterSettle - 2 * 900)).toBeLessThanOrEqual(1);
+    expect(result.activeAfterSettle).toBe(2);
+    expect(Math.abs(result.scrollAfterUp - 900)).toBeLessThanOrEqual(1);
+  }, 90_000);
+});
+
+describe('资料视角滚轮与触摸过滤', () => {
+  test('第 2 段：横向为主的滚轮不翻页', async () => {
+    const p = plaquePoint(1440, 900);
+    const road = roadPoint(1440, 900);
+    const result = await runBrowser<{ scrollBefore: number; scrollAfter: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
+      await wait(1.3);
+      const scrollBefore = await js('window.scrollY');
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 200, deltaY: 0 });
+      await wait(1.3);
+      const scrollAfter = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ scrollBefore, scrollAfter }));
+    `);
+    expect(result.scrollBefore).toBe(900);
+    expect(result.scrollAfter).toBe(900);
+  }, 90_000);
+
+  test('资料视角下 Ctrl+滚轮不翻页且不阻止默认行为', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ scrollBefore: number; scrollAfter: number; defaultPrevented: boolean }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      const scrollBefore = await js('window.scrollY');
+      const defaultPrevented = await js(\`(() => {
+        const event = new WheelEvent('wheel', { deltaY: 100, ctrlKey: true, cancelable: true, bubbles: true });
+        window.dispatchEvent(event);
+        return event.defaultPrevented;
+      })()\`);
+      await wait(0.3);
+      const scrollAfter = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ scrollBefore, scrollAfter, defaultPrevented }));
+    `);
+    expect(result.scrollBefore).toBe(0);
+    expect(result.scrollAfter).toBe(0);
+    expect(result.defaultPrevented).toBe(false);
+  }, 90_000);
+
+  test('整体视角下 Ctrl+滚轮不被拦截', async () => {
+    const result = await runBrowser<{ defaultPrevented: boolean }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      const defaultPrevented = await js(\`(() => {
+        const event = new WheelEvent('wheel', { deltaY: 100, ctrlKey: true, cancelable: true, bubbles: true });
+        window.dispatchEvent(event);
+        return event.defaultPrevented;
+      })()\`);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ defaultPrevented }));
+    `);
+    expect(result.defaultPrevented).toBe(false);
+  }, 90_000);
+
+  test('双指 touchmove 不被拦截，单指 touchmove 被拦截', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ twoFingerPrevented: boolean; oneFingerPrevented: boolean }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      const data = await js(\`(() => {
+        const target = document.body;
+        const t1 = new Touch({ identifier: 1, target, clientX: 200, clientY: 300 });
+        const t2 = new Touch({ identifier: 2, target, clientX: 260, clientY: 300 });
+        const twoEvent = new TouchEvent('touchmove', { touches: [t1, t2], targetTouches: [t1, t2], changedTouches: [t1, t2], cancelable: true, bubbles: true });
+        window.dispatchEvent(twoEvent);
+        const t3 = new Touch({ identifier: 3, target, clientX: 200, clientY: 300 });
+        const oneEvent = new TouchEvent('touchmove', { touches: [t3], targetTouches: [t3], changedTouches: [t3], cancelable: true, bubbles: true });
+        window.dispatchEvent(oneEvent);
+        return { twoFingerPrevented: twoEvent.defaultPrevented, oneFingerPrevented: oneEvent.defaultPrevented };
+      })()\`);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify(data));
+    `);
+    expect(result.twoFingerPrevented).toBe(false);
+    expect(result.oneFingerPrevented).toBe(true);
+  }, 90_000);
+
+  test('390×844 手机上滑翻页，下滑返回上一段', async () => {
+    const result = await runBrowser<{ view: string | null; scrollAfterUp: number; scrollAfterDown: number }>(`
+      ${HELPERS}
+      await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+      await navigate(${JSON.stringify(BASE_URL)});
+      while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
+      await click('.loading-shell-button');
+      await settle();
+      await cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 195, y: 600 }] });
+      await cdp('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 195, y: 400 }] });
+      await cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await wait(1.3);
+      const scrollAfterUp = await js('window.scrollY');
+      await cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 195, y: 300 }] });
+      await cdp('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 195, y: 500 }] });
+      await cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await wait(1.3);
+      const scrollAfterDown = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ view: await js('document.documentElement.dataset.view ?? null'), scrollAfterUp, scrollAfterDown }));
+    `);
+    expect(result.view).toBe('story');
+    expect(result.scrollAfterUp).toBe(844);
+    expect(result.scrollAfterDown).toBe(0);
+  }, 90_000);
+
+  test('双指缩放手势（先松一指再松另一指）不触发翻页', async () => {
+    const result = await runBrowser<{ view: string | null; scrollY: number; activeIndex: number | null }>(`
+      ${HELPERS}
+      await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+      await navigate(${JSON.stringify(BASE_URL)});
+      while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
+      await click('.loading-shell-button');
+      await settle();
+      await cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 195, y: 500 }, { x: 195, y: 600 }] });
+      await cdp('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 195, y: 300 }, { x: 195, y: 800 }] });
+      await cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [{ x: 195, y: 50 }] });
+      await cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await wait(1.3);
+      const scrollY = await js('window.scrollY');
+      const activeIndex = await js("Array.from(document.querySelectorAll('.story-dot')).findIndex(d => d.getAttribute('aria-current') === 'true')");
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ view: await js('document.documentElement.dataset.view ?? null'), scrollY, activeIndex }));
+    `);
+    expect(result.view).toBe('story');
+    expect(result.scrollY).toBe(0);
+    expect(result.activeIndex).toBe(0);
+  }, 90_000);
+});
+
+describe('资料视角空格键作用域', () => {
+  test('焦点在未选中的语言按钮上按空格：切换语言且不翻页', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ scrollBefore: number; scrollAfter: number; htmlLang: string }>(`
+      ${HELPERS}
+      ${boot(1440, 900, { lang: 'zh-CN' })}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await js("document.querySelector('.story-language button').focus()");
+      const scrollBefore = await js('window.scrollY');
+      await pressKey(' ', 'Space', 32, ' ');
+      await wait(0.3);
+      const scrollAfter = await js('window.scrollY');
+      const htmlLang = await js('document.documentElement.lang');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ scrollBefore, scrollAfter, htmlLang }));
+    `);
+    expect(result.scrollBefore).toBe(0);
+    expect(result.htmlLang).toBe('en');
+    expect(result.scrollAfter).toBe(0);
+  }, 90_000);
+
+  test('焦点在返回按钮上按空格：退出到 diorama', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ views: string[] }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await js("document.querySelector('.story-back-button').focus()");
+      await pressKey(' ', 'Space', 32, ' ');
+      const exitDeadline = Date.now() + 3000;
+      while (Date.now() < exitDeadline) {
+        if (await js("(() => { const v = window.__views; const e = v.lastIndexOf('exiting'); return e >= 0 && v.indexOf('diorama', e + 1) > e; })()")) break;
+        await wait(0.05);
+      }
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ views: await js('window.__views') }));
+    `);
+    const exitingIndex = result.views.indexOf('exiting');
+    expect(exitingIndex).toBeGreaterThanOrEqual(0);
+    expect(result.views.indexOf('diorama', exitingIndex + 1)).toBeGreaterThan(exitingIndex);
+  }, 90_000);
+});
+
+describe('资料视角翻页锁边界', () => {
+  test('间隔刚过 1 秒的第二次 PageDown 能继续翻页', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ scrollY: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await pressKey('PageDown', 'PageDown', 34, '');
+      await wait(1.08);
+      await pressKey('PageDown', 'PageDown', 34, '');
+      await wait(1.2);
+      const scrollY = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ scrollY }));
+    `);
+    expect(result.scrollY).toBe(1800);
+  }, 90_000);
+
+  test.each([
+    ['PageUp', 'PageUp', 33],
+    ['ArrowUp', 'ArrowUp', 38],
+  ] as const)('键盘翻页：%s 翻到上一段', async (key, code, vk) => {
+    const p = plaquePoint(1440, 900);
+    const road = roadPoint(1440, 900);
+    const result = await runBrowser<{ scrollY: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
+      await wait(1.3);
+      await pressKey(${JSON.stringify(key)}, ${JSON.stringify(code)}, ${vk}, '');
+      await wait(1.3);
+      const scrollY = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ scrollY }));
+    `);
+    expect(result.scrollY).toBe(0);
+  }, 90_000);
+
+  test('第 3 段边界：PageDown 向下无反应', async () => {
+    const p = plaquePoint(1440, 900);
+    const road = roadPoint(1440, 900);
+    const result = await runBrowser<{ scrollY: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      for (let i = 0; i < 2; i++) {
+        await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
+        await wait(1.3);
+      }
+      await pressKey('PageDown', 'PageDown', 34, '');
+      await wait(1.3);
+      const scrollY = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ scrollY }));
+    `);
+    expect(result.scrollY).toBe(1800);
+  }, 90_000);
+
+  test('第 3 段边界：滚轮向下无反应', async () => {
+    const p = plaquePoint(1440, 900);
+    const road = roadPoint(1440, 900);
+    const result = await runBrowser<{ scrollY: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      for (let i = 0; i < 2; i++) {
+        await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
+        await wait(1.3);
+      }
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
+      await wait(1.3);
+      const scrollY = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ scrollY }));
+    `);
+    expect(result.scrollY).toBe(1800);
   }, 90_000);
 });
 
@@ -770,8 +1509,7 @@ describe('先看资料', () => {
     expect((result as any).background).toContain('radial-gradient');
   }, 90_000);
 
-  test('先看资料后场景就绪，canvas 在 450 毫秒内淡入到不透明，随后滚到 0 回到 diorama', async () => {
-    const road = roadPoint(1440, 900);
+  test('先看资料后场景就绪，canvas 在 450 毫秒内淡入到不透明，随后按 Esc 回到 diorama', async () => {
     const result = await runBrowser<{ opacityReached: boolean; view: string | null }>(`
       ${HELPERS}
       await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
@@ -791,10 +1529,10 @@ describe('先看资料', () => {
         if (opacity >= 0.99) { opacityReached = Date.now() - readyAt <= 500; break; }
         await wait(0.02);
       }
-      await wheelScroll(${road.x}, ${road.y}, -3000, 20);
+      await pressKey('Escape', 'Escape', 27);
       const dioramaDeadline = Date.now() + 5000;
       while (Date.now() < dioramaDeadline) {
-        if ((await js('window.__views')).includes('diorama')) break;
+        if (await js("(() => { const v = window.__views; const e = v.lastIndexOf('exiting'); return e >= 0 && v.indexOf('diorama', e + 1) > e; })()")) break;
         await wait(0.05);
       }
       cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ opacityReached, view: await js('document.documentElement.dataset.view ?? null') }));

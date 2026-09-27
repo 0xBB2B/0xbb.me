@@ -17,6 +17,7 @@ description: 初始语言按浏览器语言判定，只能在资料视角右上�
   - 资料段内容；
   - 加载页文字；
   - 三维失败提示；
+  - 「返回全景」按钮文字；
   - `<html lang>` 属性：中文为 `zh-CN`，英文为 `en`。
 - 语言选择只在本次访问内有效，不写入 `localStorage`、Cookie 或地址栏；刷新页面后重新按浏览器语言判定。
 - 名字 `FUBUKI_BB`、所在地 `Tokyo · Shanghai`、资料段小标签（`01 · WHO` 等）、链接名称（GitHub、LinkedIn、Juejin、Email）两种语言写法相同。

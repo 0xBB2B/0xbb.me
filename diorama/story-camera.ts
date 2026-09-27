@@ -35,30 +35,19 @@ function smoothstep(t: number): number {
 export function poseAtScroll(
   scrollY: number,
   height: number,
-  dioramaPose: Pose,
-): { position: THREE.Vector3; target: THREE.Vector3; opacity: number; index: number } {
-  const { pullBack, sectionStarts } = storyLayout(height);
-  const { opacity, index } = scrollProgress(scrollY, height);
-
-  if (scrollY <= 0) {
-    return { position: dioramaPose.position.clone(), target: dioramaPose.target.clone(), opacity, index };
-  }
-
-  if (scrollY < pullBack) {
-    const t = scrollY / pullBack;
-    const stop0 = stopPose(0);
-    return {
-      position: dioramaPose.position.clone().lerp(stop0.position, t),
-      target: dioramaPose.target.clone().lerp(stop0.target, t),
-      opacity,
-      index,
-    };
-  }
-
+): { position: THREE.Vector3; target: THREE.Vector3; index: number } {
+  const { sectionStarts } = storyLayout(height);
+  const { index } = scrollProgress(scrollY, height);
   const lastIndex = sectionStarts.length - 1;
+
+  if (scrollY <= sectionStarts[0]) {
+    const first = stopPose(0);
+    return { position: first.position, target: first.target, index };
+  }
+
   if (scrollY >= sectionStarts[lastIndex]) {
     const last = stopPose(lastIndex);
-    return { position: last.position, target: last.target, opacity, index };
+    return { position: last.position, target: last.target, index };
   }
 
   for (let i = 0; i < lastIndex; i++) {
@@ -69,17 +58,16 @@ export function poseAtScroll(
       return {
         position: stopA.position.lerp(stopB.position, t),
         target: stopA.target.lerp(stopB.target, t),
-        opacity,
         index,
       };
     }
   }
 
   const last = stopPose(lastIndex);
-  return { position: last.position, target: last.target, opacity, index };
+  return { position: last.position, target: last.target, index };
 }
 
-const ENTER_DURATION = 1.2;
+const ENTER_DURATION = 1;
 
 export function enterSequence(from: Pose, to: Pose): { duration: number; sample(seconds: number): Pose } {
   const start = { position: from.position.clone(), target: from.target.clone() };

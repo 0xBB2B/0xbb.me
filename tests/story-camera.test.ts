@@ -2,7 +2,7 @@ import { expect, test, describe } from 'bun:test';
 import * as storyCamera from '../diorama/story-camera';
 import * as storyScroll from '../diorama/story-scroll';
 import * as THREE from 'three';
-import { CAR_CENTER, DEFAULT_CAMERA, viewFov } from '../diorama/layout';
+import { CAR_CENTER, viewFov } from '../diorama/layout';
 import { PLAQUE_PANEL } from '../diorama/plaque';
 
 type Pose = { position: THREE.Vector3; target: THREE.Vector3 };
@@ -26,12 +26,12 @@ function plaqueProjection(width: number, height: number) {
 }
 
 describe('storyLayout', () => {
-  test('900 高视口：回拉区 450，三段起点 450/1350/2250', () => {
-    expect(storyScroll.storyLayout(900)).toEqual({ pullBack: 450, sectionStarts: [450, 1350, 2250] });
+  test('900 高视口：三段起点 0/900/1800', () => {
+    expect(storyScroll.storyLayout(900)).toEqual({ sectionStarts: [0, 900, 1800] });
   });
 
-  test('1200 高视口：回拉区随视口高度线性缩放', () => {
-    expect(storyScroll.storyLayout(1200)).toEqual({ pullBack: 600, sectionStarts: [600, 1800, 3000] });
+  test('1200 高视口：三段起点等比缩放为 0/1200/2400', () => {
+    expect(storyScroll.storyLayout(1200)).toEqual({ sectionStarts: [0, 1200, 2400] });
   });
 });
 
@@ -46,100 +46,107 @@ describe('CAMERA_STOPS', () => {
   });
 });
 
-describe('poseAtScroll 段内跟手', () => {
-  const dioramaPose = makePose(DEFAULT_CAMERA.position, DEFAULT_CAMERA.target);
-
+describe('poseAtScroll 段起点', () => {
   for (const k of [0, 1, 2] as const) {
-    test(`第 ${k} 段起点：镜头与观察目标贴合该停靠点，透明度为 1`, () => {
+    test(`第 ${k} 段起点：镜头与观察目标贴合该停靠点，序号为 ${k}`, () => {
       const sectionStarts = storyScroll.storyLayout(900).sectionStarts;
-      const result = storyCamera.poseAtScroll(sectionStarts[k], 900, dioramaPose);
+      const result = storyCamera.poseAtScroll(sectionStarts[k], 900);
       const stop = storyCamera.stopPose(k);
       expect(result.position.distanceTo(stop.position)).toBeLessThan(0.05);
       expect(result.target.distanceTo(stop.target)).toBeLessThan(0.05);
-      expect(result.opacity).toBe(1);
+      expect(result.index).toBe(k);
     });
   }
+});
 
-  test('第 1、2 段起点正中间：镜头远离两侧停靠点，处于过渡中', () => {
-    const result = storyCamera.poseAtScroll(900, 900, dioramaPose);
+describe('poseAtScroll 段间过渡', () => {
+  test('第 0、1 段之间：镜头远离两侧停靠点，处于过渡中', () => {
+    const result = storyCamera.poseAtScroll(450, 900);
     const stop0 = storyCamera.stopPose(0);
     const stop1 = storyCamera.stopPose(1);
     expect(result.position.distanceTo(stop0.position)).toBeGreaterThan(0.1);
     expect(result.position.distanceTo(stop1.position)).toBeGreaterThan(0.1);
   });
-});
 
-describe('poseAtScroll 回拉区', () => {
-  test('回拉区中点：镜头介于第 1 停靠点与整体视角之间，透明度介于 0 和 1 之间', () => {
-    const dioramaPose = makePose(DEFAULT_CAMERA.position, DEFAULT_CAMERA.target);
-    const result = storyCamera.poseAtScroll(225, 900, dioramaPose);
-    const stop0 = storyCamera.stopPose(0);
-    expect(result.position.distanceTo(stop0.position)).toBeGreaterThan(0.1);
-    expect(result.position.distanceTo(dioramaPose.position)).toBeGreaterThan(0.1);
-    expect(result.opacity).toBeGreaterThan(0);
-    expect(result.opacity).toBeLessThan(1);
-  });
-
-  test('scrollY 为 0：镜头等于整体视角位姿（默认位姿），透明度为 0', () => {
-    const dioramaPose = makePose(DEFAULT_CAMERA.position, DEFAULT_CAMERA.target);
-    const result = storyCamera.poseAtScroll(0, 900, dioramaPose);
-    expect(result.position.distanceTo(dioramaPose.position)).toBeLessThan(0.1);
-    expect(result.opacity).toBe(0);
-  });
-
-  test('scrollY 为 0：使用非默认整体视角位姿时，镜头跟随传入值而非硬编码默认值', () => {
-    const customPose = makePose([-30, 20, 30], [1, 2, 3]);
-    const result = storyCamera.poseAtScroll(0, 900, customPose);
-    expect(result.position.distanceTo(customPose.position)).toBeLessThan(1e-6);
-    expect(result.target.distanceTo(customPose.target)).toBeLessThan(1e-6);
+  test('第 1、2 段之间：镜头远离两侧停靠点，处于过渡中', () => {
+    const result = storyCamera.poseAtScroll(1350, 900);
+    const stop1 = storyCamera.stopPose(1);
+    const stop2 = storyCamera.stopPose(2);
+    expect(result.position.distanceTo(stop1.position)).toBeGreaterThan(0.1);
+    expect(result.position.distanceTo(stop2.position)).toBeGreaterThan(0.1);
   });
 });
 
 describe('poseAtScroll index', () => {
-  const dioramaPose = makePose(DEFAULT_CAMERA.position, DEFAULT_CAMERA.target);
-
-  test('回拉区内 → 0', () => {
-    expect(storyCamera.poseAtScroll(200, 900, dioramaPose).index).toBe(0);
+  test('第 1 段起点 → 0', () => {
+    expect(storyCamera.poseAtScroll(0, 900).index).toBe(0);
   });
 
   test('第 2 段起点 → 1', () => {
-    expect(storyCamera.poseAtScroll(1350, 900, dioramaPose).index).toBe(1);
+    expect(storyCamera.poseAtScroll(900, 900).index).toBe(1);
   });
 
   test('第 3 段起点 → 2', () => {
-    expect(storyCamera.poseAtScroll(2250, 900, dioramaPose).index).toBe(2);
+    expect(storyCamera.poseAtScroll(1800, 900).index).toBe(2);
   });
 
   test('段间更靠近第 1 段起点 → 0', () => {
-    expect(storyCamera.poseAtScroll(700, 900, dioramaPose).index).toBe(0);
+    expect(storyCamera.poseAtScroll(300, 900).index).toBe(0);
   });
 
   test('段间更靠近第 2 段起点 → 1', () => {
-    expect(storyCamera.poseAtScroll(1300, 900, dioramaPose).index).toBe(1);
+    expect(storyCamera.poseAtScroll(700, 900).index).toBe(1);
   });
 });
 
-describe('snapTarget', () => {
-  test('第 1、2 段之间超过 50%（60%）→ 吸附到第 2 段起点', () => {
-    expect(storyScroll.snapTarget(990, 900)).toBe(1350);
+describe('createPager', () => {
+  test('PAGE_DURATION 在 0.8～1.2 秒之间', () => {
+    expect(storyScroll.PAGE_DURATION).toBeGreaterThanOrEqual(0.8);
+    expect(storyScroll.PAGE_DURATION).toBeLessThanOrEqual(1.2);
   });
 
-  test('第 1、2 段之间不足 50%（40%）→ 吸附到第 1 段起点', () => {
-    expect(storyScroll.snapTarget(810, 900)).toBe(450);
+  test('向下翻页返回下一段序号，向上翻页返回上一段序号', () => {
+    const down = storyScroll.createPager({ quietMs: 150, durationMs: 1000 });
+    expect(down.input(1, 0, 0)).toBe(1);
+    const up = storyScroll.createPager({ quietMs: 150, durationMs: 1000 });
+    expect(up.input(-1, 0, 1)).toBe(0);
   });
 
-  test('回拉区内（>0）一律吸附到第 1 段起点', () => {
-    expect(storyScroll.snapTarget(1, 900)).toBe(450);
-    expect(storyScroll.snapTarget(225, 900)).toBe(450);
-    expect(storyScroll.snapTarget(449, 900)).toBe(450);
+  test('接受一次翻页后，durationMs 结束前的所有输入都返回 null', () => {
+    const pager = storyScroll.createPager({ quietMs: 150, durationMs: 1000 });
+    expect(pager.input(1, 0, 0)).toBe(1);
+    expect(pager.input(1, 200, 0)).toBeNull();
+    expect(pager.input(-1, 500, 0)).toBeNull();
+    expect(pager.input(1, 999, 0)).toBeNull();
   });
 
-  test('超过最后一段起点 → 吸附到第 3 段起点', () => {
-    expect(storyScroll.snapTarget(3000, 900)).toBe(2250);
+  test('动画结束后惯性事件按 16 毫秒间隔持续到达时一直忽略，停顿 ≥150 毫秒后才接受下一次', () => {
+    const pager = storyScroll.createPager({ quietMs: 150, durationMs: 100 });
+    expect(pager.input(1, 0, 0)).toBe(1);
+    let t = 0;
+    for (let i = 0; i < 8; i++) {
+      t += 16;
+      expect(pager.input(1, t, 1)).toBeNull();
+    }
+    expect(pager.input(1, t + 149, 1)).toBeNull();
+    expect(pager.input(1, t + 149 + 150, 1)).toBe(2);
   });
 
-  test('正好在顶部（0）→ 不吸附，停在 0', () => {
-    expect(storyScroll.snapTarget(0, 900)).toBe(0);
+  test('目标越界（第 1 段向上）返回 null', () => {
+    const pager = storyScroll.createPager({ quietMs: 150, durationMs: 1000 });
+    expect(pager.input(-1, 0, 0)).toBeNull();
+  });
+
+  test('目标越界（第 3 段向下）返回 null', () => {
+    const pager = storyScroll.createPager({ quietMs: 150, durationMs: 1000 });
+    expect(pager.input(1, 0, 2)).toBeNull();
+  });
+
+  test('touch 只记录最近输入时间，不返回翻页目标；之后 150 毫秒内的 input 仍视为过快', () => {
+    const pager = storyScroll.createPager({ quietMs: 150, durationMs: 1000 });
+    pager.touch(1000);
+    expect(pager.input(1, 1100, 0)).toBeNull();
+    expect(pager.input(1, 1300, 0)).toBe(1);
   });
 });
 
@@ -272,17 +279,6 @@ describe('第 3 停靠点位置：从车侧前方较低处看车', () => {
   });
 });
 
-describe('回拉区比例与滚入深度成正比', () => {
-  test.each([0.25, 0.5, 0.75])('滚入 %p 时不透明度等于该比例，镜头到整体视角的距离占全程同一比例', (ratio) => {
-    const diorama = makePose([33, 23, 40], [0, -1.4, -0.5]);
-    const stop0 = storyCamera.stopPose(0);
-    const total = diorama.position.distanceTo(stop0.position);
-    const result = storyCamera.poseAtScroll(450 * ratio, 900, diorama);
-    expect(result.opacity).toBeCloseTo(ratio, 6);
-    expect(result.position.distanceTo(diorama.position) / total).toBeCloseTo(ratio, 6);
-  });
-});
-
 describe('停靠点与视口无关', () => {
   test('停靠点等于 CAMERA_STOPS 原值', () => {
     storyCamera.CAMERA_STOPS.forEach((stop, index) => {
@@ -305,10 +301,9 @@ describe('enterSequence 不受调用方后续修改起点影响', () => {
   });
 });
 
-describe('scrollProgress 与 poseAtScroll 的不透明度和段序号一致', () => {
-  test.each([0, 1, 225, 449, 450, 700, 900, 990, 1350, 1800, 2250, 3000])('scrollY=%i', (scrollY) => {
-    const diorama = makePose([33, 23, 40], [0, -1.4, -0.5]);
-    const pose = storyCamera.poseAtScroll(scrollY, 900, diorama);
-    expect(storyScroll.scrollProgress(scrollY, 900)).toEqual({ opacity: pose.opacity, index: pose.index });
+describe('scrollProgress 与 poseAtScroll 的段序号一致', () => {
+  test.each([0, 300, 450, 700, 900, 1300, 1800])('scrollY=%i', (scrollY) => {
+    const pose = storyCamera.poseAtScroll(scrollY, 900);
+    expect(storyScroll.scrollProgress(scrollY, 900).index).toBe(pose.index);
   });
 });
