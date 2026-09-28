@@ -53,6 +53,36 @@ const VIEW_TRACKER = `
   })();
 `;
 
+// 「场景就绪通知」与「点击先看资料」谁先谁后由 React 调度决定，正常时序下窗口不到 1 毫秒，
+// 无头浏览器里几乎撞不上；把 React 用来冲刷更新的 MessageChannel 消息延后 400 毫秒，
+// 相当于把窗口从亚毫秒级撑开到 400 毫秒，再在场景首帧 rAF 回调里延时 20 毫秒补一次点击，
+// 稳定落在通知已发出、状态尚未冲刷的空档里。
+const READY_RACE_INJECTION = VIEW_TRACKER + `
+  (function() {
+    const OriginalMessageChannel = window.MessageChannel;
+    window.MessageChannel = function() {
+      const channel = new OriginalMessageChannel();
+      const originalPostMessage = channel.port2.postMessage.bind(channel.port2);
+      channel.port2.postMessage = function(...args) {
+        setTimeout(() => originalPostMessage(...args), 400);
+      };
+      return channel;
+    };
+    let clicked = false;
+    const originalRAF = window.requestAnimationFrame;
+    window.requestAnimationFrame = function(cb) {
+      if (!clicked) {
+        clicked = true;
+        setTimeout(() => {
+          const btn = document.querySelector('.loading-shell-button');
+          if (btn) btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+        }, 20);
+      }
+      return originalRAF(cb);
+    };
+  })();
+`;
+
 function boot(width: number, height: number, opts: { lang?: 'zh-CN' | 'en-US'; extraScript?: string; waitForExpr?: string } = {}): string {
   const { lang, extraScript = '', waitForExpr = "document.documentElement.dataset.view === 'diorama' && document.querySelector('#scene')?.getAttribute('aria-busy') === 'false'" } = opts;
   return `
@@ -1589,6 +1619,32 @@ describe('先看资料', () => {
     expect(result.opacityReached).toBe(true);
     expect(result.view).toBe('diorama');
   }, 90_000);
+
+  test('场景就绪通知与点击「先看资料」时序撞在一起时，返回全景按钮仍可见且 Esc 仍能退出', async () => {
+    const result = await runBrowser<{ backVisible: boolean; views: string[]; recovered: boolean }>(`
+      ${HELPERS}
+      await cdp('Page.addScriptToEvaluateOnNewDocument', { source: ${JSON.stringify(READY_RACE_INJECTION)} });
+      await navigate(${JSON.stringify(BASE_URL)});
+      const readyDeadline = Date.now() + 1500;
+      let backVisible = false;
+      while (Date.now() < readyDeadline) {
+        backVisible = await js("(() => { const b = document.querySelector('.story-back-button'); if (!b) return false; const r = b.getBoundingClientRect(); return r.width > 0 && r.height > 0; })()");
+        if (backVisible) break;
+        await wait(0.05);
+      }
+      await pressKey('Escape', 'Escape', 27);
+      const exitDeadline = Date.now() + 3000;
+      let recovered = false;
+      while (Date.now() < exitDeadline) {
+        recovered = await js("(() => { const v = window.__views; const e = v.lastIndexOf('exiting'); return e >= 0 && v.indexOf('diorama', e + 1) > e; })()");
+        if (recovered) break;
+        await wait(0.05);
+      }
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ backVisible, views: await js('window.__views'), recovered }));
+    `);
+    expect(result.backVisible).toBe(true);
+    expect(result.recovered).toBe(true);
+  }, 20_000);
 });
 
 describe('语言', () => {

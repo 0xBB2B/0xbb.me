@@ -253,6 +253,48 @@ describe('资料视角退出镜头位姿', () => {
   }, 60_000);
 });
 
+describe('资料视角重复通知不覆盖退出位姿', () => {
+  test('资料视角里重复调用 startStoryWithoutEntering 不改变退出目标', async () => {
+    const px = ROAD_PIXEL.x;
+    const py = ROAD_PIXEL.y;
+    const result = await runBrowser<{ ready: boolean; views: string[]; distance: number }>(`
+      ${BOOT}
+      await js('window.handle.onViewChange((view) => { if (view === "entering" && window.handle.camera) window.__enterPos = { x: window.handle.camera.position.x, y: window.handle.camera.position.y, z: window.handle.camera.position.z }; })');
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: ${px}, y: ${py} });
+      await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x: ${px}, y: ${py}, button: 'left', buttons: 1, clickCount: 1 });
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: ${px + 200}, y: ${py}, buttons: 1 });
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x: ${px + 200}, y: ${py}, button: 'left', buttons: 0, clickCount: 1 });
+      const plaquePoint = await js('window.projectToScreen ? window.projectToScreen([0, -2.87, 14.245]) : null');
+      const clickX = plaquePoint ? plaquePoint.x : ${PLAQUE_PIXEL.x};
+      const clickY = plaquePoint ? plaquePoint.y : ${PLAQUE_PIXEL.y};
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: clickX, y: clickY });
+      await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x: clickX, y: clickY, button: 'left', buttons: 1, clickCount: 1 });
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x: clickX, y: clickY, button: 'left', buttons: 0, clickCount: 1 });
+      const storyDeadline = Date.now() + 5000;
+      let views = [];
+      while (Date.now() < storyDeadline) {
+        views = await js('window.views ?? []');
+        if (views.includes('story')) break;
+        await wait(0.05);
+      }
+      await js('window.handle.startStoryWithoutEntering()');
+      await js('window.handle.exitToDiorama()');
+      const exitDeadline = Date.now() + 3000;
+      while (Date.now() < exitDeadline) {
+        views = await js('window.views ?? []');
+        if (views.lastIndexOf('diorama') > views.indexOf('exiting')) break;
+        await wait(0.05);
+      }
+      await wait(1);
+      const distance = await js("(() => { const enter = window.__enterPos; const camera = window.handle && window.handle.camera; if (!enter || !camera) return 9999; return Math.hypot(camera.position.x - enter.x, camera.position.y - enter.y, camera.position.z - enter.z); })()");
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, views, distance }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.views).toContain('story');
+    expect(result.distance).toBeLessThanOrEqual(0.1);
+  }, 60_000);
+});
+
 describe('离开整体视角后的悬停状态', () => {
   test('规则3: 离开整体视角后悬停不改变光标和边框亮度，边框仍随时间呼吸', async () => {
     const px = PLAQUE_PIXEL.x;

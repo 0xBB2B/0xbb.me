@@ -58,7 +58,6 @@ export default function App() {
 
   function handleReadFirst() {
     setLoadingVisible(false);
-    if (viewState.ready) sceneRef.current?.startStoryWithoutEntering();
     dispatch('readFirst');
   }
 

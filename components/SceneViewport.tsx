@@ -7,7 +7,6 @@ import './SceneViewport.css';
 
 export interface SceneViewportHandle {
   enterStory(): void;
-  startStoryWithoutEntering(): void;
   setScroll(scrollY: number): void;
   exitToDiorama(): void;
 }
@@ -32,8 +31,6 @@ export const SceneViewport = forwardRef<SceneViewportHandle, SceneViewportProps>
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<DioramaHandle | null>(null);
-  const viewRef = useRef(view);
-  viewRef.current = view;
   const languageRef = useRef(language);
   languageRef.current = language;
   const [ready, setReady] = useState(false);
@@ -43,7 +40,6 @@ export const SceneViewport = forwardRef<SceneViewportHandle, SceneViewportProps>
     ref,
     () => ({
       enterStory: () => handleRef.current?.enterStory(),
-      startStoryWithoutEntering: () => handleRef.current?.startStoryWithoutEntering(),
       setScroll: (scrollY: number) => handleRef.current?.setScroll(scrollY),
       exitToDiorama: () => handleRef.current?.exitToDiorama(),
     }),
@@ -91,10 +87,6 @@ export const SceneViewport = forwardRef<SceneViewportHandle, SceneViewportProps>
 
       setReady(true);
       onReady();
-      if (viewRef.current === 'story') {
-        handle.startStoryWithoutEntering();
-        handle.setScroll(window.scrollY);
-      }
     }
 
     mount();
@@ -108,6 +100,13 @@ export const SceneViewport = forwardRef<SceneViewportHandle, SceneViewportProps>
   useEffect(() => {
     handleRef.current?.setLanguage(language);
   }, [language]);
+
+  useEffect(() => {
+    if (ready && view === 'story') {
+      handleRef.current?.startStoryWithoutEntering();
+      handleRef.current?.setScroll(window.scrollY);
+    }
+  }, [ready, view]);
 
   return (
     <div

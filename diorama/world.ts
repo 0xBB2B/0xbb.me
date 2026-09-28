@@ -192,6 +192,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
     }
 
     function startStoryWithoutEntering(): void {
+      if (view !== 'diorama') return;
       savedPose = {
         position: new THREE.Vector3(...DEFAULT_CAMERA.position),
         target: new THREE.Vector3(...DEFAULT_CAMERA.target),
