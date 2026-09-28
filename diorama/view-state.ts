@@ -1,0 +1,34 @@
+export type View = 'diorama' | 'entering' | 'story' | 'exiting';
+
+export interface ViewState {
+  view: View;
+  ready: boolean;
+  failed: boolean;
+}
+
+export type ViewEvent = 'clickPlaque' | 'enterDone' | 'exit' | 'exitDone' | 'readFirst' | 'sceneReady' | 'sceneFailed';
+
+export function transition(state: ViewState, event: ViewEvent): ViewState {
+  if (event === 'readFirst') return { view: 'story', ready: state.ready, failed: state.failed };
+  if (event === 'sceneFailed') return { view: 'story', ready: state.ready, failed: true };
+  if (event === 'sceneReady') return { view: state.view, ready: true, failed: state.failed };
+
+  if (state.view === 'diorama' && event === 'clickPlaque') {
+    return state.ready ? { view: 'entering', ready: state.ready, failed: state.failed } : { ...state };
+  }
+  if (state.view === 'entering' && event === 'enterDone') {
+    return { view: 'story', ready: state.ready, failed: state.failed };
+  }
+  if (state.view === 'story' && event === 'exit') {
+    return state.ready && !state.failed ? { view: 'exiting', ready: state.ready, failed: state.failed } : { ...state };
+  }
+  if (state.view === 'exiting' && event === 'exitDone') {
+    return { view: 'diorama', ready: state.ready, failed: state.failed };
+  }
+
+  return { ...state };
+}
+
+export function acceptsSceneInput(state: ViewState): boolean {
+  return state.view === 'diorama' && state.ready;
+}

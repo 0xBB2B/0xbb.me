@@ -1,28 +1,11 @@
 {
   "name": "FUBUKI_BB",
-  "description": "Explore FUBUKI_BB's engineering portfolio and AI workflow practice through a playable personal homepage.",
-  "keywords": [
-    "Full Stack Engineer",
-    "System Architect",
-    "AI Workflows",
-    "Scalable Backends",
-    "Game SDK Ecosystems",
-    "Trading Platforms",
-    "Exploration Portfolio",
-    "FUBUKI_BB"
-  ],
-  "author": {
-    "name": "FUBUKI_BB",
-    "email": "bb@yorha.xyz",
-    "role": "Full Stack Engineer & AI Agent Developer"
-  },
+  "description": "FUBUKI_BB — full-stack engineer and AI agent developer. Explore a rainy-night Tokyo convenience store diorama, then tap the brass plaque and scroll through the profile.",
+  "keywords": ["Full Stack Engineer", "System Architect", "AI Agent Developer", "AI Workflows", "Scalable Backends", "Game SDK Ecosystems", "Payment Platforms", "FUBUKI_BB"],
+  "author": { "name": "FUBUKI_BB", "email": "bb@yorha.xyz", "role": "Full Stack Engineer & AI Agent Developer" },
   "siteUrl": "https://0xbb.me",
-  "social": {
-    "github": "https://github.com/0xBB2b",
-    "linkedin": "https://www.linkedin.com/in/0xbb2b",
-    "email": "mailto:bb@yorha.xyz"
-  },
+  "social": { "github": "https://github.com/0xBB2b", "linkedin": "https://www.linkedin.com/in/0xbb2b", "email": "mailto:bb@yorha.xyz" },
   "image": "/profile.jpg",
   "locale": "en_US",
-  "themeColor": "#d9af91"
+  "themeColor": "#142047"
 }

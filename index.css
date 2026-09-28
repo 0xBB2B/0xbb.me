@@ -1,14 +1,13 @@
 :root {
-  color: #3b3432;
-  background: #d9af91;
+  color: #e8eefc;
+  background: #070a18;
 }
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; width: 100%; min-height: 100%; }
-body { min-width: 320px; }
-#root { background: #101923; }
+body { min-width: 320px; background: radial-gradient(ellipse at 50% 35%, #1c2a5a 0%, #0d1430 55%, #070a18 100%) fixed; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { color: inherit; font: inherit; cursor: pointer; border-radius: 3px; }
 button:hover { filter: brightness(1.06); }
 button:focus-visible, a:focus-visible { outline: 2px solid #366d89; outline-offset: 4px; }
 a { color: inherit; }
-::selection { background: #bf9c6a; color: #fff9e9; }
+::selection { background: #2c3a68; color: #f3d9a0; }

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dir, '..');
@@ -14,7 +14,7 @@ test('current documentation describes active behavior without migration-era inst
 });
 
 test('production comments explain current mechanics rather than keeping deprecated alternatives', () => {
-  const files: string[] = ['App.tsx'];
+  const files: string[] = ['App.tsx', 'copy.ts', 'language.ts'].filter(file => existsSync(path.join(root, file)));
   const visit = (directory: string) => {
     for (const entry of readdirSync(path.join(root, directory), { withFileTypes: true })) {
       const file = path.join(directory, entry.name);
@@ -22,7 +22,7 @@ test('production comments explain current mechanics rather than keeping deprecat
       else if (/\.(?:ts|tsx|css)$/.test(file) && !/\.test\.tsx?$/.test(file)) files.push(file);
     }
   };
-  visit('portfolio'); visit('components');
+  for (const directory of ['diorama', 'components']) if (existsSync(path.join(root, directory))) visit(directory);
   for (const file of files) {
     const comments = readFileSync(path.join(root, file), 'utf8').match(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g) ?? [];
     expect(comments.join('\n'), file).not.toMatch(forbidden);

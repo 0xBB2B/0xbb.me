@@ -34,25 +34,3 @@ test('the test driver uses headless Chrome, trusted input, real network events a
     expect(profiles()).toEqual(before);
   } finally { server.stop(true); }
 }, 30_000);
-
-test('real page deactivation still clears the application input when test focus emulation is disabled', async () => {
-  const url = 'http://127.0.0.1:3000/';
-  const result = await runBrowser<{ before: number; after: number; trustedDeactivation: boolean }>(`
-    await navigate(${JSON.stringify(url)}, {settle:.5})
-    await js('(async()=>{const {createInput}=await import("/portfolio/input.ts");window.__focusTestInput=createInput();window.__focusTestDetach=window.__focusTestInput.attach();window.addEventListener("blur",e=>window.__trustedDeactivation=e.isTrusted);document.addEventListener("visibilitychange",e=>{if(document.hidden)window.__trustedDeactivation=e.isTrusted})})()')
-    await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'ArrowRight',code:'ArrowRight',windowsVirtualKeyCode:39})
-    const before=await js('window.__focusTestInput.direction()')
-    if(!(await js('navigator.userAgent.includes("HeadlessChrome")')))throw Error('Focus test requires a windowless browser')
-    // Switch only between virtual tabs in the windowless instance to deactivate the original page.
-    const other=await cdp('Target.createTarget',{url:'about:blank',background:false})
-    try {
-      await wait(.1)
-      const after=await js('window.__focusTestInput.direction()'),trustedDeactivation=await js('window.__trustedDeactivation')
-      cliLog('PLAYABLE_TOWN_RESULT:'+JSON.stringify({before,after,trustedDeactivation}))
-    } finally {
-      await cdp('Target.closeTarget',{targetId:other.targetId})
-      await js('window.__focusTestDetach();delete window.__focusTestInput;delete window.__focusTestDetach;delete window.__trustedDeactivation')
-    }
-  `, {emulateFocus:false});
-  expect(result).toEqual({before:1,after:0,trustedDeactivation:true});
-}, 30_000);

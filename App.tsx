@@ -1,69 +1,109 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Hud, type GraphicsState } from './components/portfolio/Hud';
-import { LoadingScreen, LOADING_EXIT_MS } from './components/portfolio/LoadingScreen';
-import './components/portfolio/WorldViewport.css';
-import { createInput } from './portfolio/input';
-import { cancelAppearanceChange, cancelDoorOpening, cancelNpcReaction, closeReader, openOverview, createSession } from './portfolio/state';
-
-type Viewport = typeof import('./components/portfolio/WorldViewport')['WorldViewport'];
+import { useEffect, useRef, useState } from 'react';
+import type { Language } from './data';
+import { detectLanguage, applyDocumentLanguage } from './language';
+import { transition, type ViewState, type ViewEvent } from './diorama/view-state';
+import { initialTier, type Tier } from './diorama/quality';
+import { LoadingShell } from './components/LoadingShell';
+import { SceneViewport, type SceneViewportHandle } from './components/SceneViewport';
+import { StoryScroller } from './components/StoryScroller';
+import { EnterStoryButton } from './components/EnterStoryButton';
 
 export default function App() {
-  const [session] = useState(createSession);
-  const [input] = useState(createInput);
-  const [Viewport, setViewport] = useState<Viewport | null>(null);
-  const [graphics, setGraphics] = useState<GraphicsState>('loading');
+  const [language, setLanguage] = useState<Language>(() => detectLanguage(navigator.language));
+  const [viewState, setViewState] = useState<ViewState>({ view: 'diorama', ready: false, failed: false });
+  const [stage, setStage] = useState<'code' | 'scene'>('code');
+  const [quality, setQuality] = useState<Tier>(() => initialTier(matchMedia('(pointer: coarse)').matches, innerWidth));
   const [loadingVisible, setLoadingVisible] = useState(true);
+  const [loadingLeaving, setLoadingLeaving] = useState(false);
+  const sceneRef = useRef<SceneViewportHandle>(null);
 
   useEffect(() => {
-    let active = true;
-    import('./components/portfolio/WorldViewport').then(module => {
-      if (active) setViewport(() => module.WorldViewport);
-    }).catch(() => {
-      if (active) setGraphics('unavailable');
-    });
-    return () => { active = false; };
+    applyDocumentLanguage(language);
+  }, [language]);
+
+  useEffect(() => {
+    document.documentElement.dataset.quality = quality;
+  }, [quality]);
+
+  useEffect(() => {
+    document.documentElement.dataset.view = viewState.view;
+  }, [viewState.view]);
+
+  useEffect(() => {
+    if (viewState.ready && loadingVisible) setLoadingLeaving(true);
+  }, [viewState.ready, loadingVisible]);
+
+  useEffect(() => {
+    if (!loadingLeaving) return;
+    const timer = setTimeout(() => setLoadingVisible(false), 450);
+    return () => clearTimeout(timer);
+  }, [loadingLeaving]);
+
+  const showBack = (viewState.view === 'story' || viewState.view === 'exiting') && viewState.ready && !viewState.failed;
+  const canExitRef = useRef(false);
+  canExitRef.current = viewState.view === 'story' && viewState.ready && !viewState.failed;
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape' || !canExitRef.current) return;
+      sceneRef.current?.exitToDiorama();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  useEffect(() => {
-    if (graphics !== 'unavailable') return;
-    input.pause(true);
-    cancelDoorOpening(session);
-    cancelAppearanceChange(session);
-    cancelNpcReaction(session);
-    if (session.reader !== 'overview') {
-      closeReader(session);
-      openOverview(session);
-    }
-  }, [graphics, input, session]);
+  function dispatch(event: ViewEvent) {
+    setViewState((prev) => transition(prev, event));
+  }
 
-  useEffect(() => {
-    if (!loadingVisible || graphics === 'loading') return;
-    if (graphics === 'unavailable') {
-      setLoadingVisible(false);
-      return;
-    }
-    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : LOADING_EXIT_MS;
-    const timer = window.setTimeout(() => setLoadingVisible(false), delay);
-    return () => window.clearTimeout(timer);
-  }, [graphics, loadingVisible]);
-
-  const ready = useCallback(() => setGraphics(current => current === 'loading' ? 'ready' : current), []);
-  const unavailable = useCallback(() => setGraphics('unavailable'), []);
-  const readWhileLoading = () => {
-    input.pause(true);
-    openOverview(session);
+  function handleReadFirst() {
     setLoadingVisible(false);
-  };
-  const showLoading = loadingVisible && graphics !== 'unavailable';
+    dispatch('readFirst');
+  }
 
-  return <main className="town-page">
-    {Viewport && graphics !== 'unavailable'
-      ? <Viewport session={session} input={input} onReady={ready} onUnavailable={unavailable} />
-      : <div className="world-placeholder" aria-hidden="true" />}
-    <div className="town-interface" inert={showLoading} aria-hidden={showLoading || undefined} aria-busy={showLoading}>
-      <Hud session={session} input={input} graphics={showLoading ? 'loading' : graphics} />
-    </div>
-    {showLoading && <LoadingScreen phase={Viewport ? 'world' : 'code'} language={session.language}
-      leaving={graphics === 'ready'} onOverview={readWhileLoading} />}
-  </main>;
+  function handleSceneFailed() {
+    setLoadingVisible(false);
+    dispatch('sceneFailed');
+  }
+
+  function handleExit() {
+    if (!canExitRef.current) return;
+    sceneRef.current?.exitToDiorama();
+  }
+
+  return (
+    <>
+      <SceneViewport
+        ref={sceneRef}
+        language={language}
+        view={viewState.view}
+        loading={loadingVisible}
+        onStageChange={() => setStage('scene')}
+        onReady={() => dispatch('sceneReady')}
+        onFailed={handleSceneFailed}
+        onEntering={() => dispatch('clickPlaque')}
+        onStoryEntered={() => dispatch('enterDone')}
+        onExiting={() => dispatch('exit')}
+        onExitDone={() => dispatch('exitDone')}
+        onQualityChange={setQuality}
+      />
+      <StoryScroller
+        language={language}
+        view={viewState.view}
+        failed={viewState.failed}
+        showBack={showBack}
+        onScrollChange={(scrollY) => sceneRef.current?.setScroll(scrollY)}
+        onBack={handleExit}
+        onLanguageChange={setLanguage}
+      />
+      <EnterStoryButton
+        language={language}
+        enabled={viewState.view === 'diorama' && viewState.ready}
+        onActivate={() => sceneRef.current?.enterStory()}
+      />
+      {loadingVisible && (
+        <LoadingShell language={language} stage={stage} onReadFirst={handleReadFirst} leaving={loadingLeaving} />
+      )}
+    </>
+  );
 }

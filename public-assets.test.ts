@@ -6,9 +6,9 @@ import { createHash } from 'node:crypto';
 const root = path.dirname(new URL(import.meta.url).pathname);
 // Published portrait assets are identified by exact path and SHA-256.
 const userPortraits: Record<string, string> = {
-  'profile-full.png': '93112c75b439d72949250c21da06d5a6ff86be5e7211ed1ee09eb17575747a8f',
-  'profile.png': '3bbaa161ddf6141706341ab661ba3da59230e8a87b932e1eefdd6f2bd132e2d8',
   'profile.jpg': 'c28ed9a1e2296e6b667212bd3758323b496791982f25b4e663d84ebbb2422543',
+  'profile.png': '3bbaa161ddf6141706341ab661ba3da59230e8a87b932e1eefdd6f2bd132e2d8',
+  'profile-full.png': '93112c75b439d72949250c21da06d5a6ff86be5e7211ed1ee09eb17575747a8f',
 };
 const bitmapMagic = [
   /^\x89PNG\r\n\x1a\n/s,
@@ -47,15 +47,15 @@ function expectNoConcealedBitmap(filename: string) {
 describe('site-entry/AC-5/AC-6: published portraits and geometry-only world graphics', () => {
   test('the explicit portrait files are published unchanged and unapproved artwork is absent', () => {
     expect(existsSync(path.join(root, 'public', 'profile-cyber.png'))).toBe(false);
-    expect(existsSync(path.join(root, 'public', 'profile-full.png'))).toBe(true);
+    for (const file of Object.keys(userPortraits)) {
+      expect(existsSync(path.join(root, 'public', file))).toBe(true);
+    }
     if (existsSync(path.join(root, 'dist'))) {
-      expect(existsSync(path.join(root, 'dist', 'profile-full.png'))).toBe(true);
       for (const file of Object.keys(userPortraits)) {
-        expect(existsSync(path.join(root, 'public', file))).toBe(true);
         expect(existsSync(path.join(root, 'dist', file))).toBe(true);
         expect(readFileSync(path.join(root, 'dist', file)).equals(readFileSync(path.join(root, 'public', file)))).toBe(true);
       }
-      for (const file of ['robots.txt', 'site-card.svg', 'sitemap.xml']) {
+      for (const file of ['robots.txt', 'sitemap.xml']) {
         expect(readFileSync(path.join(root, 'dist', file)).equals(readFileSync(path.join(root, 'public', file)))).toBe(true);
       }
     }
@@ -67,7 +67,8 @@ describe('site-entry/AC-5/AC-6: published portraits and geometry-only world grap
     for (const filename of files) expectNoConcealedBitmap(filename);
     const searchable = files.filter(file => /\.(?:html|css|js|svg|json)$/i.test(file))
       .map(file => readFileSync(file, 'utf8')).join('\n');
-    const withoutSelectedPortrait = searchable.replaceAll('profile-full.png', 'approved-persona');
-    expect(withoutSelectedPortrait).not.toMatch(/(?:data:image\/(?:png|jpe?g|gif|webp|bmp|avif)|[^\w-](?:profile(?:-cyber|-full)?\.png)|\.(?:jpe?g|webp|bmp|avif)(?:[?#'"\s)]|$))/i);
+    const withoutSharedPortrait = Object.keys(userPortraits)
+      .reduce((text, file) => text.replaceAll(`/${file}`, '/approved-portrait'), searchable);
+    expect(withoutSharedPortrait).not.toMatch(/(?:data:image\/(?:png|jpe?g|gif|webp|bmp|avif)|[^\w-](?:profile(?:-cyber|-full)?\.png)|\.(?:jpe?g|webp|bmp|avif)(?:[?#'"\s)]|$))/i);
   });
 });
