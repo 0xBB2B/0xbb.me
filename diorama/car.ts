@@ -65,15 +65,47 @@ export function buildCar(): CarBuild {
     if (sz < 0) { m.rotation.y = Math.PI; m.scale.x = -1; }
   }
 
-  const slab = (a: [number, number], b: [number, number], width: number, off: number): THREE.Mesh => {
-    const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
-    const nx = -dy / len, ny = dx / len;
-    const m = add(car, new THREE.BoxGeometry(len, 0.012, width), darkGlass, (a[0] + b[0]) / 2 + nx * off, (a[1] + b[1]) / 2 + ny * off, 0);
-    m.rotation.z = Math.atan2(dy, dx);
-    return m;
+  const cabinHalfDepth = (GW - 0.24) / 2;
+  const cabinRing: [number, number][] = [];
+  {
+    const pos = cabin.attributes.position;
+    const seen = new Set<string>();
+    for (let i = 0; i < pos.count; i++) {
+      if (Math.abs(Math.abs(pos.getZ(i)) - cabinHalfDepth) > 1e-4) continue;
+      const x = pos.getX(i), y = pos.getY(i);
+      if (y <= 0.8) continue;
+      const key = `${x.toFixed(4)},${y.toFixed(4)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      cabinRing.push([x, y]);
+    }
+    cabinRing.sort((a, b) => b[0] - a[0]);
+  }
+
+  const glassBand = (xMin: number, xMax: number, halfWidth: number, offset: number): THREE.BufferGeometry => {
+    const pts = cabinRing.filter(([x]) => x >= xMin && x <= xMax);
+    const positions: number[] = [];
+    const indices: number[] = [];
+    for (let i = 0; i < pts.length; i++) {
+      const [x, y] = pts[i];
+      const [px, py] = pts[Math.max(0, i - 1)];
+      const [nx, ny] = pts[Math.min(pts.length - 1, i + 1)];
+      const tx = nx - px, ty = ny - py, len = Math.hypot(tx, ty);
+      const ox = x + (ty / len) * offset, oy = y - (tx / len) * offset;
+      positions.push(ox, oy, -halfWidth, ox, oy, halfWidth);
+      if (i < pts.length - 1) {
+        const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+        indices.push(a, c, b, b, c, d);
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    return geo;
   };
-  slab([0.08, 1.2], [0.86, 0.78], 1.16, 0.1);
-  slab([-1.62, 0.95], [-0.85, 1.19], 0.96, 0.09);
+  add(car, glassBand(0.02, 0.95, 0.5, 0.006), darkGlass);
+  add(car, glassBand(-1.66, -0.75, 0.5, 0.006), darkGlass);
 
   for (const sz of [-1, 1]) {
     const hl = add(car, new THREE.SphereGeometry(1, 20, 14), toon('#dfe8f5'), 2.085, 0.66, sz * 0.6);

@@ -19,29 +19,26 @@ export function scrollProgress(scrollY: number, viewportHeight: number): { index
 }
 
 export const PAGE_DURATION = 1;
+export const PAGE_COOLDOWN = 0.5;
 
 const LAST_SECTION_INDEX = 2;
 
-export function createPager(opts: { quietMs: number; durationMs: number }): {
+export function createPager(opts: { durationMs: number; cooldownMs: number }): {
   input(direction: number, nowMs: number, currentIndex: number): number | null;
-  touch(nowMs: number): void;
+  rest(nowMs: number): void;
 } {
   let busyUntil = -Infinity;
-  let lastInputAt = -Infinity;
   return {
-    touch(nowMs) {
-      lastInputAt = nowMs;
+    rest(nowMs) {
+      busyUntil = nowMs + opts.cooldownMs;
     },
     input(direction, nowMs, currentIndex) {
-      const busy = nowMs < busyUntil;
-      const tooSoonAfterAnimation = !busy && nowMs - lastInputAt < opts.quietMs;
-      lastInputAt = nowMs;
-      if (busy || tooSoonAfterAnimation) return null;
+      if (nowMs < busyUntil) return null;
 
       const target = currentIndex + direction;
       if (target < 0 || target > LAST_SECTION_INDEX) return null;
 
-      busyUntil = nowMs + opts.durationMs;
+      busyUntil = nowMs + opts.durationMs + opts.cooldownMs;
       return target;
     },
   };

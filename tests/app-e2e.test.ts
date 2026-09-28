@@ -343,6 +343,7 @@ describe('资料视角', () => {
       }
       await settle();
       const scrollAfterEnter = await js('window.scrollY');
+      await wait(0.6);
       await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
       await wait(0.5);
       const scrollMid = await js('window.scrollY');
@@ -372,6 +373,7 @@ describe('资料视角', () => {
         await wait(0.05);
       }
       await settle();
+      await wait(0.6);
       for (let i = 0; i < 5; i++) {
         await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
         await wait(0.05);
@@ -382,6 +384,38 @@ describe('资料视角', () => {
     `);
     expect(result.views).toContain('story');
     expect(result.scrollY).toBe(900);
+  }, 90_000);
+
+  test('持续每 50 毫秒滚动 3 秒不停手：不会卡在第 2 段，能一路翻到最后一段', async () => {
+    const p = plaquePoint(1440, 900);
+    const road = roadPoint(1440, 900);
+    const result = await runBrowser<{ scrollAtOneStep: number; scrollFinal: number; innerHeight: number }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if ((await js('window.__views')).includes('story')) break;
+        await wait(0.05);
+      }
+      await settle();
+      await wait(0.6);
+      const innerHeight = await js('window.innerHeight');
+      const loopStart = Date.now();
+      let scrollAtOneStep = null;
+      while (Date.now() - loopStart < 3000) {
+        await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
+        if (scrollAtOneStep === null && Date.now() - loopStart >= 1200) {
+          scrollAtOneStep = await js('window.scrollY');
+        }
+        await wait(0.05);
+      }
+      await wait(0.5);
+      const scrollFinal = await js('window.scrollY');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ scrollAtOneStep, scrollFinal, innerHeight }));
+    `);
+    expect(Math.abs(result.scrollAtOneStep - 1 * result.innerHeight)).toBeLessThanOrEqual(1);
+    expect(Math.abs(result.scrollFinal - 2 * result.innerHeight)).toBeLessThanOrEqual(1);
   }, 90_000);
 
   test('第 1 段向上滚动没有反应', async () => {
@@ -397,6 +431,7 @@ describe('资料视角', () => {
         await wait(0.05);
       }
       await settle();
+      await wait(0.6);
       await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: -120 });
       await wait(0.8);
       const scrollY = await js('window.scrollY');
@@ -422,6 +457,7 @@ describe('资料视角', () => {
         await wait(0.05);
       }
       await settle();
+      await wait(0.6);
       await pressKey(${JSON.stringify(key)}, ${JSON.stringify(code)}, ${vk}, ${JSON.stringify(text)});
       await wait(1.3);
       const scrollY = await js('window.scrollY');
@@ -598,6 +634,7 @@ describe('资料段高度与视口', () => {
         await wait(0.05);
       }
       await settle();
+      await wait(0.6);
       await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
       await wait(1.3);
       await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 700, deviceScaleFactor: 1, mobile: false });
@@ -626,6 +663,7 @@ describe('资料段高度与视口', () => {
         await wait(0.05);
       }
       await settle();
+      await wait(0.6);
       await pressKey('PageDown', 'PageDown', 34, '');
       await wait(0.3);
       await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 700, deviceScaleFactor: 1, mobile: false });
@@ -685,9 +723,10 @@ describe('退出时资料段淡出', () => {
         await wait(0.05);
       }
       await settle();
+      await wait(0.6);
       for (let i = 0; i < 2; i++) {
         await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
-        await wait(1.3);
+        await wait(1.6);
       }
       const scrollBeforeExit = await js('window.scrollY');
       await pressKey('Escape', 'Escape', 27);
@@ -872,7 +911,7 @@ describe('资料视角 Tab 聚焦对齐', () => {
       }
       await settle();
       await js(\`document.querySelector('.story-sections a[href="https://github.com/0xBB2b"]').focus()\`);
-      await wait(0.5);
+      await wait(0.6);
       const scrollAfterFocus = await js('window.scrollY');
       const activeAfterFocus = await js("Array.from(document.querySelectorAll('.story-dot')).findIndex(d => d.getAttribute('aria-current') === 'true')");
       await pressKey('ArrowUp', 'ArrowUp', 38);
@@ -897,6 +936,7 @@ describe('资料视角 Tab 聚焦对齐', () => {
         await wait(0.05);
       }
       await settle();
+      await wait(0.6);
       await pressKey('PageDown', 'PageDown', 34, '');
       await wait(0.2);
       await js(\`document.querySelector('.story-sections a[href="https://github.com/0xBB2b"]').focus()\`);
@@ -928,6 +968,7 @@ describe('资料视角滚轮与触摸过滤', () => {
         await wait(0.05);
       }
       await settle();
+      await wait(0.6);
       await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
       await wait(1.3);
       const scrollBefore = await js('window.scrollY');
@@ -952,6 +993,7 @@ describe('资料视角滚轮与触摸过滤', () => {
         await wait(0.05);
       }
       await settle();
+      await wait(0.6);
       const scrollBefore = await js('window.scrollY');
       const defaultPrevented = await js(\`(() => {
         const event = new WheelEvent('wheel', { deltaY: 100, ctrlKey: true, cancelable: true, bubbles: true });
@@ -1018,10 +1060,11 @@ describe('资料视角滚轮与触摸过滤', () => {
       while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
       await click('.loading-shell-button');
       await settle();
+      await wait(0.6);
       await cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 195, y: 600 }] });
       await cdp('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 195, y: 400 }] });
       await cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-      await wait(1.3);
+      await wait(1.6);
       const scrollAfterUp = await js('window.scrollY');
       await cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 195, y: 300 }] });
       await cdp('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 195, y: 500 }] });
@@ -1043,6 +1086,7 @@ describe('资料视角滚轮与触摸过滤', () => {
       while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
       await click('.loading-shell-button');
       await settle();
+      await wait(0.6);
       await cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 195, y: 500 }, { x: 195, y: 600 }] });
       await cdp('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 195, y: 300 }, { x: 195, y: 800 }] });
       await cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [{ x: 195, y: 50 }] });
@@ -1073,6 +1117,7 @@ describe('资料视角空格键作用域', () => {
       await settle();
       await js("document.querySelector('.story-language button').focus()");
       const scrollBefore = await js('window.scrollY');
+      await wait(0.6);
       await pressKey(' ', 'Space', 32, ' ');
       await wait(0.3);
       const scrollAfter = await js('window.scrollY');
@@ -1112,7 +1157,7 @@ describe('资料视角空格键作用域', () => {
 });
 
 describe('资料视角翻页锁边界', () => {
-  test('间隔刚过 1 秒的第二次 PageDown 能继续翻页', async () => {
+  test('间隔超过动画时长加冷却时长的第二次 PageDown 能继续翻页', async () => {
     const p = plaquePoint(1440, 900);
     const result = await runBrowser<{ scrollY: number }>(`
       ${HELPERS}
@@ -1124,8 +1169,9 @@ describe('资料视角翻页锁边界', () => {
         await wait(0.05);
       }
       await settle();
+      await wait(0.6);
       await pressKey('PageDown', 'PageDown', 34, '');
-      await wait(1.08);
+      await wait(1.6);
       await pressKey('PageDown', 'PageDown', 34, '');
       await wait(1.2);
       const scrollY = await js('window.scrollY');
@@ -1150,8 +1196,9 @@ describe('资料视角翻页锁边界', () => {
         await wait(0.05);
       }
       await settle();
+      await wait(0.6);
       await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
-      await wait(1.3);
+      await wait(1.6);
       await pressKey(${JSON.stringify(key)}, ${JSON.stringify(code)}, ${vk}, '');
       await wait(1.3);
       const scrollY = await js('window.scrollY');
@@ -1173,9 +1220,10 @@ describe('资料视角翻页锁边界', () => {
         await wait(0.05);
       }
       await settle();
+      await wait(0.6);
       for (let i = 0; i < 2; i++) {
         await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
-        await wait(1.3);
+        await wait(1.6);
       }
       await pressKey('PageDown', 'PageDown', 34, '');
       await wait(1.3);
@@ -1198,9 +1246,10 @@ describe('资料视角翻页锁边界', () => {
         await wait(0.05);
       }
       await settle();
+      await wait(0.6);
       for (let i = 0; i < 2; i++) {
         await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
-        await wait(1.3);
+        await wait(1.6);
       }
       await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
       await wait(1.3);

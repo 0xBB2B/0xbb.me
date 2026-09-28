@@ -506,3 +506,70 @@ describe('the body does not overhang the outer face of the tires', () => {
     }
   });
 });
+
+function glassMeshes(car: Car): THREE.Mesh[] {
+  const glassColor = new THREE.Color('#1b2436');
+  return meshesWhere(
+    car,
+    (_, m) =>
+      m instanceof THREE.MeshToonMaterial &&
+      Math.abs(m.color.r - glassColor.r) < 0.02 &&
+      Math.abs(m.color.g - glassColor.g) < 0.02 &&
+      Math.abs(m.color.b - glassColor.b) < 0.02,
+  );
+}
+
+function localX(car: Car, worldPoint: THREE.Vector3): number {
+  return car.group.worldToLocal(worldPoint.clone()).x;
+}
+
+function localZSpan(car: Car, mesh: THREE.Mesh): number {
+  const zs = worldVertices(mesh).map((v) => car.group.worldToLocal(v.clone()).z);
+  return Math.max(...zs) - Math.min(...zs);
+}
+
+describe('windows hug the body: windshield, rear window and side glass sit within 1 cm of the body surface', () => {
+  test('at least 4 meshes use the dark glass material (windshield, rear window, two side windows)', () => {
+    const { car } = buildScene();
+    expect(glassMeshes(car).length).toBeGreaterThanOrEqual(4);
+  });
+
+  test('glass spans both the nose side and the tail side along the body length (local x)', () => {
+    const { car } = buildScene();
+    const xs = glassMeshes(car).map((mesh) => localX(car, worldBox(mesh).getCenter(new THREE.Vector3())));
+    expect(Math.max(...xs)).toBeGreaterThan(0);
+    expect(Math.min(...xs)).toBeLessThan(0);
+  });
+
+  test('every glass vertex sits within 1cm of the body surface', () => {
+    const { car } = buildScene();
+    const body = bodyPaintMeshes(car);
+    const bodyTriangles = worldTriangles(body);
+    const glass = glassMeshes(car);
+    expect(glass.length).toBeGreaterThan(0);
+    for (const pane of glass) {
+      for (const point of worldVertices(pane)) {
+        expect(distanceToBody(point, body, bodyTriangles)).toBeLessThanOrEqual(0.01);
+      }
+    }
+  });
+
+  test('each glass pane has at least 90% of its vertices outside the body', () => {
+    const { car } = buildScene();
+    const body = bodyPaintMeshes(car);
+    for (const pane of glassMeshes(car)) {
+      const verts = worldVertices(pane);
+      const inside = verts.filter((v) => isInsideBody(v, body)).length;
+      expect(inside / verts.length).toBeLessThan(0.1);
+    }
+  });
+
+  test('the windshield spans at least 0.9m across the body width (local z)', () => {
+    const { car } = buildScene();
+    const nonSideWindows = glassMeshes(car).filter((mesh) => localZSpan(car, mesh) > 0.05);
+    const windshield = nonSideWindows.reduce((nose, mesh) =>
+      localX(car, worldBox(mesh).getCenter(new THREE.Vector3())) > localX(car, worldBox(nose).getCenter(new THREE.Vector3())) ? mesh : nose,
+    );
+    expect(localZSpan(car, windshield)).toBeGreaterThanOrEqual(0.9);
+  });
+});

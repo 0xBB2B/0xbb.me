@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Language } from '../data';
 import type { View } from '../diorama/view-state';
-import { storyLayout, scrollProgress, createPager, PAGE_DURATION } from '../diorama/story-scroll';
+import { storyLayout, scrollProgress, createPager, PAGE_DURATION, PAGE_COOLDOWN } from '../diorama/story-scroll';
 import { StorySections } from './StorySections';
 
 interface StoryScrollerProps {
@@ -24,7 +24,7 @@ export function StoryScroller({ language, view, failed, showBack, onScrollChange
   const active = view === 'story';
   const [currentIndex, setCurrentIndex] = useState<0 | 1 | 2>(0);
   const sectionsRef = useRef<(HTMLElement | null)[]>([null, null, null]);
-  const pagerRef = useRef(createPager({ quietMs: 150, durationMs: PAGE_DURATION * 1000 }));
+  const pagerRef = useRef(createPager({ durationMs: PAGE_DURATION * 1000, cooldownMs: PAGE_COOLDOWN * 1000 }));
   const indexRef = useRef<0 | 1 | 2>(0);
   const animRef = useRef<number | null>(null);
   const onScrollChangeRef = useRef(onScrollChange);
@@ -48,6 +48,7 @@ export function StoryScroller({ language, view, failed, showBack, onScrollChange
       setCurrentIndex(0);
       onScrollChangeRef.current(start);
       sectionsRef.current[0]?.querySelector<HTMLElement>('h1')?.focus({ preventScroll: true });
+      pagerRef.current.rest(performance.now());
       return;
     }
     if (view === 'exiting') return;
@@ -136,10 +137,7 @@ export function StoryScroller({ language, view, failed, showBack, onScrollChange
     }
 
     function handleWheel(event: WheelEvent) {
-      if (viewRef.current !== 'story') {
-        pagerRef.current.touch(performance.now());
-        return;
-      }
+      if (viewRef.current !== 'story') return;
       if (event.ctrlKey || event.deltaY === 0 || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
       event.preventDefault();
       tryPage(event.deltaY > 0 ? 1 : -1);

@@ -106,47 +106,45 @@ describe('createPager', () => {
   });
 
   test('向下翻页返回下一段序号，向上翻页返回上一段序号', () => {
-    const down = storyScroll.createPager({ quietMs: 150, durationMs: 1000 });
+    const down = storyScroll.createPager({ durationMs: 1000, cooldownMs: 500 });
     expect(down.input(1, 0, 0)).toBe(1);
-    const up = storyScroll.createPager({ quietMs: 150, durationMs: 1000 });
+    const up = storyScroll.createPager({ durationMs: 1000, cooldownMs: 500 });
     expect(up.input(-1, 0, 1)).toBe(0);
   });
 
-  test('接受一次翻页后，durationMs 结束前的所有输入都返回 null', () => {
-    const pager = storyScroll.createPager({ quietMs: 150, durationMs: 1000 });
+  test('接受一次翻页后，动画时长加冷却时长结束前即使每 50 毫秒持续输入也一直返回 null，锁定结束后第一次输入立即生效', () => {
+    const pager = storyScroll.createPager({ durationMs: 1000, cooldownMs: 500 });
     expect(pager.input(1, 0, 0)).toBe(1);
-    expect(pager.input(1, 200, 0)).toBeNull();
-    expect(pager.input(-1, 500, 0)).toBeNull();
-    expect(pager.input(1, 999, 0)).toBeNull();
-  });
-
-  test('动画结束后惯性事件按 16 毫秒间隔持续到达时一直忽略，停顿 ≥150 毫秒后才接受下一次', () => {
-    const pager = storyScroll.createPager({ quietMs: 150, durationMs: 100 });
-    expect(pager.input(1, 0, 0)).toBe(1);
-    let t = 0;
-    for (let i = 0; i < 8; i++) {
-      t += 16;
+    for (let t = 50; t <= 1450; t += 50) {
       expect(pager.input(1, t, 1)).toBeNull();
     }
-    expect(pager.input(1, t + 149, 1)).toBeNull();
-    expect(pager.input(1, t + 149 + 150, 1)).toBe(2);
+    expect(pager.input(1, 1500, 1)).toBe(2);
   });
 
-  test('目标越界（第 1 段向上）返回 null', () => {
-    const pager = storyScroll.createPager({ quietMs: 150, durationMs: 1000 });
+  test('单次输入场景：锁定结束前的探测返回 null，锁定结束后的探测返回目标段', () => {
+    const pager = storyScroll.createPager({ durationMs: 1000, cooldownMs: 500 });
+    expect(pager.input(1, 0, 0)).toBe(1);
+    expect(pager.input(1, 1300, 1)).toBeNull();
+    expect(pager.input(1, 1600, 1)).toBe(2);
+  });
+
+  test('rest 从调用时刻起进入冷却：冷却期内输入返回 null，冷却结束后第一次输入生效', () => {
+    const pager = storyScroll.createPager({ durationMs: 1000, cooldownMs: 500 });
+    pager.rest(0);
+    expect(pager.input(1, 400, 0)).toBeNull();
+    expect(pager.input(1, 500, 0)).toBe(1);
+  });
+
+  test('目标越界（第 1 段向上）返回 null 且不上锁，紧接着有效方向立即生效', () => {
+    const pager = storyScroll.createPager({ durationMs: 1000, cooldownMs: 500 });
     expect(pager.input(-1, 0, 0)).toBeNull();
+    expect(pager.input(1, 0, 0)).toBe(1);
   });
 
-  test('目标越界（第 3 段向下）返回 null', () => {
-    const pager = storyScroll.createPager({ quietMs: 150, durationMs: 1000 });
+  test('目标越界（第 3 段向下）返回 null 且不上锁，紧接着反方向立即生效', () => {
+    const pager = storyScroll.createPager({ durationMs: 1000, cooldownMs: 500 });
     expect(pager.input(1, 0, 2)).toBeNull();
-  });
-
-  test('touch 只记录最近输入时间，不返回翻页目标；之后 150 毫秒内的 input 仍视为过快', () => {
-    const pager = storyScroll.createPager({ quietMs: 150, durationMs: 1000 });
-    pager.touch(1000);
-    expect(pager.input(1, 1100, 0)).toBeNull();
-    expect(pager.input(1, 1300, 0)).toBe(1);
+    expect(pager.input(-1, 0, 2)).toBe(1);
   });
 });
 

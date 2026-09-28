@@ -146,6 +146,7 @@ describe('三维场景加载失败', () => {
       }
       const alertText = await js("(() => { const el = document.querySelector('[role=\\"alert\\"]'); return el ? el.textContent : null; })()");
       const scrollBefore = await js('window.scrollY');
+      await wait(0.6);
       await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
       await wait(1.3);
       const scrollAfter = await js('window.scrollY');
