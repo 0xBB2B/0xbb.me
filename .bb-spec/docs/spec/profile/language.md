@@ -31,7 +31,7 @@ description: 初始语言按浏览器语言判定，只能在资料视角右上�
 
 ## 例子
 - `navigator.language` 为 `zh-TW` 的访客：打开页面即为中文，`<html lang="zh-CN">`。
-- `navigator.language` 为 `ja-JP` 的访客：打开页面为英文。点铭牌进入资料视角后点「中」，资料段立即变中文；滚回整体视角，铭牌也是中文。刷新页面后又回到英文。
+- `navigator.language` 为 `ja-JP` 的访客：打开页面为英文。点铭牌进入资料视角后点「中」，资料段立即变中文；按 Esc 回到整体视角，铭牌也是中文。刷新页面后又回到英文。
 
 ## 验收
 - [ ] `navigator.language = "zh-CN"` 时初始语言为中文。

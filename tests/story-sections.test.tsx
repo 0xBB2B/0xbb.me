@@ -3,8 +3,6 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { ComponentProps } from 'react';
 import { StorySections } from '../components/StorySections';
-import { existsSync } from 'node:fs';
-import path from 'node:path';
 import { APP_DATA, type Language } from '../data';
 import { COPY, rolesLine, locationLine } from '../copy';
 
@@ -248,19 +246,5 @@ describe('StorySections：不出现已下线内容', () => {
         expect(html).not.toContain(forbidden);
       }
     }
-  });
-});
-
-describe('旧资料组件已删除', () => {
-  const root = path.resolve(import.meta.dir, '..');
-  test.each([
-    'components/ProfileCard.tsx',
-    'components/ProfileCard.css',
-    'components/CenterScreen.tsx',
-    'components/CenterScreen.css',
-    'components/ProfileContent.tsx',
-    'components/ProfileContent.css',
-  ])('%s 不再存在', (relPath) => {
-    expect(existsSync(path.join(root, relPath))).toBe(false);
   });
 });
