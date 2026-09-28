@@ -39,8 +39,7 @@ export interface DioramaHandle {
 }
 
 export async function mountDiorama(container: HTMLElement, options: { language: Language }): Promise<DioramaHandle> {
-  await loadCanvasFonts();
-
+  const fontsLoaded = loadCanvasFonts();
   const tier = initialTier(matchMedia('(pointer: coarse)').matches, innerWidth);
   let currentTier: Tier = tier;
   let pixelRatio = Math.min(devicePixelRatio, TIER_SETTINGS[tier].maxPixelRatio);
@@ -105,6 +104,13 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
 
     let view: View = 'diorama';
     let ready = false;
+    let disposed = false;
+    let currentLanguage = options.language;
+    fontsLoaded.then((loaded) => {
+      if (!loaded || disposed) return;
+      textures.redraw();
+      setPlaqueLanguage(plaque, currentLanguage);
+    });
     let savedPose: Pose | null = null;
     let scrollY = 0;
     let enterAnim: { seq: ReturnType<typeof enterSequence>; startT: number } | null = null;
@@ -281,6 +287,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       setScroll,
       exitToDiorama,
       setLanguage(language: Language): void {
+        currentLanguage = language;
         setPlaqueLanguage(plaque, language);
       },
       onViewChange(cb: (view: View) => void): void {
@@ -293,6 +300,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
         contextLostListeners.push(cb);
       },
       dispose(): void {
+        disposed = true;
         cancelAnimationFrame(rafId);
         window.removeEventListener('resize', handleResize);
         document.removeEventListener('visibilitychange', handleVisibility);

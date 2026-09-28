@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ctex, roundRect } from './materials';
+import { ctex, redrawCtex, roundRect } from './materials';
 import { rand, pick } from './primitives';
 import { rolesLine, locationLine } from '../copy';
 import type { Language } from '../data';
@@ -113,6 +113,7 @@ function posterTex(bg: string, title: string, sub: string, ink = '#fff', fontSiz
 }
 
 export interface Textures {
+  redraw(): void;
   fascia: THREE.CanvasTexture;
   pylon: THREE.CanvasTexture;
   vend1: THREE.CanvasTexture;
@@ -467,7 +468,7 @@ export function createTextures(): Textures {
     g.fillText('STAFF ONLY', w / 2, h / 2 + 2);
   });
 
-  return {
+  const textures: Omit<Textures, 'redraw'> = {
     fascia,
     pylon,
     vend1,
@@ -493,6 +494,12 @@ export function createTextures(): Textures {
     kissa,
     nobori,
     staffOnly,
+  };
+  return {
+    ...textures,
+    redraw(): void {
+      for (const texture of Object.values(textures)) redrawCtex(texture);
+    },
   };
 }
 

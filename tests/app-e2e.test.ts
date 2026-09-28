@@ -24,6 +24,15 @@ afterAll(async () => {
 });
 
 const HELPERS = `
+  async function holdScene() {
+    await cdp('Fetch.enable', { patterns: [{ urlPattern: '*/assets/world-*.js' }] });
+  }
+  async function releaseScene() {
+    for (const event of drainEvents()) {
+      if (event.method === 'Fetch.requestPaused') await cdp('Fetch.continueRequest', { requestId: event.params.requestId });
+    }
+    await cdp('Fetch.disable');
+  }
   async function pressKey(key, code, vk, text) {
     await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: vk, ...(text ? { text } : {}) });
     await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: vk });
@@ -1086,9 +1095,11 @@ describe('资料视角滚轮与触摸过滤', () => {
     const result = await runBrowser<{ view: string | null; scrollAfterUp: number; scrollAfterDown: number }>(`
       ${HELPERS}
       await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+      await holdScene();
       await navigate(${JSON.stringify(BASE_URL)});
       while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
       await click('.loading-shell-button');
+      await releaseScene();
       await settle();
       await wait(0.6);
       await cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 195, y: 600 }] });
@@ -1112,9 +1123,11 @@ describe('资料视角滚轮与触摸过滤', () => {
     const result = await runBrowser<{ view: string | null; scrollY: number; activeIndex: number | null }>(`
       ${HELPERS}
       await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+      await holdScene();
       await navigate(${JSON.stringify(BASE_URL)});
       while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
       await click('.loading-shell-button');
+      await releaseScene();
       await settle();
       await wait(0.6);
       await cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 195, y: 500 }, { x: 195, y: 600 }] });
@@ -1469,9 +1482,11 @@ describe('资料段链接按钮换行不重叠', () => {
     const result = await runBrowser<{ view: string | null; displays: string[]; overlaps: boolean }>(`
       ${HELPERS}
       await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: false });
+      await holdScene();
       await navigate(${JSON.stringify(BASE_URL)});
       while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
       await click('.loading-shell-button');
+      await releaseScene();
       await js('window.scrollTo(0, ${sectionStart2})');
       await wait(1.2);
       const data = await js(\`(() => {
@@ -1556,6 +1571,43 @@ describe('加载页', () => {
     expect(result.removedWithinBudget).toBe(true);
     expect(result.view).toBe('diorama');
   }, 90_000);
+
+  test('挂起所有网页字体请求时，场景仍在进入「正在布置雨夜街角…」阶段起 2 秒内就绪', async () => {
+    const result = await runBrowser<{ stageAt: number | null; readyAt: number | null; elapsed: number | null }>(`
+      ${HELPERS}
+      await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+      const ua = await js('navigator.userAgent');
+      await cdp('Emulation.setUserAgentOverride', { userAgent: ua, acceptLanguage: 'zh-CN' });
+      await cdp('Fetch.enable', { patterns: [{ urlPattern: '*.woff2*' }, { urlPattern: '*.woff*' }] });
+      await cdp('Page.addScriptToEvaluateOnNewDocument', { source: \`
+        window.__sceneStageAt = null;
+        window.__sceneReadyAt = null;
+        const record = () => {
+          const statusEl = document.querySelector('[role="status"]');
+          const text = statusEl ? statusEl.textContent : null;
+          if (window.__sceneStageAt === null && text === '正在布置雨夜街角…') window.__sceneStageAt = performance.now();
+          const busy = document.querySelector('#scene')?.getAttribute('aria-busy');
+          if (window.__sceneStageAt !== null && window.__sceneReadyAt === null && busy === 'false') window.__sceneReadyAt = performance.now();
+        };
+        new MutationObserver(record).observe(document, { subtree: true, childList: true, characterData: true, attributes: true });
+        record();
+      \` });
+      await cdp('Page.navigate', { url: ${JSON.stringify(BASE_URL)} });
+      const deadline = Date.now() + 15000;
+      while (Date.now() < deadline) {
+        const found = await js('window.__sceneReadyAt !== null').catch(() => false);
+        if (found) break;
+        await wait(0.05);
+      }
+      const stageAt = await js('window.__sceneStageAt');
+      const readyAt = await js('window.__sceneReadyAt');
+      const elapsed = stageAt !== null && readyAt !== null ? readyAt - stageAt : null;
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ stageAt, readyAt, elapsed }));
+    `);
+    expect(result.stageAt).not.toBeNull();
+    expect(result.elapsed).not.toBeNull();
+    expect(result.elapsed!).toBeLessThanOrEqual(2000);
+  }, 90_000);
 });
 
 describe('先看资料', () => {
@@ -1565,9 +1617,11 @@ describe('先看资料', () => {
       await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
       const ua = await js('navigator.userAgent');
       await cdp('Emulation.setUserAgentOverride', { userAgent: ua, acceptLanguage: 'en-US' });
+      await holdScene();
       await navigate(${JSON.stringify(BASE_URL)});
       while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
       await click('.loading-shell-button');
+      await releaseScene();
       const view = await js('document.documentElement.dataset.view ?? null');
       const shellGone = await js("!document.querySelector('.loading-shell')");
       const firstSectionVisible = await js(\`(() => {
@@ -1593,9 +1647,11 @@ describe('先看资料', () => {
       ${HELPERS}
       await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
       await cdp('Page.addScriptToEvaluateOnNewDocument', { source: ${JSON.stringify(VIEW_TRACKER)} });
+      await holdScene();
       await navigate(${JSON.stringify(BASE_URL)});
       while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
       await click('.loading-shell-button');
+      await releaseScene();
       const readyDeadline = Date.now() + 20000;
       while (Date.now() < readyDeadline) {
         if (await js("document.querySelector('#scene')?.getAttribute('aria-busy') === 'false'")) break;
