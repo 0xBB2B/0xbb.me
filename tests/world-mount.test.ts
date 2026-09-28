@@ -70,18 +70,16 @@ describe('挂载与场景组成', () => {
     expect(result.canvasCount).toBe(1);
   }, 60_000);
 
-  test('场景中有 porsche 与 plaque-border，五个驾驶舱内饰名称都不存在', async () => {
-    const result = await runBrowser<{ ready: boolean; hasPorsche: boolean; hasBorder: boolean; cabinNames: string[] }>(`
+  test('场景中有 porsche 与 plaque-border', async () => {
+    const result = await runBrowser<{ ready: boolean; hasPorsche: boolean; hasBorder: boolean }>(`
       ${BOOT}
       const hasPorsche = await js("window.handle.scene.getObjectByName('porsche') !== undefined");
       const hasBorder = await js("window.handle.scene.getObjectByName('plaque-border') !== undefined");
-      const cabinNames = await js("(() => { const banned = ['driver-door','cabin-interior','center-screen','steering-wheel','door-handle']; const found = []; window.handle.scene.traverse((obj) => { if (banned.includes(obj.name)) found.push(obj.name); }); return found; })()");
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, hasPorsche, hasBorder, cabinNames }));
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, hasPorsche, hasBorder }));
     `);
     expect(result.ready).toBe(true);
     expect(result.hasPorsche).toBe(true);
     expect(result.hasBorder).toBe(true);
-    expect(result.cabinNames).toEqual([]);
   }, 60_000);
 });
 

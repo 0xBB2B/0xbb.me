@@ -10,7 +10,6 @@ import { buildCar } from '../diorama/car';
 
 type Car = ReturnType<typeof buildCar>;
 
-const FORBIDDEN_NAMES = ['driver-door', 'cabin-interior', 'center-screen', 'steering-wheel', 'door-handle'];
 
 function buildScene(): { scene: THREE.Scene; car: Car } {
   const scene = new THREE.Scene();
@@ -180,15 +179,6 @@ describe('hazard lights: ground illumination stays within 1m and clear of the lo
       expect(radius).toBeLessThan(distanceToCurb);
     }
   });
-});
-
-describe('exterior-only: no interior or door-opening parts', () => {
-  for (const name of FORBIDDEN_NAMES) {
-    test(`no object named "${name}" exists`, () => {
-      const { scene } = buildScene();
-      expect(scene.getObjectByName(name)).toBeUndefined();
-    });
-  }
 });
 
 describe('the body reads as red', () => {

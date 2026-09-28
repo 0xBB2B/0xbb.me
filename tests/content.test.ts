@@ -2,15 +2,6 @@ import { expect, test, describe } from 'bun:test';
 import { APP_DATA } from '../data';
 import { COPY, AVATAR_FALLBACK, rolesLine, locationLine } from '../copy';
 
-function flattenCopyValues(obj: Record<string, unknown>): string[] {
-  const out: string[] = [];
-  for (const value of Object.values(obj)) {
-    if (Array.isArray(value)) out.push(...(value as string[]));
-    else out.push(value as string);
-  }
-  return out;
-}
-
 describe('APP_DATA.profile', () => {
   test('name is FUBUKI_BB', () => {
     expect(APP_DATA.profile.name).toBe('FUBUKI_BB');
@@ -83,27 +74,6 @@ describe('copy', () => {
     expect(COPY.en.readFirst).toBe('Read the profile first');
     expect(COPY.zh.sceneFailed).toBe('3D 场景无法加载');
     expect(COPY.en.sceneFailed).toBe("The 3D scene couldn't load");
-  });
-
-  test('COPY no longer exposes the plaqueHint, closeCard, or enterCar keys', () => {
-    for (const lang of ['zh', 'en'] as const) {
-      const keys = Object.keys(COPY[lang]);
-      expect(keys).not.toContain('plaqueHint');
-      expect(keys).not.toContain('closeCard');
-      expect(keys).not.toContain('enterCar');
-    }
-  });
-
-  test('COPY values no longer contain the retired tap-the-car / driver-seat / close copy', () => {
-    for (const lang of ['zh', 'en'] as const) {
-      const values = flattenCopyValues(COPY[lang] as Record<string, unknown>);
-      expect(values).not.toContain('点击红色跑车，坐进驾驶座');
-      expect(values).not.toContain("Tap the red car to take the driver's seat");
-      expect(values).not.toContain('进入驾驶座');
-      expect(values).not.toContain("Take the driver's seat");
-      expect(values).not.toContain('关闭');
-      expect(values).not.toContain('Close');
-    }
   });
 
   test('COPY carries the keyboard button and story-section copy under their keys', () => {

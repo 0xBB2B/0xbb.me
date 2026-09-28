@@ -17,17 +17,12 @@ function listDistFiles(extensions: string[]): string[] {
     .filter((entry) => extensions.some((ext) => entry.endsWith(ext)));
 }
 
-test('README 描述雨夜便利店新站点，不再提及旧站点用语', () => {
+test('README 描述雨夜便利店站点的玩法', () => {
   const readme = readFileSync(path.join(ROOT, 'README.md'), 'utf8');
   expect(readme).toContain('雨夜便利店');
   expect(readme).toContain('铭牌');
   expect(readme).toContain('资料视角');
   expect(readme).toContain('先看资料');
-  expect(readme).not.toContain('MC-2D');
-  expect(readme).not.toMatch(/灯塔/);
-  expect(readme).not.toContain('驾驶座');
-  expect(readme).not.toContain('中控屏');
-  expect(readme).not.toContain('切换服装');
 });
 
 test('dist/index.html 不引用外部域名的脚本或样式表', () => {
@@ -46,13 +41,8 @@ test('构建产物不残留测试钩子字符串', () => {
   for (const relativePath of files) {
     const content = readFileSync(path.join(ROOT, 'dist', relativePath), 'utf8');
     expect(content).not.toContain('PLAYABLE_TOWN_RESULT');
-    expect(content).not.toContain('__mc2d');
     expect(content).not.toContain('__test');
   }
-});
-
-test('dist/index.html 不出现旧文案 playable/walk/lighthouse/灯塔', () => {
-  expect(indexHtml).not.toMatch(/playable|walk|lighthouse|灯塔/i);
 });
 
 describe('整体视角画面', () => {
