@@ -142,6 +142,46 @@ describe('hazard lights: four corner markers start off', () => {
   });
 });
 
+const GROUND_TOP_Y = 0.15;
+const CURB_INNER_Z = 4.79;
+const CURB_INNER_X = 4.79;
+
+function groundRadius(light: THREE.PointLight, worldY: number): number {
+  const h = worldY - GROUND_TOP_Y;
+  if (light.distance <= h) return 0;
+  return Math.sqrt(light.distance * light.distance - h * h);
+}
+
+describe('hazard lights: ground illumination stays within 1m and clear of the lot curb', () => {
+  test('every hazard light has a finite falloff distance (0 means unlimited, not allowed)', () => {
+    const { car } = buildScene();
+    for (const light of car.hazardLights) {
+      expect(light.distance).toBeGreaterThan(0);
+    }
+  });
+
+  test('every hazard light ground radius does not exceed 1 meter', () => {
+    const { car } = buildScene();
+    for (const light of car.hazardLights) {
+      const position = new THREE.Vector3();
+      light.getWorldPosition(position);
+      const radius = groundRadius(light, position.y);
+      expect(radius).toBeLessThanOrEqual(1.0);
+    }
+  });
+
+  test('every hazard light ground radius stays short of the nearest curb inside face (+z and +x sides)', () => {
+    const { car } = buildScene();
+    for (const light of car.hazardLights) {
+      const position = new THREE.Vector3();
+      light.getWorldPosition(position);
+      const radius = groundRadius(light, position.y);
+      const distanceToCurb = Math.min(CURB_INNER_Z - position.z, CURB_INNER_X - position.x);
+      expect(radius).toBeLessThan(distanceToCurb);
+    }
+  });
+});
+
 describe('exterior-only: no interior or door-opening parts', () => {
   for (const name of FORBIDDEN_NAMES) {
     test(`no object named "${name}" exists`, () => {
