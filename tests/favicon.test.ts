@@ -14,109 +14,126 @@ function parseViewBox(source: string): Box {
   return { minX, minY, width, height };
 }
 
-const ARG_COUNTS: Record<string, number> = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 };
+function rootTag(source: string): string {
+  const match = source.match(/<svg\b[^>]*>/i);
+  if (!match) throw new Error('favicon.svg has no <svg> root');
+  return match[0];
+}
 
-function pathXExtent(d: string) {
-  const tokens = d.match(/[MLHVCSQTAZmlhvcsqtaz]|-?\d*\.\d+(?:e-?\d+)?|-?\d+(?:e-?\d+)?/g) ?? [];
+function pathCells(d: string): Set<string> {
+  const covered = new Set<string>();
+  const tokens = d.match(/[Mhvz]|-?\d+(?:\.\d+)?/g) ?? [];
   let x = 0;
+  let y = 0;
   let startX = 0;
-  let command = 'M';
-  let minX = Infinity;
-  let maxX = -Infinity;
+  let startY = 0;
+  let points: [number, number][] = [];
+
+  function flush(): void {
+    if (points.length === 0) return;
+    const xs = points.map((p) => p[0]);
+    const ys = points.map((p) => p[1]);
+    const minX = Math.floor(Math.min(...xs));
+    const maxX = Math.ceil(Math.max(...xs));
+    const minY = Math.floor(Math.min(...ys));
+    const maxY = Math.ceil(Math.max(...ys));
+    for (let cx = minX; cx < maxX; cx++) {
+      for (let cy = minY; cy < maxY; cy++) covered.add(`${cx},${cy}`);
+    }
+    points = [];
+  }
+
   let i = 0;
   while (i < tokens.length) {
     const token = tokens[i];
-    if (/^[a-zA-Z]$/.test(token)) {
-      command = token;
-      i++;
-      if (command.toLowerCase() === 'z') { x = startX; minX = Math.min(minX, x); maxX = Math.max(maxX, x); }
-      continue;
+    if (token === 'M') {
+      flush();
+      x = Number(tokens[i + 1]);
+      y = Number(tokens[i + 2]);
+      startX = x;
+      startY = y;
+      points.push([x, y]);
+      i += 3;
+    } else if (token === 'h') {
+      x += Number(tokens[i + 1]);
+      points.push([x, y]);
+      i += 2;
+    } else if (token === 'v') {
+      y += Number(tokens[i + 1]);
+      points.push([x, y]);
+      i += 2;
+    } else if (token === 'z') {
+      x = startX;
+      y = startY;
+      points.push([x, y]);
+      i += 1;
+    } else {
+      i += 1;
     }
-    const key = command.toLowerCase();
-    const relative = command === key;
-    const count = ARG_COUNTS[key] ?? 2;
-    const args = tokens.slice(i, i + count).map(Number);
-    i += count;
-    if (key === 'h') {
-      x = relative ? x + args[0] : args[0];
-    } else if (key !== 'v') {
-      const endX = args[args.length - 2];
-      x = relative ? x + endX : endX;
-      if (key === 'm') startX = x;
-    }
-    minX = Math.min(minX, x);
-    maxX = Math.max(maxX, x);
-    if (command === 'M') command = 'L';
-    if (command === 'm') command = 'l';
   }
-  return { minX, maxX };
+  flush();
+  return covered;
 }
 
-function circleXExtent(attrs: string) {
-  const cx = Number(attrs.match(/\bcx="(-?[\d.]+)"/)?.[1] ?? 0);
-  const r = Number(attrs.match(/\br="(-?[\d.]+)"/)?.[1] ?? 0);
-  return { minX: cx - r, maxX: cx + r };
-}
-
-function rectXExtent(attrs: string) {
-  const x = Number(attrs.match(/\bx="(-?[\d.]+)"/)?.[1] ?? 0);
-  const width = Number(attrs.match(/\bwidth="(-?[\d.]+)"/)?.[1] ?? 0);
-  return { minX: x, maxX: x + width };
-}
-
-function shapeXExtent(source: string) {
-  let minX = Infinity;
-  let maxX = -Infinity;
+function coveredCells(source: string): Set<string> {
+  const covered = new Set<string>();
   for (const match of source.matchAll(/<path\b[^>]*\bd="([^"]+)"[^>]*\/?>/gi)) {
-    const extent = pathXExtent(match[1]);
-    minX = Math.min(minX, extent.minX);
-    maxX = Math.max(maxX, extent.maxX);
+    for (const cell of pathCells(match[1])) covered.add(cell);
   }
-  for (const match of source.matchAll(/<circle\b([^>]*)\/?>/gi)) {
-    const extent = circleXExtent(match[1]);
-    minX = Math.min(minX, extent.minX);
-    maxX = Math.max(maxX, extent.maxX);
-  }
-  for (const match of source.matchAll(/<rect\b([^>]*)\/?>/gi)) {
-    const extent = rectXExtent(match[1]);
-    minX = Math.min(minX, extent.minX);
-    maxX = Math.max(maxX, extent.maxX);
-  }
-  return { minX, maxX };
+  return covered;
 }
 
-function coversCanvas(attrs: string, viewBox: Box) {
-  const x = Number(attrs.match(/\bx="(-?[\d.]+)"/)?.[1] ?? 0);
-  const y = Number(attrs.match(/\by="(-?[\d.]+)"/)?.[1] ?? 0);
-  const width = Number(attrs.match(/\bwidth="(-?[\d.]+)"/)?.[1] ?? 0);
-  const height = Number(attrs.match(/\bheight="(-?[\d.]+)"/)?.[1] ?? 0);
-  return x <= viewBox.minX && y <= viewBox.minY
-    && x + width >= viewBox.minX + viewBox.width
-    && y + height >= viewBox.minY + viewBox.height;
+function fillColors(source: string): string[] {
+  return [...new Set([...source.matchAll(/\bfill="#([0-9a-fA-F]{6})"/g)].map((m) => m[1].toLowerCase()))];
+}
+
+function rgb(hex: string): [number, number, number] {
+  return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
 }
 
 test('favicon.svg is an SVG document', () => {
   expect(svg.trim().replace(/^<\?xml[^>]*\?>\s*/i, '')).toMatch(/^<svg\b/i);
 });
 
-test('favicon.svg paints with the brand red #c8102a', () => {
-  expect(svg).toMatch(/fill="#c8102a"/i);
+test('favicon.svg uses a 32x32 pixel-art viewBox', () => {
+  expect(parseViewBox(svg)).toEqual({ minX: 0, minY: 0, width: 32, height: 32 });
 });
 
-test('favicon.svg renders geometry, not literal text glyphs', () => {
+test('favicon.svg keeps pixel edges crisp', () => {
+  expect(rootTag(svg)).toMatch(/shape-rendering="crispEdges"/i);
+});
+
+test('favicon.svg uses between 2 and 16 distinct fill colors', () => {
+  const colors = fillColors(svg);
+  expect(colors.length).toBeGreaterThanOrEqual(2);
+  expect(colors.length).toBeLessThanOrEqual(16);
+});
+
+test('favicon.svg includes a blue pixel color', () => {
+  const hasBlue = fillColors(svg).some((hex) => {
+    const [r, , b] = rgb(hex);
+    return b - r > 40;
+  });
+  expect(hasBlue).toBe(true);
+});
+
+test('favicon.svg includes a silver/white pixel color', () => {
+  const hasSilver = fillColors(svg).some((hex) => rgb(hex).every((channel) => channel >= 200));
+  expect(hasSilver).toBe(true);
+});
+
+test('favicon.svg leaves the four corner pixels uncovered', () => {
+  const covered = coveredCells(svg);
+  for (const corner of ['0,0', '31,0', '0,31', '31,31']) {
+    expect(covered.has(corner)).toBe(false);
+  }
+});
+
+test('favicon.svg renders pixel blocks, not text glyphs or embedded images', () => {
   expect(svg).not.toMatch(/<text\b/i);
-});
-
-test('favicon.svg has no rect that paints a full-canvas background', () => {
-  const viewBox = parseViewBox(svg);
-  const rects = [...svg.matchAll(/<rect\b([^>]*)\/?>/gi)].map((match) => match[1]);
-  expect(rects.some((attrs) => coversCanvas(attrs, viewBox))).toBe(false);
-});
-
-test('favicon.svg artwork spans at least 80% of the viewBox width', () => {
-  const viewBox = parseViewBox(svg);
-  const { minX, maxX } = shapeXExtent(svg);
-  expect(maxX - minX).toBeGreaterThanOrEqual(viewBox.width * 0.8);
+  expect(svg).not.toMatch(/<image\b/i);
+  expect(svg).not.toMatch(/<foreignObject\b/i);
+  expect(svg).not.toMatch(/data:image/i);
 });
 
 test('the built favicon link resolves to a file shipped in dist', () => {

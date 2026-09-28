@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { ctex, roundRect } from './materials';
 import { rand, pick } from './primitives';
-import { COPY, rolesLine, locationLine } from '../copy';
-import { APP_DATA, type Language } from '../data';
+import { rolesLine, locationLine } from '../copy';
+import type { Language } from '../data';
 
 export const FONT_D = '"Dela Gothic One", "Noto Sans SC Variable", sans-serif';
 export const FONT_R = '"M PLUS Rounded 1c", "Noto Sans SC Variable", sans-serif';
@@ -42,7 +42,7 @@ const SIGNAGE_TEXT = [
   'STAFF ONLY',
 ].join('');
 
-export const CANVAS_TEXT = SIGNAGE_TEXT + rolesLine('zh') + rolesLine('en') + JSON.stringify([APP_DATA, COPY]);
+export const CANVAS_TEXT = SIGNAGE_TEXT + 'FUBUKI_BB' + rolesLine('zh') + rolesLine('en') + locationLine();
 
 export const TEAL = '#16a39a';
 export const ORANGE = '#ff8a2b';
