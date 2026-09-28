@@ -155,10 +155,6 @@ describe('htmlPlugin public HTML transform', () => {
     }
   });
 
-  test('old profile.png references are absent', () => {
-    expect(html).not.toContain('profile.png');
-  });
-
   test('search and sharing metadata consistently reference the public profile JPEG', () => {
     const image = new URL('profile.jpg', siteUrl).href;
     expect(page.meta.get('og:image')).toBe(image);

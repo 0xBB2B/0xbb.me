@@ -1,6 +1,6 @@
 // 依赖 dist/ 为最新构建产物：运行前先执行 `bun run build`，本文件不重复构建。
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { preview, type PreviewServer } from 'vite';
 import { runBrowser } from './browser';
@@ -32,6 +32,15 @@ test('dist/index.html 不引用外部域名的脚本或样式表', () => {
   for (const url of [...scriptSrcs, ...styleHrefs]) {
     expect(url).not.toMatch(/^https?:\/\//i);
     expect(url).not.toMatch(/^\/\//);
+  }
+});
+
+test('dist/index.html 引用的站内图片在 dist 中都存在', () => {
+  const imageUrls = [...indexHtml.matchAll(/https:\/\/0xbb\.me\/([^\s"'<>)]+\.(?:jpe?g|png|svg|webp|gif))/gi)]
+    .map((match) => match[1]);
+  expect(imageUrls.length).toBeGreaterThan(0);
+  for (const imagePath of imageUrls) {
+    expect(existsSync(path.join(ROOT, 'dist', imagePath))).toBe(true);
   }
 });
 
