@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { ctex, roundRect } from './materials';
+import { ctex, redrawCtex, roundRect } from './materials';
 import { rand, pick } from './primitives';
-import { COPY, rolesLine, locationLine } from '../copy';
-import { APP_DATA, type Language } from '../data';
+import { rolesLine, locationLine } from '../copy';
+import type { Language } from '../data';
 
 export const FONT_D = '"Dela Gothic One", "Noto Sans SC Variable", sans-serif';
 export const FONT_R = '"M PLUS Rounded 1c", "Noto Sans SC Variable", sans-serif';
@@ -42,7 +42,7 @@ const SIGNAGE_TEXT = [
   'STAFF ONLY',
 ].join('');
 
-export const CANVAS_TEXT = SIGNAGE_TEXT + rolesLine('zh') + rolesLine('en') + JSON.stringify([APP_DATA, COPY]);
+export const CANVAS_TEXT = SIGNAGE_TEXT + 'FUBUKI_BB' + rolesLine('zh') + rolesLine('en') + locationLine();
 
 export const TEAL = '#16a39a';
 export const ORANGE = '#ff8a2b';
@@ -113,6 +113,7 @@ function posterTex(bg: string, title: string, sub: string, ink = '#fff', fontSiz
 }
 
 export interface Textures {
+  redraw(): void;
   fascia: THREE.CanvasTexture;
   pylon: THREE.CanvasTexture;
   vend1: THREE.CanvasTexture;
@@ -467,7 +468,7 @@ export function createTextures(): Textures {
     g.fillText('STAFF ONLY', w / 2, h / 2 + 2);
   });
 
-  return {
+  const textures: Omit<Textures, 'redraw'> = {
     fascia,
     pylon,
     vend1,
@@ -493,6 +494,12 @@ export function createTextures(): Textures {
     kissa,
     nobori,
     staffOnly,
+  };
+  return {
+    ...textures,
+    redraw(): void {
+      for (const texture of Object.values(textures)) redrawCtex(texture);
+    },
   };
 }
 

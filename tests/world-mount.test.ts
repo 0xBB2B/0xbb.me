@@ -411,3 +411,48 @@ describe('竖屏下的视场角与整体默认镜头', () => {
     expect(result.distance).toBeLessThanOrEqual(0.1);
   }, 60_000);
 });
+
+describe('铭牌贴图随网页字体到达重画', () => {
+  test('挂起字体请求时场景仍就绪；放行后铭牌材质贴图 version 增加', async () => {
+    const result = await runBrowser<{ ready: boolean; versionBefore: number; versionAfter: number }>(`
+      await cdp('Fetch.enable', { patterns: [{ urlPattern: '*.woff2*' }, { urlPattern: '*.woff*' }] });
+      let release = false;
+      let __stop = false;
+      const pending = [];
+      (async () => {
+        while (!__stop) {
+          for (const event of drainEvents()) {
+            if (event.method !== 'Fetch.requestPaused') continue;
+            if (release) await cdp('Fetch.continueRequest', { requestId: event.params.requestId });
+            else pending.push(event.params.requestId);
+          }
+          await wait(0.05);
+        }
+      })();
+      await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+      await cdp('Page.navigate', { url: ${JSON.stringify(PAGE_URL)} });
+      let ready = false, mountError = null;
+      const mountDeadline = Date.now() + 20000;
+      while (Date.now() < mountDeadline) {
+        ready = await js('!!window.ready').catch(() => false);
+        mountError = await js('window.mountError ?? null').catch(() => null);
+        if (ready || mountError) break;
+        await wait(0.2);
+      }
+      const versionBefore = await js("window.handle.scene.getObjectByName('plaque-face').material.map.version");
+      release = true;
+      for (const id of pending.splice(0)) await cdp('Fetch.continueRequest', { requestId: id });
+      const redrawDeadline = Date.now() + 8000;
+      let versionAfter = versionBefore;
+      while (Date.now() < redrawDeadline) {
+        versionAfter = await js("window.handle.scene.getObjectByName('plaque-face').material.map.version");
+        if (versionAfter > versionBefore) break;
+        await wait(0.1);
+      }
+      __stop = true;
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, versionBefore, versionAfter }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.versionAfter).toBeGreaterThan(result.versionBefore);
+  }, 60_000);
+});

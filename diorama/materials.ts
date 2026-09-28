@@ -30,7 +30,18 @@ export function ctex(
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(repeat[0], repeat[1]);
   }
+  texture.userData.redraw = (): void => {
+    const redrawCtx = canvas.getContext('2d');
+    if (!redrawCtx) return;
+    redrawCtx.clearRect(0, 0, width, height);
+    draw(redrawCtx, width, height);
+    texture.needsUpdate = true;
+  };
   return texture;
+}
+
+export function redrawCtex(texture: THREE.CanvasTexture): void {
+  (texture.userData.redraw as (() => void) | undefined)?.();
 }
 
 export function noOutline<T extends THREE.Material>(material: T): T {

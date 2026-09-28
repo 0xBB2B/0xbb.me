@@ -19,7 +19,7 @@
 
 ## site
 
-- [favicon](site/favicon.md) — 网站图标为红色 911 侧身剪影 SVG
+- [favicon](site/favicon.md) — 网站图标为按 profile.jpg 头像缩成 32×32 格的圆形像素画 SVG
 - [loading-shell](site/loading-shell.md) — 脚本下载前就可显示的雨夜风格加载页、「先看资料」入口与退出时机
 - [profile-images](site/profile-images.md) — 三张头像图片永久保留在仓库并随网站发布，搜索与分享元信息引用的图片必须真实存在
 - [scene-failure](site/scene-failure.md) — 三维场景加载或运行失败时，移除加载页并直接进入无 3D 的资料视角

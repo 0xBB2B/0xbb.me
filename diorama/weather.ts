@@ -34,7 +34,7 @@ export interface RainHandle {
   setVisibleRatio(ratio: number): void;
 }
 
-export function createRain(count = 6500): RainHandle {
+export function createRain(count = 3900): RainHandle {
   const seeds = rainSeeds(count, Math.random);
   const seedAttr = new Float32Array(count * 2 * 4);
   const floorY = new Float32Array(count * 2);
@@ -85,7 +85,7 @@ export interface SplashHandle {
   setPixelRatio(pixelRatio: number): void;
 }
 
-export function createSplashes(pixelRatio: number, count = 1800): SplashHandle {
+export function createSplashes(pixelRatio: number, count = 1100): SplashHandle {
   const seed = new Float32Array(count * 3);
   const floorY = new Float32Array(count);
   for (let i = 0; i < count; i++) {

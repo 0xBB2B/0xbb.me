@@ -29,6 +29,15 @@ afterAll(async () => {
 });
 
 const HELPERS = `
+  async function holdScene() {
+    await cdp('Fetch.enable', { patterns: [{ urlPattern: '*/assets/world-*.js' }] });
+  }
+  async function releaseScene() {
+    for (const event of drainEvents()) {
+      if (event.method === 'Fetch.requestPaused') await cdp('Fetch.continueRequest', { requestId: event.params.requestId });
+    }
+    await cdp('Fetch.disable');
+  }
   async function settle() {
     await js('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
   }
@@ -199,9 +208,11 @@ describe('三维场景加载失败', () => {
       ${HELPERS}
       await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
       await cdp('Emulation.setUserAgentOverride', { userAgent: await js('navigator.userAgent'), acceptLanguage: 'en-US' });
+      await holdScene();
       await navigate(${JSON.stringify(BASE_URL)});
       while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
       await click('.loading-shell-button');
+      await releaseScene();
       const deadline = Date.now() + 20000;
       while (Date.now() < deadline) {
         if (await js("document.querySelector('#scene')?.getAttribute('aria-busy') === 'false'")) break;

@@ -289,3 +289,17 @@ test('every character drawn on canvas textures is part of the font preload text'
   expect(missing).toEqual([]);
   setCanvasFactory(createFakeCanvasFactory());
 });
+
+test('the font preload text contains no character beyond what canvas textures actually draw', () => {
+  const canvases: FakeCanvas[] = [];
+  setCanvasFactory(() => { const canvas = createFakeCanvas(); canvases.push(canvas); return canvas; });
+  createTextures();
+  const plaqueCanvas = createFakeCanvas();
+  const ctx = plaqueCanvas.getContext('2d') as CanvasRenderingContext2D;
+  drawPlaque(ctx, 'zh');
+  drawPlaque(ctx, 'en');
+  const drawn = new Set([...canvases, plaqueCanvas].flatMap((canvas) => canvas.fillTextCalls).join(''));
+  const extra = [...new Set(CANVAS_TEXT)].filter((char) => char.trim() && !drawn.has(char));
+  expect(extra).toEqual([]);
+  setCanvasFactory(createFakeCanvasFactory());
+});

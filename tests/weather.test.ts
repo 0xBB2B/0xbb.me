@@ -91,6 +91,16 @@ describe('roof landing heights and low-tier handles', () => {
     }
   });
 
+  test('the default rain count is 3900 streaks', () => {
+    const rain = createRain();
+    expect(rain.mesh.geometry.getAttribute('position').count).toBe(3900 * 2);
+  });
+
+  test('the default splash count is 1100 drops', () => {
+    const splashes = createSplashes(1);
+    expect(splashes.mesh.geometry.getAttribute('position').count).toBe(1100);
+  });
+
   test('the rain can be thinned to half for the low tier', () => {
     const rain = createRain(1000);
     rain.setVisibleRatio(0.5);
