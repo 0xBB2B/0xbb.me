@@ -12,7 +12,7 @@ import { buildStreet } from './street';
 import { buildLights } from './lights';
 import { createPlaque, setPlaqueGlow, setPlaqueLanguage } from './plaque';
 import { createRain, createSplashes, createDrips } from './weather';
-import { createWetGround } from './wet-ground';
+import { captureEnvironment, createWetGround, type EnvironmentCapture } from './wet-ground';
 import { buildCar } from './car';
 import { createAmbient } from './ambient';
 import { plaqueGlow } from './rhythm';
@@ -53,6 +53,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
   camera.updateProjectionMatrix();
 
   let wetGround: ReturnType<typeof createWetGround> | undefined;
+  let envCapture: EnvironmentCapture | undefined;
   let handleResize: () => void = () => {};
   let handleVisibility: () => void = () => {};
   let handleContextLost: () => void = () => {};
@@ -73,16 +74,13 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
     const splashes = createSplashes(pixelRatio);
     const drips = createDrips();
     scene.add(rain.mesh, splashes.mesh, drips.mesh);
-    wetGround = createWetGround(scene, width, height, pixelRatio);
 
     function applyTier(nextTier: Tier): void {
       const settings = TIER_SETTINGS[nextTier];
       pixelRatio = Math.min(devicePixelRatio, settings.maxPixelRatio);
       setPixelRatio(pixelRatio);
-      wetGround!.setReflection(settings.reflection);
       rain.setVisibleRatio(settings.rainRatio);
       splashes.setPixelRatio(pixelRatio);
-      wetGround!.resize(width, height, pixelRatio);
     }
 
     applyTier(tier);
@@ -92,6 +90,10 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
     const ambient = createAmbient({ store, street, hazard: { material: car.hazardMaterial, lights: car.hazardLights } });
 
     disableFogOnEmissive(scene);
+
+    ambient.tick(0, 0);
+    envCapture = captureEnvironment(renderer, scene, [rain.mesh, splashes.mesh, drips.mesh]);
+    wetGround = createWetGround(scene, envCapture.texture);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -259,7 +261,6 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       resize(w, h);
       camera.fov = viewFov(w, h);
       camera.updateProjectionMatrix();
-      wetGround!.resize(w, h, pixelRatio);
       if (view !== 'diorama') updateCamera(clock.elapsedTime);
     };
     window.addEventListener('resize', handleResize);
@@ -308,6 +309,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
         interaction.dispose();
         controls.dispose();
         wetGround!.dispose();
+        envCapture!.dispose();
         disposeRenderer();
       },
     };
@@ -316,6 +318,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
     document.removeEventListener('visibilitychange', handleVisibility);
     renderer.domElement.removeEventListener('webglcontextlost', handleContextLost);
     wetGround?.dispose();
+    envCapture?.dispose();
     disposeRenderer();
     throw error;
   }

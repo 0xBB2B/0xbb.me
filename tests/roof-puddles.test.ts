@@ -77,7 +77,7 @@ describe('rain landing on the real roof slabs', () => {
 describe('roof puddles', () => {
   function setup() {
     const s = assembleScene();
-    const wet = createWetGround(s, 800, 600, 1);
+    const wet = createWetGround(s, new THREE.CubeTexture());
     return { s, wet };
   }
 
@@ -96,12 +96,9 @@ describe('roof puddles', () => {
     wet.dispose();
   });
 
-  test('both layers stay visible in high and low tier', () => {
+  test('both layers are visible', () => {
     const { s, wet } = setup();
-    for (const settings of [{ scale: 0.5, shared: false }, { scale: 0.25, shared: true }]) {
-      wet.setReflection(settings);
-      for (const { name } of ROOFS) expect(s.getObjectByName(name)?.visible).toBe(true);
-    }
+    for (const { name } of ROOFS) expect(s.getObjectByName(name)?.visible).toBe(true);
     wet.dispose();
   });
 
@@ -184,7 +181,7 @@ describe('puddle shader uniforms', () => {
 
   test.each(PUDDLE_CASES)('$name: uCount, uPuddles and uSheen match the layout data', ({ name, zone }) => {
     const s = assembleScene();
-    const wet = createWetGround(s, 800, 600, 1);
+    const wet = createWetGround(s, new THREE.CubeTexture());
     const material = (s.getObjectByName(name) as THREE.Mesh).material as THREE.ShaderMaterial;
     const { uCount, uPuddles, uSheen } = material.uniforms;
     expect(uCount.value).toBe(zone.puddles.length);

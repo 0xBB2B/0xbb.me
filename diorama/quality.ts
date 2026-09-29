@@ -11,14 +11,13 @@ export function percentile95(values: number[]): number {
 }
 
 export interface TierSettings {
-  reflection: { scale: number; shared: boolean };
   rainRatio: number;
   maxPixelRatio: number;
 }
 
 export const TIER_SETTINGS: Record<Tier, TierSettings> = {
-  high: { reflection: { scale: 0.5, shared: false }, rainRatio: 1, maxPixelRatio: 2 },
-  low: { reflection: { scale: 0.25, shared: true }, rainRatio: 0.5, maxPixelRatio: 1 },
+  high: { rainRatio: 1, maxPixelRatio: 2 },
+  low: { rainRatio: 0.5, maxPixelRatio: 1 },
 };
 
 const WINDOW_MS = 5000;
