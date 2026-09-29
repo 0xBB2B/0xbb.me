@@ -2,13 +2,14 @@ import type { CanvasLike } from '../diorama/materials';
 
 export interface FakeCanvas extends CanvasLike {
   fillTextCalls: string[];
+  fillStyleCalls: unknown[];
 }
 
 function fakeGradient(): { addColorStop: (offset: number, color: string) => void } {
   return { addColorStop: () => {} };
 }
 
-function fakeContext(fillTextCalls: string[]): CanvasRenderingContext2D {
+function fakeContext(fillTextCalls: string[], fillStyleCalls: unknown[]): CanvasRenderingContext2D {
   const state: Record<string, unknown> = {};
   return new Proxy(state, {
     get(target, prop: string) {
@@ -19,6 +20,7 @@ function fakeContext(fillTextCalls: string[]): CanvasRenderingContext2D {
       return () => {};
     },
     set(target, prop: string, value) {
+      if (prop === 'fillStyle') fillStyleCalls.push(value);
       target[prop] = value;
       return true;
     },
@@ -27,12 +29,14 @@ function fakeContext(fillTextCalls: string[]): CanvasRenderingContext2D {
 
 export function createFakeCanvas(): FakeCanvas {
   const fillTextCalls: string[] = [];
-  const ctx = fakeContext(fillTextCalls);
+  const fillStyleCalls: unknown[] = [];
+  const ctx = fakeContext(fillTextCalls, fillStyleCalls);
   return {
     width: 0,
     height: 0,
     getContext: () => ctx,
     fillTextCalls,
+    fillStyleCalls,
   };
 }
 

@@ -146,6 +146,8 @@ export interface Textures {
   kissa: THREE.CanvasTexture;
   nobori: THREE.CanvasTexture;
   staffOnly: THREE.CanvasTexture;
+  curtain: THREE.CanvasTexture;
+  acFront: THREE.CanvasTexture;
 }
 
 export function createTextures(): Textures {
@@ -519,6 +521,48 @@ export function createTextures(): Textures {
     g.fillText('COFFEE', w / 2, h / 2);
   });
 
+  const curtain = ctex(128, 128, (g, w, h) => {
+    g.fillStyle = '#efefec';
+    g.fillRect(0, 0, w, h);
+    const folds = 10;
+    for (let i = 0; i < folds; i++) {
+      const x = (i / folds) * w;
+      const shade = g.createLinearGradient(x, 0, x + w / folds, 0);
+      shade.addColorStop(0, 'rgba(60,60,60,0.05)');
+      shade.addColorStop(0.5, 'rgba(60,60,60,0.32)');
+      shade.addColorStop(1, 'rgba(60,60,60,0.05)');
+      g.fillStyle = shade;
+      g.fillRect(x, 0, w / folds, h);
+    }
+    g.fillStyle = 'rgba(40,30,20,0.55)';
+    g.fillRect(w / 2 - 2, 0, 4, h);
+  });
+
+  const acFront = ctex(128, 128, (g, w, h) => {
+    g.fillStyle = '#e4e7ec';
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#8a919c';
+    g.lineWidth = 2;
+    const cx = w * 0.4;
+    const cy = h / 2;
+    g.beginPath();
+    g.arc(cx, cy, 44, 0, Math.PI * 2);
+    g.stroke();
+    for (let r = 10; r < 44; r += 8) {
+      g.beginPath();
+      g.arc(cx, cy, r, 0, Math.PI * 2);
+      g.stroke();
+    }
+    for (let a = 0; a < 6; a++) {
+      g.beginPath();
+      g.moveTo(cx, cy);
+      g.lineTo(cx + Math.cos((a * Math.PI) / 3) * 44, cy + Math.sin((a * Math.PI) / 3) * 44);
+      g.stroke();
+    }
+    g.fillStyle = '#b9bfc9';
+    g.fillRect(w - 26, cy - 22, 18, 44);
+  });
+
   const kissa = ctex(512, 128, (g, w, h) => {
     g.fillStyle = '#e9dcc0';
     g.fillRect(0, 0, w, h);
@@ -581,6 +625,8 @@ export function createTextures(): Textures {
     kissa,
     nobori,
     staffOnly,
+    curtain,
+    acFront,
   };
   return {
     ...textures,

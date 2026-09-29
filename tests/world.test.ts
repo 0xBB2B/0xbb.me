@@ -7,7 +7,7 @@ import { buildStore } from '../diorama/store';
 import { buildStreet } from '../diorama/street';
 import { buildLights } from '../diorama/lights';
 import { createPlaque, setPlaqueLanguage, setPlaqueGlow, PLAQUE_PANEL } from '../diorama/plaque';
-import { DEFAULT_CAMERA } from '../diorama/layout';
+import { DEFAULT_CAMERA, ROOF_ZONES } from '../diorama/layout';
 import type { FakeCanvas } from './fake-canvas';
 import { createFakeCanvas, createFakeCanvasFactory } from './fake-canvas';
 
@@ -482,6 +482,27 @@ describe('store roof and outer walls ignore lights behind them', () => {
   });
 });
 
+function neighborGroup(scene: THREE.Scene): THREE.Object3D {
+  return scene.getObjectByName('neighbor-building')!;
+}
+
+function meshesUnder(root: THREE.Object3D): THREE.Mesh[] {
+  const found: THREE.Mesh[] = [];
+  root.traverse((obj) => {
+    if ((obj as THREE.Mesh).isMesh) found.push(obj as THREE.Mesh);
+  });
+  return found;
+}
+
+function materialsOf(mesh: THREE.Mesh): THREE.Material[] {
+  return Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+}
+
+function isInside(obj: THREE.Object3D, ancestor: THREE.Object3D): boolean {
+  for (let node: THREE.Object3D | null = obj; node; node = node.parent) if (node === ancestor) return true;
+  return false;
+}
+
 describe('the neighbor building is a two-storey tea house left of the store', () => {
   const NEIGHBOR_NAMES = [
     'neighbor-wall-1f',
@@ -494,33 +515,12 @@ describe('the neighbor building is a two-storey tea house left of the store', ()
     'kissa-lightbox',
   ];
 
-  function neighborGroup(scene: THREE.Scene): THREE.Object3D {
-    return scene.getObjectByName('neighbor-building')!;
-  }
-
-  function meshesUnder(root: THREE.Object3D): THREE.Mesh[] {
-    const found: THREE.Mesh[] = [];
-    root.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) found.push(obj as THREE.Mesh);
-    });
-    return found;
-  }
-
-  function materialsOf(mesh: THREE.Mesh): THREE.Material[] {
-    return Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-  }
-
   function boxOf(scene: THREE.Scene, name: string): THREE.Box3 {
     return new THREE.Box3().setFromObject(scene.getObjectByName(name)!);
   }
 
   function centerOf(box: THREE.Box3): THREE.Vector3 {
     return box.getCenter(new THREE.Vector3());
-  }
-
-  function isInside(obj: THREE.Object3D, ancestor: THREE.Object3D): boolean {
-    for (let node: THREE.Object3D | null = obj; node; node = node.parent) if (node === ancestor) return true;
-    return false;
   }
 
   test('the group exists, holds at most 72 meshes and contains no light', () => {
@@ -653,5 +653,234 @@ describe('the neighbor building is a two-storey tea house left of the store', ()
     expect(rainPipe).toBeDefined();
     expect(pipes).toHaveLength(1);
     expect(isInside(pipes[0], rainPipe!)).toBe(true);
+  });
+});
+
+describe('the neighbor building balcony, curtained windows and rooftop', () => {
+  const ROOF_NAMES = ['neighbor-stair-house', 'neighbor-drying-rack', 'neighbor-water-tank', 'neighbor-antenna'];
+  const BALCONY_NAMES = ['balcony-pole', 'balcony-hanger', 'balcony-pot', 'balcony-ac'];
+
+  function boxOf(obj: THREE.Object3D): THREE.Box3 {
+    return new THREE.Box3().setFromObject(obj);
+  }
+
+  function upperWindowFaces(scene: THREE.Scene): { front: THREE.Mesh[]; side: THREE.Mesh[] } {
+    const planes = meshesUnder(neighborGroup(scene)).filter((mesh) => mesh.geometry.type === 'PlaneGeometry');
+    const near = (mesh: THREE.Mesh, axis: 'x' | 'z', value: number) => {
+      const center = boxOf(mesh).getCenter(new THREE.Vector3());
+      return Math.abs(center[axis] - value) <= 0.12 && Math.abs(center.y - 4.8) <= 0.8;
+    };
+    return { front: planes.filter((m) => near(m, 'z', -3.5)), side: planes.filter((m) => near(m, 'x', -7.59)) };
+  }
+
+  function lowerSideWindowFaces(scene: THREE.Scene): THREE.Mesh[] {
+    return meshesUnder(neighborGroup(scene)).filter((mesh) => {
+      if (mesh.geometry.type !== 'PlaneGeometry') return false;
+      const center = boxOf(mesh).getCenter(new THREE.Vector3());
+      return Math.abs(center.x + 7.59) <= 0.12 && Math.abs(center.y - 2.2) <= 0.5 && Math.abs(center.z + 10.4) <= 0.6;
+    });
+  }
+
+  function windowColor(mesh: THREE.Mesh): THREE.Color {
+    return (materialsOf(mesh)[0] as THREE.MeshBasicMaterial).color;
+  }
+
+  function luminance(color: THREE.Color): number {
+    return 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
+  }
+
+  function parseChannels(style: unknown): number[] | undefined {
+    if (typeof style !== 'string') return undefined;
+    const hex = style.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (hex) {
+      const digits = hex[1].length === 3 ? hex[1].replace(/./g, '$&$&') : hex[1];
+      return [0, 2, 4].map((i) => parseInt(digits.slice(i, i + 2), 16));
+    }
+    const rgb = style.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    return rgb ? [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])] : undefined;
+  }
+
+  function horizontalDistance(box: THREE.Box3, x: number, z: number): number {
+    const dx = Math.max(box.min.x - x, x - box.max.x, 0);
+    const dz = Math.max(box.min.z - z, z - box.max.z, 0);
+    return Math.hypot(dx, dz);
+  }
+
+  function assembleWithStreet() {
+    const scene = new THREE.Scene();
+    const textures = createTextures();
+    buildPedestal(scene, null);
+    buildGround(scene, textures);
+    buildRoadMarkings(scene, textures);
+    buildStore(scene, textures);
+    const street = buildStreet(scene, textures);
+    scene.updateMatrixWorld(true);
+    return { scene, tvMaterial: street.tvMaterial };
+  }
+
+  for (const name of [...BALCONY_NAMES, 'neighbor-parapet', ...ROOF_NAMES, 'neighbor-stair-door']) {
+    test(`"${name}" exists inside the neighbor-building group`, () => {
+      const scene = assembleScene();
+      const found = scene.getObjectByName(name);
+      expect(found).toBeDefined();
+      expect(isInside(found!, neighborGroup(scene))).toBe(true);
+    });
+  }
+
+  test('the balcony has 3 to 4 empty hangers and no clothes', () => {
+    const scene = assembleScene();
+    expect(namedObjects(scene, 'balcony-hanger').length).toBeGreaterThanOrEqual(3);
+    expect(namedObjects(scene, 'balcony-hanger').length).toBeLessThanOrEqual(4);
+    neighborGroup(scene).traverse((obj) => {
+      const center = boxOf(obj).getCenter(new THREE.Vector3());
+      if (center.y < 3.9 || center.y > 5.5 || center.z <= -3.6) return;
+      expect(obj.name.toLowerCase()).not.toMatch(/cloth|shirt|towel/);
+    });
+  });
+
+  test('the balcony has 2 to 3 pots', () => {
+    const pots = namedObjects(assembleScene(), 'balcony-pot');
+    expect(pots.length).toBeGreaterThanOrEqual(2);
+    expect(pots.length).toBeLessThanOrEqual(3);
+  });
+
+  for (const name of BALCONY_NAMES) {
+    test(`every "${name}" sits on the balcony`, () => {
+      const objects = namedObjects(assembleScene(), name);
+      expect(objects.length).toBeGreaterThanOrEqual(1);
+      for (const obj of objects) {
+        const center = boxOf(obj).getCenter(new THREE.Vector3());
+        expect(center.y).toBeGreaterThanOrEqual(3.9);
+        expect(center.y).toBeLessThanOrEqual(5.5);
+        expect(center.z).toBeGreaterThanOrEqual(-3.6);
+        expect(center.z).toBeLessThanOrEqual(-2.6);
+      }
+    });
+  }
+
+  for (const name of ['neighbor-parapet', ...ROOF_NAMES]) {
+    test(`"${name}" rests on the roof slab`, () => {
+      const scene = assembleScene();
+      expect(scene.getObjectByName(name)).toBeDefined();
+      expect(boxOf(scene.getObjectByName(name)!).min.y).toBeGreaterThanOrEqual(7.15);
+    });
+  }
+
+  test('the parapet runs around the whole roof edge', () => {
+    const scene = assembleScene();
+    expect(scene.getObjectByName('neighbor-parapet')).toBeDefined();
+    const size = boxOf(scene.getObjectByName('neighbor-parapet')!).getSize(new THREE.Vector3());
+    expect(size.x).toBeGreaterThanOrEqual(5.3);
+    expect(size.z).toBeGreaterThanOrEqual(9.4);
+  });
+
+  test('the stair house contains its door', () => {
+    const house = assembleScene().getObjectByName('neighbor-stair-house');
+    expect(house).toBeDefined();
+    expect(house!.getObjectByName('neighbor-stair-door')).toBeDefined();
+  });
+
+  test('rooftop objects stay clear of the roof puddles', () => {
+    const scene = assembleScene();
+    const roof = ROOF_ZONES.find((zone) => zone.x0 === -13)!;
+    for (const name of ROOF_NAMES) {
+      const object = scene.getObjectByName(name);
+      expect(object).toBeDefined();
+      const box = boxOf(object!);
+      for (const puddle of roof.puddles) {
+        const separated =
+          box.max.x < puddle.x - puddle.rx || box.min.x > puddle.x + puddle.rx || box.max.z < puddle.z - puddle.rz || box.min.z > puddle.z + puddle.rz;
+        expect(separated).toBe(true);
+      }
+    }
+  });
+
+  test('the four upper-floor windows share one curtained texture canvas', () => {
+    const { front, side } = upperWindowFaces(assembleScene());
+    expect(front).toHaveLength(2);
+    expect(side).toHaveLength(2);
+    const images = [...front, ...side].map((mesh) => (materialsOf(mesh)[0] as THREE.MeshBasicMaterial).map?.image);
+    for (const image of images) expect(image).toBeDefined();
+    expect(new Set(images).size).toBe(1);
+  });
+
+  test('the flickering tv material belongs to an upper-floor side window', () => {
+    const { scene, tvMaterial } = assembleWithStreet();
+    const { front, side } = upperWindowFaces(scene);
+    const materials = [...front, ...side].flatMap(materialsOf);
+    expect(materials).toContain(tvMaterial);
+  });
+
+  test('the balcony pole has one bracket at each end', () => {
+    const scene = assembleScene();
+    const pole = scene.getObjectByName('balcony-pole');
+    expect(pole).toBeDefined();
+    const poleBox = boxOf(pole!);
+    const centerZ = poleBox.getCenter(new THREE.Vector3()).z;
+    const brackets = namedObjects(scene, 'balcony-pole-bracket');
+    expect(brackets).toHaveLength(2);
+    const distances = brackets.map((b) => [poleBox.min.x, poleBox.max.x].map((x) => horizontalDistance(boxOf(b), x, centerZ)));
+    expect(Math.min(distances[0][0], distances[1][0])).toBeLessThanOrEqual(0.15);
+    expect(Math.min(distances[0][1], distances[1][1])).toBeLessThanOrEqual(0.15);
+    expect(distances.filter((d) => Math.min(...d) <= 0.15)).toHaveLength(2);
+  });
+
+  test('every hanger hook loops over the pole', () => {
+    const scene = assembleScene();
+    const pole = scene.getObjectByName('balcony-pole');
+    expect(pole).toBeDefined();
+    const hangers = namedObjects(scene, 'balcony-hanger');
+    expect(hangers.length).toBeGreaterThanOrEqual(1);
+    for (const hanger of hangers) expect(boxOf(hanger).intersectsBox(boxOf(pole!))).toBe(true);
+  });
+
+  test('upper front windows are one warm and one dark, side windows one white and one tv', () => {
+    const { scene, tvMaterial } = assembleWithStreet();
+    const { front, side } = upperWindowFaces(scene);
+    expect(front).toHaveLength(2);
+    expect(side).toHaveLength(2);
+    const frontColors = front.map(windowColor);
+    expect(frontColors.some((c) => c.r > c.b)).toBe(true);
+    expect(frontColors.some((c) => luminance(c) < 0.25)).toBe(true);
+    const sideColors = side.map(windowColor);
+    expect(sideColors.some((c) => c.r > 0.6 && c.g > 0.6 && c.b > 0.6)).toBe(true);
+    expect(side.flatMap(materialsOf)).toContain(tvMaterial);
+  });
+
+  test('the lower side window is dark and carries the same curtain texture', () => {
+    const scene = assembleScene();
+    const lower = lowerSideWindowFaces(scene);
+    expect(lower).toHaveLength(1);
+    expect(luminance(windowColor(lower[0]))).toBeLessThan(0.25);
+    const upperImage = (materialsOf(upperWindowFaces(scene).front[0])[0] as THREE.MeshBasicMaterial).map?.image;
+    expect(upperImage).toBeDefined();
+    expect((materialsOf(lower[0])[0] as THREE.MeshBasicMaterial).map?.image).toBe(upperImage);
+  });
+
+  test('the curtain texture is painted on a neutral near-white base', () => {
+    const face = upperWindowFaces(assembleScene()).front[0];
+    expect(face).toBeDefined();
+    const canvas = (materialsOf(face)[0] as THREE.MeshBasicMaterial).map?.image as unknown as FakeCanvas;
+    const channels = parseChannels(canvas.fillStyleCalls[0]);
+    expect(channels).toBeDefined();
+    expect(Math.max(...channels!) - Math.min(...channels!)).toBeLessThanOrEqual(12);
+  });
+
+  test('the parapet has a wall segment flush with each of the four roof slab edges', () => {
+    const parapet = assembleScene().getObjectByName('neighbor-parapet');
+    expect(parapet).toBeDefined();
+    const boxes = meshesUnder(parapet!).map((mesh) => boxOf(mesh));
+    const thin = (a: number, b: number) => b - a <= 0.6;
+    const flush = (edge: 'west' | 'east' | 'north' | 'south') =>
+      boxes.some((box) => {
+        if (edge === 'west') return Math.abs(box.min.x + 13.1) <= 0.05 && thin(box.min.x, box.max.x);
+        if (edge === 'east') return Math.abs(box.max.x + 7.5) <= 0.05 && thin(box.min.x, box.max.x);
+        if (edge === 'north') return Math.abs(box.min.z + 13.1) <= 0.05 && thin(box.min.z, box.max.z);
+        return Math.abs(box.max.z + 3.4) <= 0.05 && thin(box.min.z, box.max.z);
+      });
+    expect(flush('west')).toBe(true);
+    expect(flush('east')).toBe(true);
+    expect(flush('north')).toBe(true);
+    expect(flush('south')).toBe(true);
   });
 });
