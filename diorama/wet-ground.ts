@@ -2,15 +2,15 @@ import * as THREE from 'three';
 import { noOutline } from './materials';
 import { BASE_HALF, ROOF_ZONES, type RoofZone } from './layout';
 
-const GLSL_HASH = `
+export const GLSL_HASH = `
 float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
 float vnoise(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.-2.*f);
   return mix(mix(hash(i),hash(i+vec2(1,0)),u.x), mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x), u.y); }`;
 
-const FRESNEL_F0 = 0.04;
+export const FRESNEL_F0 = 0.04;
 const PUDDLE_FLOOR = 0.25;
 
-const glsl = (n: number): string => (Number.isInteger(n) ? n.toFixed(1) : String(n));
+export const glsl = (n: number): string => (Number.isInteger(n) ? n.toFixed(1) : String(n));
 
 export function fresnel(cosTheta: number): number {
   return FRESNEL_F0 + (1 - FRESNEL_F0) * (1 - cosTheta) ** 5;
@@ -27,14 +27,16 @@ const RIPPLES_GLSL = `
       acc.x+=ring; acc.yz+=dv/(d+1e-3)*ring; }
     return acc; }`;
 
-const PUDDLE_GLSL = `
+export const PUDDLE_GLSL = `
 float puddle(vec2 p){
   float n=vnoise(p*.28)*.6+vnoise(p*.9)*.3+vnoise(p*3.1)*.1;
   return smoothstep(.645,.665,n); }`;
 
+export const LOT_REGION = '((p.x<5.&&p.y<5.)||p.y>11.||(p.x>11.&&p.y<5.))';
+
 const WET_GROUND_FRAGMENT = `uniform samplerCube envMap; uniform float uTime; uniform float uMask; varying vec3 vW; ${GLSL_HASH} ${RIPPLES_GLSL} ${PUDDLE_GLSL}
     void main(){ vec2 p=vW.xz;
-      if(uMask>.5 && !((p.x<5.&&p.y<5.)||p.y>11.||(p.x>11.&&p.y<5.))) discard;
+      if(uMask>.5 && !${LOT_REGION}) discard;
       float pud=puddle(p);
       vec3 rp=ripples(p);
       float cosT=normalize(cameraPosition-vW).y;

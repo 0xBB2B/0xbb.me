@@ -2,9 +2,10 @@
 | 序号 | Plan | 状态 | 完成时间 |
 |---|---|---|---|
 | 01 | wet-ground-env | done | 2026-09-29 |
-| 02 | light-streaks | in-progress | — |
+| 02 | light-streaks | done | 2026-09-29 |
 ## 当前
-正在执行 `02-light-streaks.md`：Impl（Green）阶段（Red 测试已写好）。
+全部 2 步完成（全量 555 个用例通过，含 1440×900 旋转 30 秒帧率用例）。
+- 02 记录：截图后按效果追加 spec 规则并闭环：贴墙宽灯按墙面方向拆约 1 米一段（立式招牌不拆）、中心亮度上限 0.9、两端淡入淡出、重叠处取最大值（MaxEquation）不相加。Review 后修正：纵向曲线峰值归一、光带 renderOrder 2.5（原与湿层同为 2 且无 position，被排在湿层前而压暗水洼光带）、喫茶店灯箱 y 0.65 与立式招牌 y 5.2（plan 原数据漏算父组偏移）、停车场区域判断复用 wet-ground 的 LOT_REGION、相机低于地面层时不画、Lamp 类型复用。
 - 01 记录：删除旧的镜面抖动测试 tests/wet-ground.test.ts（新着色器无此模糊）。Review 后修正：环境图改半精度浮点、拍摄时背景换雾色避免立方体面接缝、拍摄前先 tick 一次环境动效让信号灯状态正确、相机抬到 y=3；湿层着色器改为纯字符串常量；补测试 uMask、湿层先于暗区绘制、captureEnvironment 隐藏恢复/背景/类型。
 ## 阻塞
 （无）

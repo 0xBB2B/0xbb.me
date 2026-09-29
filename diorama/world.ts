@@ -12,6 +12,7 @@ import { buildStreet } from './street';
 import { buildLights } from './lights';
 import { createPlaque, setPlaqueGlow, setPlaqueLanguage } from './plaque';
 import { createRain, createSplashes, createDrips } from './weather';
+import { createLightStreaks, STORE_STREAK_SOURCES, signalStreakSources } from './light-streaks';
 import { captureEnvironment, createWetGround, type EnvironmentCapture } from './wet-ground';
 import { buildCar } from './car';
 import { createAmbient } from './ambient';
@@ -54,6 +55,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
 
   let wetGround: ReturnType<typeof createWetGround> | undefined;
   let envCapture: EnvironmentCapture | undefined;
+  let lightStreaks: ReturnType<typeof createLightStreaks> | undefined;
   let handleResize: () => void = () => {};
   let handleVisibility: () => void = () => {};
   let handleContextLost: () => void = () => {};
@@ -94,6 +96,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
     ambient.tick(0, 0);
     envCapture = captureEnvironment(renderer, scene, [rain.mesh, splashes.mesh, drips.mesh]);
     wetGround = createWetGround(scene, envCapture.texture);
+    lightStreaks = createLightStreaks(scene, [...STORE_STREAK_SOURCES, ...signalStreakSources(street)]);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -243,6 +246,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       const t = clock.elapsedTime;
       sharedTime.value = t;
       ambient.tick(t, dt);
+      lightStreaks!.update();
       drips.update(t);
       wetGround!.update(t);
       setPlaqueGlow(plaque, plaqueGlow(t), interaction.hovered && view === 'diorama');
@@ -309,6 +313,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
         interaction.dispose();
         controls.dispose();
         wetGround!.dispose();
+        lightStreaks!.dispose();
         envCapture!.dispose();
         disposeRenderer();
       },
@@ -318,6 +323,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
     document.removeEventListener('visibilitychange', handleVisibility);
     renderer.domElement.removeEventListener('webglcontextlost', handleContextLost);
     wetGround?.dispose();
+    lightStreaks?.dispose();
     envCapture?.dispose();
     disposeRenderer();
     throw error;
