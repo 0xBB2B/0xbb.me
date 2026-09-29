@@ -17,7 +17,7 @@
 - [diorama-layout](scene/diorama-layout.md) — 雨夜便利店微缩模型包含的物件、摆放关系、画风，以及整体视角的镜头操作
 - [neighbor-building](scene/neighbor-building.md) — 便利店左侧两层旧楼的外观：外墙材质、一楼喫茶店、二楼住家、屋顶物件与物件数量上限
 - [quality-tier](scene/quality-tier.md) — 画质分高低两档，按设备与实测帧率自动选择与降档，并规定帧率标准
-- [wet-reflection](scene/wet-reflection.md) — 湿地面倒影的强弱随视角变化、只映出亮处的竖直光带、水洼镜面，以及物体正下方的暗区
+- [wet-reflection](scene/wet-reflection.md) — 湿地面倒影由按视角计算位置的灯光光带和水洼里的环境图倒影组成，任何角度都稳定，外加物体下方暗区
 
 ## site
 
