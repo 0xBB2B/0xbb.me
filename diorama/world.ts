@@ -79,13 +79,13 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       const settings = TIER_SETTINGS[nextTier];
       pixelRatio = Math.min(devicePixelRatio, settings.maxPixelRatio);
       setPixelRatio(pixelRatio);
-      wetGround!.setReflection(settings.reflection);
+      wetGround!.setReflections(settings.reflections);
       rain.setVisibleRatio(settings.rainRatio);
       splashes.setPixelRatio(pixelRatio);
       wetGround!.resize(width, height, pixelRatio);
     }
 
-    applyTier(tier);
+    if (tier === 'low') applyTier('low');
 
     const car = buildCar();
     scene.add(car.group);

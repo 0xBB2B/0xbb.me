@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { toon, glow, noOutline, sharedTime, toonGradientMap } from './materials';
 import { add, box, cyl, plane, flat, rod, rand, pick, acUnit } from './primitives';
 import { TEAL, ORANGE, type Textures } from './textures';
-import { contactShadow } from './wet-ground';
 
 const GLSL_HASH = `
 float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
@@ -337,7 +336,6 @@ export function buildStore(scene: THREE.Scene, textures: Textures): Store {
     g.position.set(x, 0.156, z);
     g.rotation.y = ry;
     parent.add(g);
-    contactShadow(g, 1.3, 1.1, 0, 0.019, 0);
     box(g, 0.92, 1.83, 0.72, toon(body), 0, 0, 0);
     plane(g, 0.86, 1.72, new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color(0.95, 0.95, 0.95), toneMapped: false }), 0, 0.92, 0.365);
     box(g, 0.96, 0.08, 0.76, toon('#2b2f3a'), 0, 1.83, 0);
@@ -354,7 +352,6 @@ export function buildStore(scene: THREE.Scene, textures: Textures): Store {
   box(st, 0.3, 0.4, 0.12, toon('#c9ced6'), 3.56, 1.4, -2.0);
   rod(st, new THREE.Vector3(3.56, 1.8, -2.0), new THREE.Vector3(3.56, 3.8, -2.0), 0.03, toon('#8f97a3'));
 
-  contactShadow(st, 2.1, 0.9, 1.75 + 1.5 * 0.42, 0.175, -0.72);
   const binColors = ['#3a86ff', '#6bcb77', '#ff8a2b', '#8d99ae'];
   binColors.forEach((c, i) => {
     const x = 1.75 + i * 0.42;

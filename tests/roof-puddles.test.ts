@@ -98,8 +98,8 @@ describe('roof puddles', () => {
 
   test('both layers stay visible in high and low tier', () => {
     const { s, wet } = setup();
-    for (const settings of [{ scale: 0.5, shared: false }, { scale: 0.25, shared: true }]) {
-      wet.setReflection(settings);
+    for (const enabled of [false, true]) {
+      wet.setReflections(enabled);
       for (const { name } of ROOFS) expect(s.getObjectByName(name)?.visible).toBe(true);
     }
     wet.dispose();

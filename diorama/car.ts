@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { toon, glow } from './materials';
 import { add, box } from './primitives';
 import { CAR_CENTER } from './layout';
-import { contactShadow } from './wet-ground';
 
 export interface CarBuild {
   group: THREE.Group;
@@ -164,8 +163,6 @@ export function buildCar(): CarBuild {
       hazardLights.push(light);
     }
   }
-
-  contactShadow(car, 4.6, 1.9, 0, 0.025, 0);
 
   car.position.set(...CAR_CENTER);
   car.rotation.y = -Math.PI / 2;
