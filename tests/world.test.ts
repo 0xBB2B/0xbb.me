@@ -481,3 +481,177 @@ describe('store roof and outer walls ignore lights behind them', () => {
     for (const material of [...interior, ...outsideStore]) expect(shadeTable(material)).toEqual([70, 150, 215, 255]);
   });
 });
+
+describe('the neighbor building is a two-storey tea house left of the store', () => {
+  const NEIGHBOR_NAMES = [
+    'neighbor-wall-1f',
+    'neighbor-wall-2f',
+    'neighbor-floor-line',
+    'neighbor-rain-pipe',
+    'neighbor-meter',
+    'kissa-front',
+    'kissa-menu-board',
+    'kissa-lightbox',
+  ];
+
+  function neighborGroup(scene: THREE.Scene): THREE.Object3D {
+    return scene.getObjectByName('neighbor-building')!;
+  }
+
+  function meshesUnder(root: THREE.Object3D): THREE.Mesh[] {
+    const found: THREE.Mesh[] = [];
+    root.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) found.push(obj as THREE.Mesh);
+    });
+    return found;
+  }
+
+  function materialsOf(mesh: THREE.Mesh): THREE.Material[] {
+    return Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  }
+
+  function boxOf(scene: THREE.Scene, name: string): THREE.Box3 {
+    return new THREE.Box3().setFromObject(scene.getObjectByName(name)!);
+  }
+
+  function centerOf(box: THREE.Box3): THREE.Vector3 {
+    return box.getCenter(new THREE.Vector3());
+  }
+
+  function isInside(obj: THREE.Object3D, ancestor: THREE.Object3D): boolean {
+    for (let node: THREE.Object3D | null = obj; node; node = node.parent) if (node === ancestor) return true;
+    return false;
+  }
+
+  test('the group exists, holds at most 72 meshes and contains no light', () => {
+    const group = neighborGroup(assembleScene());
+    expect(group).toBeDefined();
+    expect(meshesUnder(group).length).toBeLessThanOrEqual(72);
+    let lights = 0;
+    group.traverse((obj) => {
+      if ((obj as THREE.Light).isLight) lights += 1;
+    });
+    expect(lights).toBe(0);
+  });
+
+  for (const name of NEIGHBOR_NAMES) {
+    test(`"${name}" exists inside the neighbor-building group`, () => {
+      const scene = assembleScene();
+      const found = namedObjects(scene, name);
+      expect(found.length).toBeGreaterThanOrEqual(1);
+      expect(isInside(found[0], neighborGroup(scene))).toBe(true);
+    });
+  }
+
+  test('the ground floor and upper floor walls use different textures split at the floor line', () => {
+    const scene = assembleScene();
+    const sideImages = (name: string) => {
+      const mesh = meshesUnder(scene.getObjectByName(name)!)[0];
+      const materials = mesh.material as THREE.MeshToonMaterial[];
+      return [0, 1, 4, 5].map((index) => materials[index]?.map?.image);
+    };
+    const images1f = sideImages('neighbor-wall-1f');
+    const images2f = sideImages('neighbor-wall-2f');
+    for (const image of [...images1f, ...images2f]) expect(image).toBeDefined();
+    expect(new Set(images1f).size).toBe(1);
+    expect(new Set(images2f).size).toBe(1);
+    expect(images1f[0]).not.toBe(images2f[0]);
+    expect(boxOf(scene, 'neighbor-wall-1f').max.y).toBeLessThanOrEqual(3.8);
+    expect(boxOf(scene, 'neighbor-wall-2f').min.y).toBeGreaterThanOrEqual(3.2);
+  });
+
+  test('the floor line sits between 3.2m and 3.8m and wraps all four sides', () => {
+    const box = boxOf(assembleScene(), 'neighbor-floor-line');
+    const center = centerOf(box);
+    expect(center.y).toBeGreaterThanOrEqual(3.2);
+    expect(center.y).toBeLessThanOrEqual(3.8);
+    expect(box.max.x - box.min.x).toBeGreaterThanOrEqual(5.4);
+    expect(box.max.z - box.min.z).toBeGreaterThanOrEqual(9.5);
+  });
+
+  test('the rain pipe runs vertically from the roof edge to the ground', () => {
+    const box = boxOf(assembleScene(), 'neighbor-rain-pipe');
+    const size = box.getSize(new THREE.Vector3());
+    expect(size.y).toBeGreaterThan(size.x * 5);
+    expect(size.y).toBeGreaterThan(size.z * 5);
+    expect(box.min.y).toBeLessThanOrEqual(0.3);
+    expect(box.max.y).toBeGreaterThanOrEqual(6.8);
+  });
+
+  test('the meter box is on the ground-floor side wall facing the alley', () => {
+    const center = centerOf(boxOf(assembleScene(), 'neighbor-meter'));
+    expect(center.y).toBeLessThan(3.5);
+    expect(Math.abs(center.x + 7.6)).toBeLessThanOrEqual(0.4);
+  });
+
+  test('the tea house glass is a warm, unlit, textured material', () => {
+    const scene = assembleScene();
+    const glass = meshesUnder(scene.getObjectByName('kissa-front')!).flatMap(materialsOf);
+    expect(glass.length).toBeGreaterThan(0);
+    for (const material of glass) {
+      const basic = material as THREE.MeshBasicMaterial;
+      expect(basic.isMeshBasicMaterial).toBe(true);
+      expect(basic.color.r).toBeGreaterThan(basic.color.b);
+      expect(basic.map).toBeTruthy();
+    }
+  });
+
+  for (const name of ['kissa-menu-board', 'kissa-lightbox']) {
+    test(`"${name}" stands on the pavement in front of the door`, () => {
+      const box = boxOf(assembleScene(), name);
+      const center = centerOf(box);
+      expect(center.z).toBeGreaterThan(-3.5);
+      expect(center.x).toBeGreaterThanOrEqual(-13);
+      expect(center.x).toBeLessThanOrEqual(-7.6);
+      expect(box.min.y).toBeLessThanOrEqual(0.3);
+    });
+  }
+
+  test('there is no shutter texture and no shutter-related object in the neighbor group', () => {
+    expect('shutter' in createTextures()).toBe(false);
+    const group = neighborGroup(assembleScene());
+    group.traverse((obj) => {
+      expect(obj.name.toLowerCase()).not.toContain('shutter');
+    });
+  });
+
+  test('only the tea house glass and lightbox glow faces may have their outline turned off', () => {
+    const scene = assembleScene();
+    const front = scene.getObjectByName('kissa-front')!;
+    const lightbox = scene.getObjectByName('kissa-lightbox')!;
+    for (const mesh of meshesUnder(neighborGroup(scene))) {
+      if (isInside(mesh, front)) continue;
+      const inLightbox = isInside(mesh, lightbox);
+      for (const material of materialsOf(mesh)) {
+        if (inLightbox && (material as THREE.MeshBasicMaterial).isMeshBasicMaterial) continue;
+        expect(material.userData.outlineParameters?.visible).not.toBe(false);
+      }
+    }
+  });
+
+  test('the lightbox has a textured unlit glow face', () => {
+    const lightbox = assembleScene().getObjectByName('kissa-lightbox')!;
+    const glowFaces = meshesUnder(lightbox).flatMap(materialsOf).filter((m) => (m as THREE.MeshBasicMaterial).isMeshBasicMaterial);
+    expect(glowFaces.length).toBeGreaterThanOrEqual(1);
+    expect(glowFaces.some((m) => (m as THREE.MeshBasicMaterial).map)).toBe(true);
+  });
+
+  test('the neighbor building has exactly one rain pipe in the whole scene', () => {
+    const scene = assembleScene();
+    const wall = { minX: -13, maxX: -7.6, minZ: -13, maxZ: -3.5 };
+    const pipes: THREE.Mesh[] = [];
+    scene.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const box = new THREE.Box3().setFromObject(mesh);
+      const size = box.getSize(new THREE.Vector3());
+      const dx = Math.max(wall.minX - box.max.x, box.min.x - wall.maxX, 0);
+      const dz = Math.max(wall.minZ - box.max.z, box.min.z - wall.maxZ, 0);
+      if (Math.hypot(dx, dz) <= 0.3 && size.y >= 5 && size.x <= 0.2 && size.z <= 0.2) pipes.push(mesh);
+    });
+    const rainPipe = scene.getObjectByName('neighbor-rain-pipe');
+    expect(rainPipe).toBeDefined();
+    expect(pipes).toHaveLength(1);
+    expect(isInside(pipes[0], rainPipe!)).toBe(true);
+  });
+});

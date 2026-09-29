@@ -1,7 +1,20 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { toon, glow, noOutline } from './materials';
 import { add, box, cyl, plane, rod, rand, pick, acUnit } from './primitives';
 import type { Textures } from './textures';
+
+const WALL_TILE_METERS = 1.2;
+
+function wallMaterials(tex: THREE.Texture, w: number, h: number, d: number, tileY = true): THREE.Material[] {
+  const faceSizes = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
+  return faceSizes.map(([fw, fh]) => {
+    const face = tex.clone();
+    face.wrapS = face.wrapT = THREE.RepeatWrapping;
+    face.repeat.set(fw / WALL_TILE_METERS, tileY ? fh / WALL_TILE_METERS : 1);
+    return toon('#fff', { map: face });
+  });
+}
 
 interface Lamp {
   m: THREE.MeshBasicMaterial;
@@ -238,9 +251,22 @@ export function buildStreet(scene: THREE.Scene, textures: Textures): Street {
     neighborBuilding.name = 'neighbor-building';
     scene.add(neighborBuilding);
     const b = neighborBuilding;
-    box(b, 5.4, 6.8, 9.5, toon('#7d8497'), -10.3, 0.15, -8.25);
+    box(b, 5.4, 3.35, 9.5, wallMaterials(textures.wallTile1f, 5.4, 3.35, 9.5), -10.3, 0.15, -8.25).name = 'neighbor-wall-1f';
+    box(b, 5.4, 3.45, 9.5, wallMaterials(textures.wallMortar2f, 5.4, 3.45, 9.5, false), -10.3, 3.5, -8.25).name = 'neighbor-wall-2f';
+    box(b, 5.5, 0.12, 9.6, toon('#c9c5ba'), -10.3, 3.44, -8.25).name = 'neighbor-floor-line';
+    cyl(b, 0.04, 0.04, 6.8, toon('#9aa0aa'), -7.75, 0.15, -3.4, 8).name = 'neighbor-rain-pipe';
+    box(b, 0.15, 0.5, 0.4, toon('#8e96a3'), -7.525, 1.15, -6.4).name = 'neighbor-meter';
     box(b, 5.6, 0.25, 9.7, toon('#5f6678'), -10.3, 6.95, -8.25);
-    plane(b, 3.2, 2.3, toon('#fff', { map: textures.shutter }), -10.6, 1.35, -3.49);
+    plane(b, 3.2, 2.3, glow('#ffe0a0', 1, { map: textures.kissaFront, noOutline: true }), -10.6, 1.35, -3.49).name = 'kissa-front';
+    const menuPanel = (ry: number, z: number): THREE.BufferGeometry =>
+      new THREE.PlaneGeometry(0.6, 0.9).rotateX(-0.2).rotateY(ry).translate(0, 0.45, z);
+    add(b, mergeGeometries([menuPanel(0, 0.12), menuPanel(Math.PI, -0.12)]), toon('#fff', { map: textures.kissaMenu }), -8.5, 0.15, -3.0).name = 'kissa-menu-board';
+    const lightbox = new THREE.Group();
+    lightbox.name = 'kissa-lightbox';
+    lightbox.position.set(-10.85, 0.15, -3.1);
+    b.add(lightbox);
+    box(lightbox, 0.44, 0.9, 0.2, toon('#5b3520'), 0, 0, 0);
+    plane(lightbox, 0.36, 0.7, glow('#ffe0a0', 1, { map: textures.kissaLamp, noOutline: true }), 0, 0.5, 0.101);
     box(b, 3.6, 0.08, 0.6, toon('#a8454a'), -10.6, 2.65, -3.2);
     plane(b, 2.2, 0.55, toon('#fff', { map: textures.kissa, glow: 0.15 }), -10.6, 3.1, -3.49);
     function win(x: number, y: number, z: number, ry: number, mat: THREE.Material): THREE.Group {
@@ -278,7 +304,6 @@ export function buildStreet(scene: THREE.Scene, textures: Textures): Street {
     box(scene, 0.35, 0.06, 1.2, toon('#6b727d'), -6.2, 1.85, -6.0);
     rod(scene, new THREE.Vector3(-6.05, 0.5, -4.6), new THREE.Vector3(-6.05, 3.6, -4.6), 0.035, toon('#d8dce2'));
     rod(scene, new THREE.Vector3(-6.05, 0.5, -6.3), new THREE.Vector3(-6.05, 3.6, -6.3), 0.035, toon('#d8dce2'));
-    rod(scene, new THREE.Vector3(-7.5, 0.15, -6.8), new THREE.Vector3(-7.5, 6.8, -6.8), 0.05, toon('#9aa0aa'));
     box(scene, 0.5, 0.35, 0.4, toon('#e0b83a'), -7.2, 0.15, -9.2);
     box(scene, 0.5, 0.35, 0.4, toon('#3a7bd5'), -7.2, 0.5, -9.2);
     for (let i = 0; i < 3; i++) {

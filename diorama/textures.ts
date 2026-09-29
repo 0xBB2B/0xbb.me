@@ -39,6 +39,9 @@ const SIGNAGE_TEXT = [
   'いらっしゃいませ',
   '自動ドア',
   '喫茶ルナ',
+  '本日のコーヒー',
+  'ブレンド ¥450',
+  'ナポリタン',
   'STAFF ONLY',
 ].join('');
 
@@ -135,7 +138,11 @@ export interface Textures {
   grate: THREE.CanvasTexture;
   mat: THREE.CanvasTexture;
   door: THREE.CanvasTexture;
-  shutter: THREE.CanvasTexture;
+  wallTile1f: THREE.CanvasTexture;
+  wallMortar2f: THREE.CanvasTexture;
+  kissaFront: THREE.CanvasTexture;
+  kissaMenu: THREE.CanvasTexture;
+  kissaLamp: THREE.CanvasTexture;
   kissa: THREE.CanvasTexture;
   nobori: THREE.CanvasTexture;
   staffOnly: THREE.CanvasTexture;
@@ -425,15 +432,91 @@ export function createTextures(): Textures {
     g.fillText('自動ドア', w / 2, h / 2 + 1);
   });
 
-  const shutter = ctex(256, 256, (g, w, h) => {
-    g.fillStyle = '#8c929c';
+  const wallTile1f = ctex(128, 128, (g, w, h) => {
+    g.fillStyle = '#5a3a2c';
     g.fillRect(0, 0, w, h);
-    for (let y = 0; y < h; y += 10) {
-      g.fillStyle = '#6f7580';
-      g.fillRect(0, y, w, 3);
+    const shades = ['#8a5a3f', '#7d4f38', '#946347'];
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        g.fillStyle = shades[(row * 3 + col * 5) % 3];
+        g.fillRect(col * 16 + 1, row * 16 + 1, 14, 14);
+      }
     }
-    g.fillStyle = 'rgba(40,40,60,.35)';
-    g.fillRect(0, h - 30, w, 30);
+  });
+
+  const wallMortar2f = ctex(128, 128, (g, w, h) => {
+    g.fillStyle = '#d9d6cc';
+    g.fillRect(0, 0, w, h);
+    for (const [x, len, alpha] of [
+      [18, 128, 0.22],
+      [61, 84, 0.15],
+      [97, 112, 0.25],
+    ]) {
+      g.fillStyle = `rgba(70,66,58,${alpha})`;
+      g.fillRect(x, 0, 5, len);
+    }
+  });
+
+  const kissaFront = ctex(256, 184, (g, w, h) => {
+    const wood = '#5b3520';
+    g.fillStyle = '#ffd98a';
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = '#ffe9b8';
+    g.fillRect(12, 16, 148, 114);
+    g.fillStyle = '#7a4a2a';
+    g.fillRect(80, 92, 74, 8);
+    g.fillRect(84, 100, 66, 30);
+    for (const x of [92, 118, 144]) {
+      g.fillRect(x - 8, 78, 16, 6);
+      g.fillRect(x - 1, 84, 2, 46);
+    }
+    for (const x of [104, 136]) {
+      g.fillRect(x, 16, 2, 26);
+      g.fillStyle = '#ffb347';
+      g.beginPath();
+      g.arc(x + 1, 52, 14, 0, Math.PI, true);
+      g.fill();
+      g.fillStyle = '#7a4a2a';
+    }
+    g.fillStyle = wood;
+    g.fillRect(0, 0, w, 16);
+    g.fillRect(0, 0, 12, h);
+    g.fillRect(160, 0, 12, h);
+    g.fillRect(w - 8, 0, 8, h);
+    g.fillRect(0, 130, 172, h - 130);
+    g.fillStyle = '#ffc860';
+    g.fillRect(180, 26, 68, h - 38);
+    g.fillStyle = '#ffe9b8';
+    g.fillRect(186, 32, 56, h - 50);
+    g.fillStyle = wood;
+    g.fillRect(180, h - 12, 68, 12);
+    g.fillRect(226, 80, 5, 36);
+  });
+
+  const kissaMenu = ctex(256, 384, (g, w, h) => {
+    g.fillStyle = '#2b2f2a';
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#8a6a44';
+    g.lineWidth = 12;
+    g.strokeRect(6, 6, w - 12, h - 12);
+    g.fillStyle = '#f4efe0';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.font = `34px ${FONT_D}`;
+    g.fillText('本日のコーヒー', w / 2, 90, w - 48);
+    g.font = `800 32px ${FONT_R}`;
+    g.fillText('ブレンド ¥450', w / 2, 190, w - 48);
+    g.fillText('ナポリタン', w / 2, 270, w - 48);
+  });
+
+  const kissaLamp = ctex(128, 256, (g, w, h) => {
+    g.fillStyle = '#fff1cf';
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = '#7a4a2a';
+    g.font = `28px ${FONT_D}`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText('COFFEE', w / 2, h / 2);
   });
 
   const kissa = ctex(512, 128, (g, w, h) => {
@@ -490,7 +573,11 @@ export function createTextures(): Textures {
     grate,
     mat,
     door,
-    shutter,
+    wallTile1f,
+    wallMortar2f,
+    kissaFront,
+    kissaMenu,
+    kissaLamp,
     kissa,
     nobori,
     staffOnly,
