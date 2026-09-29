@@ -884,3 +884,23 @@ describe('the neighbor building balcony, curtained windows and rooftop', () => {
     expect(flush('south')).toBe(true);
   });
 });
+
+describe('自动贩卖机', () => {
+  test('两台贩卖机正面 1.5 米内没有点光源，护栏不会被照到过曝', () => {
+    const scene = assembleScene();
+    const fronts: THREE.Vector3[] = [];
+    const lights: THREE.Vector3[] = [];
+    scene.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      const params = (mesh.geometry as THREE.PlaneGeometry | undefined)?.parameters;
+      if (mesh.isMesh && mesh.geometry instanceof THREE.PlaneGeometry && params?.width === 0.86 && params?.height === 1.72) {
+        fronts.push(mesh.getWorldPosition(new THREE.Vector3()));
+      }
+      if ((obj as THREE.PointLight).isPointLight) lights.push(obj.getWorldPosition(new THREE.Vector3()));
+    });
+    expect(fronts).toHaveLength(2);
+    for (const front of fronts) {
+      for (const light of lights) expect(light.distanceTo(front)).toBeGreaterThan(1.5);
+    }
+  });
+});

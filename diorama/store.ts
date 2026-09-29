@@ -344,11 +344,6 @@ export function buildStore(scene: THREE.Scene, textures: Textures): Store {
   vending(st, 3.96, -6.42, Math.PI / 2, textures.vend1, '#f2f4f7');
   vending(st, 3.96, -5.48, Math.PI / 2, textures.vend2, '#d7263d');
   box(st, 0.35, 0.8, 0.3, toon('#e8e8e8'), 3.75, 0.156, -4.75);
-  {
-    const l = new THREE.PointLight('#d4e8ff', 3.5, 5, 1.4);
-    l.position.set(4.8, 1.3, -5.95);
-    st.add(l);
-  }
   box(st, 0.3, 0.4, 0.12, toon('#c9ced6'), 3.56, 1.4, -2.0);
   rod(st, new THREE.Vector3(3.56, 1.8, -2.0), new THREE.Vector3(3.56, 3.8, -2.0), 0.03, toon('#8f97a3'));
 
