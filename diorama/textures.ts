@@ -38,10 +38,8 @@ const SIGNAGE_TEXT = [
   '夜野町三丁目',
   'いらっしゃいませ',
   '自動ドア',
-  '喫茶ルナ',
-  '本日のコーヒー',
-  'ブレンド ¥450',
-  'ナポリタン',
+  '喫茶フブキ',
+  '準備中',
   'STAFF ONLY',
 ].join('');
 
@@ -141,8 +139,7 @@ export interface Textures {
   wallTile1f: THREE.CanvasTexture;
   wallMortar2f: THREE.CanvasTexture;
   kissaFront: THREE.CanvasTexture;
-  kissaMenu: THREE.CanvasTexture;
-  kissaLamp: THREE.CanvasTexture;
+  kissaClosed: THREE.CanvasTexture;
   kissa: THREE.CanvasTexture;
   nobori: THREE.CanvasTexture;
   staffOnly: THREE.CanvasTexture;
@@ -495,30 +492,17 @@ export function createTextures(): Textures {
     g.fillRect(226, 80, 5, 36);
   });
 
-  const kissaMenu = ctex(256, 384, (g, w, h) => {
-    g.fillStyle = '#2b2f2a';
+  const kissaClosed = ctex(128, 64, (g, w, h) => {
+    g.fillStyle = '#efe4c8';
     g.fillRect(0, 0, w, h);
-    g.strokeStyle = '#8a6a44';
-    g.lineWidth = 12;
-    g.strokeRect(6, 6, w - 12, h - 12);
-    g.fillStyle = '#f4efe0';
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
+    g.strokeStyle = '#5b3520';
+    g.lineWidth = 6;
+    g.strokeRect(3, 3, w - 6, h - 6);
+    g.fillStyle = '#5b3520';
     g.font = `34px ${FONT_D}`;
-    g.fillText('本日のコーヒー', w / 2, 90, w - 48);
-    g.font = `800 32px ${FONT_R}`;
-    g.fillText('ブレンド ¥450', w / 2, 190, w - 48);
-    g.fillText('ナポリタン', w / 2, 270, w - 48);
-  });
-
-  const kissaLamp = ctex(128, 256, (g, w, h) => {
-    g.fillStyle = '#fff1cf';
-    g.fillRect(0, 0, w, h);
-    g.fillStyle = '#7a4a2a';
-    g.font = `28px ${FONT_D}`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText('COFFEE', w / 2, h / 2);
+    g.fillText('準備中', w / 2, h / 2 + 2, w - 20);
   });
 
   const curtain = ctex(128, 128, (g, w, h) => {
@@ -570,7 +554,7 @@ export function createTextures(): Textures {
     g.font = `70px ${FONT_D}`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText('喫茶ルナ', w / 2, h / 2 + 4);
+    g.fillText('喫茶フブキ', w / 2, h / 2 + 4, w - 40);
   });
 
   const nobori = ctex(96, 480, (g, w, h) => {
@@ -620,8 +604,7 @@ export function createTextures(): Textures {
     wallTile1f,
     wallMortar2f,
     kissaFront,
-    kissaMenu,
-    kissaLamp,
+    kissaClosed,
     kissa,
     nobori,
     staffOnly,

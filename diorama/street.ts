@@ -257,16 +257,13 @@ export function buildStreet(scene: THREE.Scene, textures: Textures): Street {
     cyl(b, 0.04, 0.04, 6.8, toon('#9aa0aa'), -7.75, 0.15, -3.4, 8).name = 'neighbor-rain-pipe';
     box(b, 0.15, 0.5, 0.4, toon('#8e96a3'), -7.525, 1.15, -6.4).name = 'neighbor-meter';
     box(b, 5.6, 0.25, 9.7, toon('#5f6678'), -10.3, 6.95, -8.25);
-    plane(b, 3.2, 2.3, glow('#ffe0a0', 1, { map: textures.kissaFront, noOutline: true }), -10.6, 1.35, -3.49).name = 'kissa-front';
-    const menuPanel = (ry: number, z: number): THREE.BufferGeometry =>
-      new THREE.PlaneGeometry(0.6, 0.9).rotateX(-0.2).rotateY(ry).translate(0, 0.45, z);
-    add(b, mergeGeometries([menuPanel(0, 0.12), menuPanel(Math.PI, -0.12)]), toon('#fff', { map: textures.kissaMenu }), -8.5, 0.15, -3.0).name = 'kissa-menu-board';
-    const lightbox = new THREE.Group();
-    lightbox.name = 'kissa-lightbox';
-    lightbox.position.set(-10.85, 0.15, -3.1);
-    b.add(lightbox);
-    box(lightbox, 0.44, 0.9, 0.2, toon('#5b3520'), 0, 0, 0);
-    plane(lightbox, 0.36, 0.7, glow('#ffe0a0', 1, { map: textures.kissaLamp, noOutline: true }), 0, 0.5, 0.101);
+    plane(b, 3.2, 2.3, glow('#fff', 0.06, { map: textures.kissaFront, noOutline: true }), -10.6, 1.35, -3.49).name = 'kissa-front';
+    const closedSign = new THREE.Group();
+    closedSign.name = 'kissa-closed-sign';
+    closedSign.position.set(-9.52, 1.7, -3.47);
+    b.add(closedSign);
+    box(closedSign, 0.4, 0.2, 0.02, toon('#5b3520'), 0, -0.1, 0);
+    plane(closedSign, 0.36, 0.16, glow('#fff', 0.85, { map: textures.kissaClosed, noOutline: true }), 0, 0, 0.011);
     box(b, 3.6, 0.08, 0.6, toon('#a8454a'), -10.6, 2.65, -3.2);
     plane(b, 2.2, 0.55, toon('#fff', { map: textures.kissa, glow: 0.15 }), -10.6, 3.1, -3.49);
     function win(x: number, y: number, z: number, ry: number, mat: THREE.Material): THREE.Group {

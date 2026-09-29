@@ -511,8 +511,7 @@ describe('the neighbor building is a two-storey tea house left of the store', ()
     'neighbor-rain-pipe',
     'neighbor-meter',
     'kissa-front',
-    'kissa-menu-board',
-    'kissa-lightbox',
+    'kissa-closed-sign',
   ];
 
   function boxOf(scene: THREE.Scene, name: string): THREE.Box3 {
@@ -584,28 +583,52 @@ describe('the neighbor building is a two-storey tea house left of the store', ()
     expect(Math.abs(center.x + 7.6)).toBeLessThanOrEqual(0.4);
   });
 
-  test('the tea house glass is a warm, unlit, textured material', () => {
+  test('the tea house glass keeps its interior texture, is very dark and does not glow', () => {
     const scene = assembleScene();
     const glass = meshesUnder(scene.getObjectByName('kissa-front')!).flatMap(materialsOf);
     expect(glass.length).toBeGreaterThan(0);
     for (const material of glass) {
-      const basic = material as THREE.MeshBasicMaterial;
-      expect(basic.isMeshBasicMaterial).toBe(true);
-      expect(basic.color.r).toBeGreaterThan(basic.color.b);
-      expect(basic.map).toBeTruthy();
+      const { color, emissive, map } = material as THREE.MeshStandardMaterial;
+      expect(map).toBeTruthy();
+      for (const channel of [color.r, color.g, color.b]) expect(channel).toBeLessThanOrEqual(0.08);
+      if (emissive) for (const channel of [emissive.r, emissive.g, emissive.b]) expect(channel).toBe(0);
     }
   });
 
-  for (const name of ['kissa-menu-board', 'kissa-lightbox']) {
-    test(`"${name}" stands on the pavement in front of the door`, () => {
-      const box = boxOf(assembleScene(), name);
-      const center = centerOf(box);
-      expect(center.z).toBeGreaterThan(-3.5);
-      expect(center.x).toBeGreaterThanOrEqual(-13);
-      expect(center.x).toBeLessThanOrEqual(-7.6);
-      expect(box.min.y).toBeLessThanOrEqual(0.3);
-    });
-  }
+  test('the menu board and lightbox are gone from the scene', () => {
+    const scene = assembleScene();
+    expect(scene.getObjectByName('kissa-menu-board')).toBeUndefined();
+    expect(scene.getObjectByName('kissa-lightbox')).toBeUndefined();
+  });
+
+  test('the closed sign hangs in front of the glass door at eye height', () => {
+    const scene = assembleScene();
+    const box = boxOf(scene, 'kissa-closed-sign');
+    const center = centerOf(box);
+    expect(box.min.z).toBeGreaterThan(-3.49);
+    expect(center.x).toBeGreaterThanOrEqual(-9.95);
+    expect(center.x).toBeLessThanOrEqual(-9.1);
+    expect(center.y).toBeGreaterThanOrEqual(1.35);
+    expect(center.y).toBeLessThanOrEqual(2.05);
+    expect(center.z).toBeGreaterThanOrEqual(-3.6);
+    expect(center.z).toBeLessThanOrEqual(-3.3);
+  });
+
+  test('the closed sign texture draws 準備中', () => {
+    const scene = assembleScene();
+    const sign = scene.getObjectByName('kissa-closed-sign')!;
+    expect(sign).toBeDefined();
+    expect(meshesDrawing(scene, '準備中').filter((mesh) => isInside(mesh, sign)).length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('the signboard above the door reads 喫茶フブキ and no longer 喫茶ルナ', () => {
+    const scene = assembleScene();
+    const group = neighborGroup(scene);
+    const boards = meshesDrawing(scene, '喫茶フブキ');
+    expect(boards.length).toBeGreaterThanOrEqual(1);
+    for (const mesh of boards) expect(isInside(mesh, group)).toBe(true);
+    expect(meshesDrawing(scene, '喫茶ルナ')).toHaveLength(0);
+  });
 
   test('there is no shutter texture and no shutter-related object in the neighbor group', () => {
     expect('shutter' in createTextures()).toBe(false);
@@ -615,25 +638,19 @@ describe('the neighbor building is a two-storey tea house left of the store', ()
     });
   });
 
-  test('only the tea house glass and lightbox glow faces may have their outline turned off', () => {
+  test('only the tea house glass and the closed-sign face may have their outline turned off', () => {
     const scene = assembleScene();
     const front = scene.getObjectByName('kissa-front')!;
-    const lightbox = scene.getObjectByName('kissa-lightbox')!;
+    const sign = scene.getObjectByName('kissa-closed-sign')!;
+    expect(sign).toBeDefined();
     for (const mesh of meshesUnder(neighborGroup(scene))) {
       if (isInside(mesh, front)) continue;
-      const inLightbox = isInside(mesh, lightbox);
+      const inSign = isInside(mesh, sign);
       for (const material of materialsOf(mesh)) {
-        if (inLightbox && (material as THREE.MeshBasicMaterial).isMeshBasicMaterial) continue;
+        if (inSign && (material as THREE.MeshBasicMaterial).isMeshBasicMaterial) continue;
         expect(material.userData.outlineParameters?.visible).not.toBe(false);
       }
     }
-  });
-
-  test('the lightbox has a textured unlit glow face', () => {
-    const lightbox = assembleScene().getObjectByName('kissa-lightbox')!;
-    const glowFaces = meshesUnder(lightbox).flatMap(materialsOf).filter((m) => (m as THREE.MeshBasicMaterial).isMeshBasicMaterial);
-    expect(glowFaces.length).toBeGreaterThanOrEqual(1);
-    expect(glowFaces.some((m) => (m as THREE.MeshBasicMaterial).map)).toBe(true);
   });
 
   test('the neighbor building has exactly one rain pipe in the whole scene', () => {
