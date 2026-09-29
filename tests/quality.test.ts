@@ -46,12 +46,12 @@ describe('percentile95', () => {
 });
 
 describe('TIER_SETTINGS', () => {
-  test('high tier: full rain ratio, pixel ratio cap 2, no reflection field', () => {
-    expect(TIER_SETTINGS.high).toEqual({ rainRatio: 1, maxPixelRatio: 2 });
+  test('high tier reflects at half size per surface, full rain ratio, pixel ratio cap 2', () => {
+    expect(TIER_SETTINGS.high).toEqual({ reflection: { scale: 0.5, shared: false }, rainRatio: 1, maxPixelRatio: 2 });
   });
 
-  test('low tier: halved rain, pixel ratio cap 1, no reflection field', () => {
-    expect(TIER_SETTINGS.low).toEqual({ rainRatio: 0.5, maxPixelRatio: 1 });
+  test('low tier reflects at quarter size with one shared render, halves rain, pixel ratio cap 1', () => {
+    expect(TIER_SETTINGS.low).toEqual({ reflection: { scale: 0.25, shared: true }, rainRatio: 0.5, maxPixelRatio: 1 });
   });
 });
 

@@ -8,7 +8,7 @@ import { buildStreet } from '../diorama/street';
 import { buildLights } from '../diorama/lights';
 import { createPlaque } from '../diorama/plaque';
 import { buildCar } from '../diorama/car';
-import { fresnel, createWetGround, captureEnvironment, contactShadow } from '../diorama/wet-ground';
+import { fresnel, streakGain, createWetGround, WET_SHADER } from '../diorama/wet-ground';
 import { createFakeCanvasFactory } from './fake-canvas';
 
 setCanvasFactory(createFakeCanvasFactory());
@@ -48,90 +48,103 @@ describe('fresnel', () => {
   });
 });
 
-describe('createWetGround', () => {
-  const ROAD = 'wet-ground-road';
-  const LOT = 'wet-ground-lot';
+describe('streakGain', () => {
+  test('is zero at and below 0.35', () => {
+    expect(streakGain(0.3)).toBeCloseTo(0, 6);
+    expect(streakGain(0.35)).toBeCloseTo(0, 6);
+  });
+
+  test('is 3 at full brightness', () => {
+    expect(streakGain(1)).toBeCloseTo(3, 6);
+  });
+
+  test('strictly increases between 0.35 and 1', () => {
+    let prev = streakGain(0.35);
+    for (let l = 0.4; l <= 1.0001; l += 0.05) {
+      const g = streakGain(Math.min(l, 1));
+      expect(g).toBeGreaterThan(prev);
+      prev = g;
+    }
+  });
+});
+
+describe('WET_SHADER constants', () => {
+  test.each(['pow(1.-cosT,5.)', '0.04', '0.35', '3.0', '0.25'])('fragment shader contains %s', (literal) => {
+    expect(WET_SHADER.fragmentShader).toContain(literal);
+  });
+});
+
+describe('createWetGround reflection settings', () => {
+  type Mirror = THREE.Mesh & { getRenderTarget(): THREE.WebGLRenderTarget };
 
   function setup() {
     const scene = new THREE.Scene();
-    const envMap = new THREE.CubeTexture();
-    const wet = createWetGround(scene, envMap);
-    return { scene, envMap, wet };
+    const wet = createWetGround(scene, 800, 600, 1);
+    const mirrors: Mirror[] = [];
+    scene.traverse((o) => {
+      if ((o as { isReflector?: boolean }).isReflector === true && !o.name.startsWith('roof-puddles')) {
+        mirrors.push(o as Mirror);
+      }
+    });
+    return { scene, wet, mirrors };
   }
 
-  const material = (scene: THREE.Scene, name: string) =>
-    (scene.getObjectByName(name) as THREE.Mesh).material as THREE.ShaderMaterial;
+  const map = (m: Mirror) => (m.material as THREE.ShaderMaterial).uniforms.tDiffuse.value;
 
-  test('no object in the scene re-renders the scene each frame', () => {
-    const { scene, wet } = setup();
-    scene.traverse((o) => expect((o as { isReflector?: boolean }).isReflector).not.toBe(true));
+  test('the scene holds two ground mirrors', () => {
+    const { mirrors, wet } = setup();
+    expect(mirrors.length).toBe(2);
     wet.dispose();
   });
 
-  test('adds only the two wet layers and the two roof puddle layers', () => {
-    const { scene, wet } = setup();
-    expect(scene.children.map((o) => o.name).sort()).toEqual([
-      'roof-puddles-konbini',
-      'roof-puddles-neighbor',
-      LOT,
-      ROAD,
-    ].sort());
-    wet.dispose();
-  });
-
-  test('both wet layers use the given environment map', () => {
-    const { scene, envMap, wet } = setup();
-    for (const name of [ROAD, LOT]) expect(material(scene, name).uniforms.envMap.value).toBe(envMap);
-    wet.dispose();
-  });
-
-  test.each([
-    [ROAD, 0.012],
-    [LOT, 0.166],
-  ])('%s sits at height %f', (name, y) => {
-    const { scene, wet } = setup();
-    scene.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(scene.getObjectByName(name)!);
-    expect(Math.abs((box.min.y + box.max.y) / 2 - y)).toBeLessThanOrEqual(0.005);
-    wet.dispose();
-  });
-
-  test('update(t) writes t into both wet layers uTime', () => {
-    const { scene, wet } = setup();
-    wet.update(12.5);
-    for (const name of [ROAD, LOT]) expect(material(scene, name).uniforms.uTime.value).toBe(12.5);
-    wet.dispose();
-  });
-
-  test('dispose removes all four objects', () => {
-    const { scene, wet } = setup();
-    wet.dispose();
-    for (const name of [ROAD, LOT, 'roof-puddles-konbini', 'roof-puddles-neighbor']) {
-      expect(scene.getObjectByName(name)).toBeUndefined();
-    }
-  });
-
-  test.each([
-    [ROAD, 0],
-    [LOT, 1],
-  ])('%s has uMask %d', (name, mask) => {
-    const { scene, wet } = setup();
-    expect(material(scene, name).uniforms.uMask.value).toBe(mask);
-    wet.dispose();
-  });
-
-  test('both wet layers draw before a contact shadow', () => {
-    const { scene, wet } = setup();
-    const shadow = contactShadow(scene, 1, 1, 0, 0.02, 0);
-    for (const name of [ROAD, LOT]) {
-      expect(scene.getObjectByName(name)!.renderOrder).toBeLessThan(shadow.renderOrder);
+  test('low tier: both mirrors visible, one shared texture at quarter size', () => {
+    const { mirrors, wet } = setup();
+    wet.setReflection({ scale: 0.25, shared: true });
+    expect(mirrors.every((m) => m.visible)).toBe(true);
+    expect(map(mirrors[0])).toBe(map(mirrors[1]));
+    for (const m of mirrors) {
+      expect(m.getRenderTarget().width).toBe(200);
+      expect(m.getRenderTarget().height).toBe(150);
     }
     wet.dispose();
   });
 
-  test.each(['pow(1.-cosT,5.)', '0.04', '0.25'])('wet layer fragment shader contains %s', (literal) => {
-    const { scene, wet } = setup();
-    expect(material(scene, ROAD).fragmentShader).toContain(literal);
+  test('high tier: separate textures at half size', () => {
+    const { mirrors, wet } = setup();
+    wet.setReflection({ scale: 0.5, shared: false });
+    expect(mirrors.every((m) => m.visible)).toBe(true);
+    expect(map(mirrors[0])).not.toBe(map(mirrors[1]));
+    for (const m of mirrors) {
+      expect(m.getRenderTarget().width).toBe(400);
+      expect(m.getRenderTarget().height).toBe(300);
+    }
+    wet.dispose();
+  });
+
+  const matrix = (m: Mirror) => (m.material as THREE.ShaderMaterial).uniforms.textureMatrix.value;
+
+  test('shared mode shares the texture matrix; separate mode restores each own texture and matrix', () => {
+    const { mirrors, wet } = setup();
+    wet.setReflection({ scale: 0.25, shared: true });
+    expect(matrix(mirrors[0])).toBe(matrix(mirrors[1]));
+    wet.setReflection({ scale: 0.5, shared: false });
+    expect(matrix(mirrors[0])).not.toBe(matrix(mirrors[1]));
+    for (const m of mirrors) expect(map(m)).toBe(m.getRenderTarget().texture);
+    wet.dispose();
+  });
+
+  test('switching from high back to low shares the texture again', () => {
+    const { mirrors, wet } = setup();
+    wet.setReflection({ scale: 0.5, shared: false });
+    wet.setReflection({ scale: 0.25, shared: true });
+    expect(map(mirrors[0])).toBe(map(mirrors[1]));
+    wet.dispose();
+  });
+
+  test('no ripple-only overlay is added besides the mirrors and roof puddles', () => {
+    const { scene, mirrors, wet } = setup();
+    const others = scene.children.filter((o) => !mirrors.includes(o as Mirror) && !o.name.startsWith('roof-puddles'));
+    expect(others).toEqual([]);
     wet.dispose();
   });
 });
@@ -218,69 +231,5 @@ describe('contact shadows', () => {
       }
       expect(g(0, 0)).toBe(0);
     }
-  });
-});
-
-describe('captureEnvironment', () => {
-  function run(setupScene?: (scene: THREE.Scene) => void) {
-    const scene = new THREE.Scene();
-    const background = new THREE.Texture();
-    scene.background = background;
-    const shown = new THREE.Object3D();
-    const alsoShown = new THREE.Object3D();
-    const alreadyHidden = new THREE.Object3D();
-    alreadyHidden.visible = false;
-    scene.add(shown, alsoShown, alreadyHidden);
-    setupScene?.(scene);
-
-    const seen = { shown: [] as boolean[], hiddenAlready: [] as boolean[], background: [] as unknown[] };
-    const renderer = {
-      coordinateSystem: THREE.WebGLCoordinateSystem,
-      isWebGLRenderer: false,
-      reversedDepthBuffer: false,
-      autoClear: true,
-      xr: { enabled: false },
-      getRenderTarget: () => null,
-      getActiveCubeFace: () => 0,
-      getActiveMipmapLevel: () => 0,
-      setRenderTarget: () => {},
-      render: (s: THREE.Scene) => {
-        seen.shown.push(shown.visible);
-        seen.hiddenAlready.push(alreadyHidden.visible);
-        seen.background.push(s.background);
-      },
-    };
-    const capture = captureEnvironment(renderer as unknown as THREE.WebGLRenderer, scene, [shown, alreadyHidden]);
-    return { scene, background, shown, alsoShown, alreadyHidden, seen, capture };
-  }
-
-  test('listed objects are hidden while rendering and restored afterwards', () => {
-    const { seen, shown, alsoShown, alreadyHidden, capture } = run();
-    expect(seen.shown.length).toBeGreaterThan(0);
-    expect(seen.shown.every((v) => v === false)).toBe(true);
-    expect(shown.visible).toBe(true);
-    expect(alsoShown.visible).toBe(true);
-    expect(alreadyHidden.visible).toBe(false);
-    capture.dispose();
-  });
-
-  test('the 2D background is swapped out while rendering and restored afterwards', () => {
-    const { seen, scene, background, capture } = run();
-    expect(seen.background.length).toBeGreaterThan(0);
-    for (const bg of seen.background) expect(bg).not.toBe(background);
-    expect(scene.background).toBe(background);
-    capture.dispose();
-  });
-
-  test('returns a half-float cube texture', () => {
-    const { capture } = run();
-    expect(capture.texture.type).toBe(THREE.HalfFloatType);
-    expect((capture.texture as { isCubeTexture?: boolean }).isCubeTexture === true || capture.texture.isRenderTargetTexture).toBe(true);
-    capture.dispose();
-  });
-
-  test('dispose does not throw', () => {
-    const { capture } = run();
-    expect(() => capture.dispose()).not.toThrow();
   });
 });
