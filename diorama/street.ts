@@ -3,6 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { toon, glow, noOutline } from './materials';
 import { add, box, cyl, plane, rod, rand, pick, acUnit } from './primitives';
 import type { Textures } from './textures';
+import { contactShadow } from './wet-ground';
 
 const WALL_TILE_METERS = 1.2;
 
@@ -144,6 +145,7 @@ function bike(scene: THREE.Scene, x: number, y: number, z: number, ry: number, c
   g.rotation.y = ry;
   g.rotation.x = 0.05;
   scene.add(g);
+  contactShadow(g, 1.6, 0.6, 0, 0.02, 0);
   const tire = toon('#1a1b22');
   const fr = toon(color);
   const mt = toon('#c9ced6');

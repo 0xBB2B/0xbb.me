@@ -1,7 +1,6 @@
 import { expect, test, describe } from 'bun:test';
 import * as THREE from 'three';
 import { rainSeeds, createRain, createSplashes } from '../diorama/weather';
-import { createWetGround } from '../diorama/wet-ground';
 import { ROOF_ZONES, isOnLot } from '../diorama/layout';
 
 function mulberry32(seed: number): () => number {
@@ -114,24 +113,5 @@ describe('roof landing heights and low-tier handles', () => {
     const splashes = createSplashes(2, 10);
     splashes.setPixelRatio(1);
     expect((splashes.mesh.material as THREE.ShaderMaterial).uniforms.uPR.value).toBe(1);
-  });
-
-  test('turning reflections off hides the mirrors and shows the ripple-only overlays', () => {
-    const scene = new THREE.Scene();
-    const wet = createWetGround(scene, 800, 600, 1);
-    const mirrors = scene.children.filter((o) => (o as { isReflector?: boolean }).isReflector);
-    expect(mirrors.length).toBe(2);
-    const overlays = scene.children.filter(
-      (o) => !(o as { isReflector?: boolean }).isReflector && !o.name.startsWith('roof-puddles')
-    );
-    wet.setReflections(false);
-    expect(mirrors.every((m) => !m.visible)).toBe(true);
-    expect(overlays.length).toBe(2);
-    expect(overlays.every((o) => o.visible)).toBe(true);
-    wet.setReflections(true);
-    expect(mirrors.every((m) => m.visible)).toBe(true);
-    expect(overlays.every((o) => !o.visible)).toBe(true);
-    wet.resize(0, 0, 1);
-    wet.dispose();
   });
 });
