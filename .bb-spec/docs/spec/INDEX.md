@@ -15,6 +15,7 @@
 
 - [ambient-motion](scene/ambient-motion.md) — 微缩模型里一直循环播放的环境动效及其节奏参数
 - [diorama-layout](scene/diorama-layout.md) — 雨夜便利店微缩模型包含的物件、摆放关系、画风，以及整体视角的镜头操作
+- [neighbor-building](scene/neighbor-building.md) — 便利店左侧两层旧楼的外观：外墙材质、一楼喫茶店、二楼住家、屋顶物件与物件数量上限
 - [quality-tier](scene/quality-tier.md) — 画质分高低两档，按设备与实测帧率自动选择与降档，并规定帧率标准
 
 ## site
