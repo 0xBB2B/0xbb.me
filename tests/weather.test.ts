@@ -121,7 +121,9 @@ describe('roof landing heights and low-tier handles', () => {
     const wet = createWetGround(scene, 800, 600, 1);
     const mirrors = scene.children.filter((o) => (o as { isReflector?: boolean }).isReflector);
     expect(mirrors.length).toBe(2);
-    const overlays = scene.children.filter((o) => !(o as { isReflector?: boolean }).isReflector);
+    const overlays = scene.children.filter(
+      (o) => !(o as { isReflector?: boolean }).isReflector && !o.name.startsWith('roof-puddles')
+    );
     wet.setReflections(false);
     expect(mirrors.every((m) => !m.visible)).toBe(true);
     expect(overlays.length).toBe(2);

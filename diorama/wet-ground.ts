@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { noOutline } from './materials';
-import { BASE_HALF } from './layout';
+import { BASE_HALF, ROOF_ZONES, type RoofZone } from './layout';
 
 const GLSL_HASH = `
 float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
@@ -41,7 +41,7 @@ export const WET_SHADER = {
 };
 
 const RIPPLE_LAYER_VERTEX = `varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
-const RIPPLE_LAYER_FRAGMENT = `uniform float uTime; uniform float uMask; varying vec3 vW; ${GLSL_HASH}
+const RIPPLES_GLSL = `
   vec3 ripples(vec2 p){ vec3 acc=vec3(0.);
     for(int k=0;k<2;k++){ vec2 q=p*1.5+vec2(float(k)*3.1,float(k)*1.7); vec2 id=floor(q); vec2 f=fract(q);
       float h=hash(id+float(k)*17.); vec2 c=vec2(hash(id+3.1),hash(id+5.7))*.6+.2;
@@ -49,7 +49,8 @@ const RIPPLE_LAYER_FRAGMENT = `uniform float uTime; uniform float uMask; varying
       float ring=(1.-smoothstep(0.,.02,abs(d-t*.45)))+.55*(1.-smoothstep(0.,.015,abs(d-t*.28)));
       ring*=(1.-t)*(1.-t)*step(.2,h);
       acc.x+=ring; acc.yz+=dv/(d+1e-3)*ring; }
-    return acc; }
+    return acc; }`;
+const RIPPLE_LAYER_FRAGMENT = `uniform float uTime; uniform float uMask; varying vec3 vW; ${GLSL_HASH} ${RIPPLES_GLSL}
   void main(){ vec2 p=vW.xz;
     if(uMask>.5 && !((p.x<5.&&p.y<5.)||p.y>11.||(p.x>11.&&p.y<5.))) discard;
     float n=vnoise(p*.28)*.6+vnoise(p*.9)*.3+vnoise(p*3.1)*.1;
@@ -57,6 +58,14 @@ const RIPPLE_LAYER_FRAGMENT = `uniform float uTime; uniform float uMask; varying
     vec3 rp=ripples(p);
     vec3 col=vec3(.6,.72,1.)*rp.x*.3*pud;
     gl_FragColor=vec4(col, pud*rp.x*.6); }`;
+
+const ROOF_PUDDLE_FRAGMENT = `uniform float uTime; uniform vec4 uPuddles[4]; uniform int uCount; uniform vec3 uSheen; varying vec3 vW; ${GLSL_HASH} ${RIPPLES_GLSL}
+  void main(){ vec2 p=vW.xz;
+    float m=0.;
+    for(int i=0;i<4;i++){ if(i>=uCount) break; vec4 e=uPuddles[i];
+      m=max(m,smoothstep(0.,.03,(1.-length((p-e.xy)/e.zw))*min(e.z,e.w))); }
+    vec3 col=(uSheen+vec3(.6,.72,1.)*ripples(p).x*.3)*m;
+    gl_FragColor=vec4(col,m); }`;
 
 function rippleLayer(size: number, y: number, mask: number): THREE.Mesh {
   const material = noOutline(
@@ -74,6 +83,35 @@ function rippleLayer(size: number, y: number, mask: number): THREE.Mesh {
   mesh.position.set(0, y, 0);
   mesh.renderOrder = 2;
   mesh.visible = false;
+  return mesh;
+}
+
+function roofPuddleLayer(zone: RoofZone, name: string): THREE.Mesh {
+  const puddles = Array.from({ length: 4 }, (_, i) => {
+    const e = zone.puddles[i];
+    return e ? new THREE.Vector4(e.x, e.z, e.rx, e.rz) : new THREE.Vector4();
+  });
+  const material = noOutline(
+    new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uPuddles: { value: puddles },
+        uCount: { value: zone.puddles.length },
+        uSheen: { value: new THREE.Color(0.06, 0.08, 0.12) },
+      },
+      vertexShader: RIPPLE_LAYER_VERTEX,
+      fragmentShader: ROOF_PUDDLE_FRAGMENT,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }),
+  );
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.scale.set(zone.x1 - zone.x0, zone.z1 - zone.z0, 1);
+  mesh.position.set((zone.x0 + zone.x1) / 2, zone.y + 0.01, (zone.z0 + zone.z1) / 2);
+  mesh.renderOrder = 2;
+  mesh.name = name;
   return mesh;
 }
 
@@ -123,7 +161,10 @@ export function createWetGround(scene: THREE.Scene, width: number, height: numbe
 
   const rippleRoad = rippleLayer(size, 0.012, 0);
   const rippleLot = rippleLayer(size, 0.166, 1);
-  scene.add(rippleRoad, rippleLot);
+  const roofPuddles = ROOF_ZONES.filter((zone) => zone.puddles.length > 0).map((zone) =>
+    roofPuddleLayer(zone, zone.x0 < -10 ? 'roof-puddles-neighbor' : 'roof-puddles-konbini'),
+  );
+  scene.add(rippleRoad, rippleLot, ...roofPuddles);
 
   function setReflections(enabled: boolean): void {
     road.visible = enabled;
@@ -138,6 +179,7 @@ export function createWetGround(scene: THREE.Scene, width: number, height: numbe
     }
     (rippleRoad.material as THREE.ShaderMaterial).uniforms.uTime.value = time;
     (rippleLot.material as THREE.ShaderMaterial).uniforms.uTime.value = time;
+    for (const mesh of roofPuddles) (mesh.material as THREE.ShaderMaterial).uniforms.uTime.value = time;
   }
 
   function resize(w: number, h: number, pr: number): void {
@@ -152,7 +194,7 @@ export function createWetGround(scene: THREE.Scene, width: number, height: numbe
       reflector.geometry.dispose();
       reflector.dispose();
     }
-    for (const mesh of [rippleRoad, rippleLot]) {
+    for (const mesh of [rippleRoad, rippleLot, ...roofPuddles]) {
       scene.remove(mesh);
       mesh.geometry.dispose();
       (mesh.material as THREE.Material).dispose();
