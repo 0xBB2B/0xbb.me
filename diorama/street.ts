@@ -17,9 +17,8 @@ function wallMaterials(tex: THREE.Texture, w: number, h: number, d: number, tile
   });
 }
 
-export interface Lamp {
+interface Lamp {
   m: THREE.MeshBasicMaterial;
-  mesh: THREE.Mesh;
   base: THREE.Color;
 }
 
@@ -35,7 +34,7 @@ function signalHead(parent: THREE.Object3D, x: number, y: number, z: number, ry:
     const lamp = add(g, new THREE.CylinderGeometry(0.13, 0.13, 0.02, 20), m, -0.36 + i * 0.36, 0, 0.115);
     lamp.rotation.x = Math.PI / 2;
     box(g, 0.32, 0.03, 0.18, toon('#2b303b'), -0.36 + i * 0.36, 0.15, 0.2);
-    return { m, mesh: lamp, base: new THREE.Color(color) };
+    return { m, base: new THREE.Color(color) };
   });
 }
 
@@ -58,8 +57,8 @@ function pedHead(parent: THREE.Object3D, x: number, y: number, z: number, ry: nu
   box(g, 0.34, 0.7, 0.2, toon('#3a4150'), 0, -0.35, 0);
   return ['#ff3b3b', '#35e0b0'].map((color, i) => {
     const m = new THREE.MeshBasicMaterial({ color, toneMapped: false });
-    const face = plane(g, 0.24, 0.26, m, 0, 0.17 - i * 0.34, 0.102);
-    return { m, mesh: face, base: new THREE.Color(color) };
+    plane(g, 0.24, 0.26, m, 0, 0.17 - i * 0.34, 0.102);
+    return { m, base: new THREE.Color(color) };
   });
 }
 

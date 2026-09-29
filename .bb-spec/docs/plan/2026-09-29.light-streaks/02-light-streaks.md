@@ -13,8 +13,7 @@ description: 灯光光带：按相机与灯的镜像点算落点，路面层与�
   - 路灯与立式招牌：3 盏路灯、OxBB MART 立式招牌。
   - 信号灯与行人灯：光带颜色等于该灯此刻亮着的颜色，灯灭时光带亮度为 0。
 - 光带落点：把灯按所在地面层高度做镜像，相机与镜像点连线和该层地面的交点，误差 ≤ 1 厘米；光带从落点沿地面朝相机方向拉长。
-- 光带中心亮度 = min(灯颜色 × F(θ) × 3, 0.9)，F(θ) = 0.04 + 0.96 × (1 − cos θ)^5；两端平滑淡入淡出。
-- 带 `along`（墙面方向）的 4 个贴墙宽灯沿该方向拆成 ceil(w ÷ 1.0) 段，均匀排开，每段宽 w ÷ 段数；没有 `along` 的灯（包括立式招牌）不拆段。
+- 光带中心亮度 = 灯颜色 × F(θ) × 3，F(θ) = 0.04 + 0.96 × (1 − cos θ)^5。
 - 每个灯在路面层（y≈0.012）和停车场层（y≈0.166）各一条光带；路面层只画在马路区域，停车场层只画在停车场和人行道区域（区域判断与湿地面一致：停车场/人行道为 `(x<5&&z<5)||z>11||(x>11&&z<5)`）；超出底座（|x|、|z| > 13）不画。
 - 光带在水洼内亮度为水洼外的 2 倍。
 - 物体下方暗区绘制在光带之后。
@@ -30,17 +29,17 @@ description: 灯光光带：按相机与灯的镜像点算落点，路面层与�
 
 ```ts
 export const STORE_STREAK_SOURCES: StreakSource[] = [
-  { name: 'fascia', position: [-1.25, 3.22, -2.66], width: 9.9, color: '#fff6e8', along: [1, 0] },
-  { name: 'store-front-glass', position: [-1.25, 1.43, -3.04], width: 9.3, color: '#fff1d8', along: [1, 0] },
-  { name: 'store-side-glass', position: [3.51, 1.63, -5.4], width: 3.6, color: '#fff1d8', along: [0, 1] },
-  { name: 'kissa-front', position: [-10.6, 1.35, -3.49], width: 3.2, color: '#ffe0a0', along: [1, 0] },
-  { name: 'kissa-lightbox', position: [-10.85, 0.65, -3.1], width: 0.45, color: '#fff4dc' },
+  { name: 'fascia', position: [-1.25, 3.22, -2.66], width: 9.9, color: '#fff6e8' },
+  { name: 'store-front-glass', position: [-1.25, 1.43, -3.04], width: 9.3, color: '#fff1d8' },
+  { name: 'store-side-glass', position: [3.51, 1.63, -5.4], width: 3.6, color: '#fff1d8' },
+  { name: 'kissa-front', position: [-10.6, 1.35, -3.49], width: 3.2, color: '#ffe0a0' },
+  { name: 'kissa-lightbox', position: [-10.85, 0.45, -3.1], width: 0.45, color: '#fff4dc' },
   { name: 'vending-1', position: [4.33, 1.1, -8.42], width: 0.9, color: '#f2f4f7' },
   { name: 'vending-2', position: [4.33, 1.1, -7.48], width: 0.9, color: '#ffd6dc' },
   { name: 'street-lamp-1', position: [-8.8, 5.12, 4.95], width: 0.5, color: '#d6e6ff' },
   { name: 'street-lamp-2', position: [11.15, 5.12, -5.5], width: 0.5, color: '#d6e6ff' },
   { name: 'street-lamp-3', position: [-2.5, 5.12, 10.95], width: 0.5, color: '#d6e6ff' },
-  { name: 'pylon', position: [-6.4, 5.2, 2.9], width: 1.5, color: '#e8fff9' },
+  { name: 'pylon', position: [-6.4, 5.05, 2.9], width: 1.5, color: '#e8fff9' },
 ];
 ```
 
@@ -52,7 +51,7 @@ export const STORE_STREAK_SOURCES: StreakSource[] = [
 | `streakAnchor`（导出） | 纯函数：输入相机位置、灯位置、地面高度，返回相机与镜像点连线和该平面的交点 |
 | `STORE_STREAK_SOURCES`（导出） | 见成品定义 |
 | `signalStreakSources`（导出） | 从 `street.vehicleSignals`、`street.pedestrianSignals` 的每个 Lamp 取 `mesh` 世界位置、宽约 0.25，颜色函数：灯亮（颜色亮度高于 base 亮度）时返回 base，否则返回黑色 |
-| `createLightStreaks`（导出） | 为路面层、停车场层各建一个网格（`light-streaks-road`、`light-streaks-lot`），每个光源一个四边形；顶点属性含灯位置、宽度、颜色、角点；顶点着色器用 `cameraPosition` 按 `streakAnchor` 同算法求落点，沿地面朝相机方向拉长，长度 = clamp(灯离地高度 × 1.5 ÷ max(cosθ, 0.2), 0.5, 8)；片元：颜色 × F × 3 × 横向高斯 × 纵向衰减，水洼内 ×2，按层遮罩与底座范围 discard；取最大值混合（CustomBlending + MaxEquation，重叠光带不相加）、深度测试开、不写深度、关描边、renderOrder 2.5（画在湿层 2 之后、暗区 3 之前，否则湿层的预乘混合会把水洼里的光带压暗）；纵向亮度曲线峰值归一化为 1；相机低于该层地面时不画；停车场区域判断复用 wet-ground 的同一份表达式；返回 `{ update, dispose }`，`update` 把带颜色函数的光源颜色写回颜色属性并标记更新 |
+| `createLightStreaks`（导出） | 为路面层、停车场层各建一个网格（`light-streaks-road`、`light-streaks-lot`），每个光源一个四边形；顶点属性含灯位置、宽度、颜色、角点；顶点着色器用 `cameraPosition` 按 `streakAnchor` 同算法求落点，沿地面朝相机方向拉长，长度 = clamp(灯离地高度 × 1.5 ÷ max(cosθ, 0.2), 0.5, 8)；片元：颜色 × F × 3 × 横向高斯 × 纵向衰减，水洼内 ×2，按层遮罩与底座范围 discard；叠加混合、深度测试开、不写深度、关描边、renderOrder 2；返回 `{ update, dispose }`，`update` 把带颜色函数的光源颜色写回颜色属性并标记更新 |
 ### diorama/street.ts
 | `Lamp` | 增加 `mesh` 字段（灯面网格），`signalHead`、`pedHead` 返回时填入 |
 ### diorama/world.ts
@@ -70,6 +69,6 @@ export const STORE_STREAK_SOURCES: StreakSource[] = [
   - `STORE_STREAK_SOURCES` 有 11 项，名字与成品定义一致。
   - `createLightStreaks(scene, sources)` 后场景中有 `light-streaks-road`、`light-streaks-lot` 两个网格，每个的四边形数等于光源数（11 + 所有信号灯与行人灯的灯数）。
   - 把某个信号灯材质颜色设为 base×2.4（亮）后调用 `update()`，该光源顶点颜色等于 base；设为 base×0.1（灭）后为 0。
-  - 两个网格材质：`blending` 为 CustomBlending 且 `blendEquation` 为 MaxEquation、`depthWrite` 为 false、`depthTest` 为 true、renderOrder 大于湿层（2）且小于暗区（3），关描边。
+  - 两个网格材质：叠加混合、`depthWrite` 为 false、`depthTest` 为 true、renderOrder 为 2（小于暗区 3），关描边。
 - [ ] 全量 `bun test`、`tsc` 通过；1440×900 旋转 30 秒帧率用例通过
 - [ ] 截图：默认、压低、俯视、先拖动再滚轮后，光带都在；信号灯变色后光带跟着变
