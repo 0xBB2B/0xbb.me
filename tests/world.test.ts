@@ -20,7 +20,6 @@ const REQUIRED_NAMES = [
   'crosswalk-main',
   'crosswalk-side',
   'stop-marking-side',
-  'stop-marking-alley',
   'stop-sign-side',
   'signal-main',
   'neighbor-building',
@@ -49,6 +48,48 @@ function namedObjects(scene: THREE.Scene, name: string): THREE.Object3D[] {
     if (obj.name === name) found.push(obj);
   });
   return found;
+}
+
+const STOP_TEXT = '止まれ';
+
+function textureCanvas(mesh: THREE.Mesh): FakeCanvas | undefined {
+  const material = mesh.material as THREE.MeshBasicMaterial;
+  return material.map?.image as unknown as FakeCanvas | undefined;
+}
+
+function meshesDrawing(scene: THREE.Scene, text: string): THREE.Mesh[] {
+  const found: THREE.Mesh[] = [];
+  scene.traverse((obj) => {
+    const mesh = obj as THREE.Mesh;
+    if (mesh.isMesh && textureCanvas(mesh)?.fillTextCalls.includes(text)) found.push(mesh);
+  });
+  return found;
+}
+
+function isSignFace(mesh: THREE.Mesh): boolean {
+  const canvas = textureCanvas(mesh)!;
+  return canvas.height <= canvas.width;
+}
+
+function signParts(scene: THREE.Scene): THREE.Mesh[] {
+  const parts: THREE.Mesh[] = [];
+  scene.getObjectByName('stop-sign-side')!.traverse((obj) => {
+    const mesh = obj as THREE.Mesh;
+    if (mesh.isMesh && mesh.geometry.type !== 'CylinderGeometry') parts.push(mesh);
+  });
+  return parts;
+}
+
+function triangleCount(geometry: THREE.BufferGeometry): number {
+  return (geometry.index ? geometry.index.count : geometry.attributes.position.count) / 3;
+}
+
+function firstTriangleWorldNormal(mesh: THREE.Mesh): THREE.Vector3 {
+  const position = mesh.geometry.attributes.position;
+  const index = mesh.geometry.index;
+  const corner = (i: number) => new THREE.Vector3().fromBufferAttribute(position, index ? index.getX(i) : i).applyMatrix4(mesh.matrixWorld);
+  const [a, b, c] = [corner(0), corner(1), corner(2)];
+  return b.sub(a).cross(c.sub(a)).normalize();
 }
 
 function assertOrderedLines(fillTextCalls: string[], lines: string[]): void {
@@ -135,6 +176,71 @@ describe('the side street has no vehicle signal light', () => {
   test('the main road keeps its vehicle signal ("signal-main" exists)', () => {
     const scene = assembleScene();
     expect(scene.getObjectByName('signal-main')).toBeDefined();
+  });
+});
+
+describe('the 止まれ stop sign and road marking exist only on the side street', () => {
+  test('the alley has no stop-marking-alley object', () => {
+    const scene = assembleScene();
+    expect(namedObjects(scene, 'stop-marking-alley')).toHaveLength(0);
+  });
+
+  test('exactly one sign-shaped 止まれ face exists, inside the stop-sign-side group', () => {
+    const scene = assembleScene();
+    const faces = meshesDrawing(scene, STOP_TEXT).filter(isSignFace);
+    expect(faces).toHaveLength(1);
+    const group = scene.getObjectByName('stop-sign-side')!;
+    let ancestor = faces[0].parent;
+    while (ancestor && ancestor !== group) ancestor = ancestor.parent;
+    expect(ancestor).toBe(group);
+  });
+
+  test('exactly one 止まれ road marking exists, named stop-marking-side', () => {
+    const scene = assembleScene();
+    const markings = meshesDrawing(scene, STOP_TEXT).filter((mesh) => !isSignFace(mesh));
+    expect(markings.map((mesh) => mesh.name)).toEqual(['stop-marking-side']);
+  });
+
+  test('nothing 止まれ appears on the alley side of the store (x < -5)', () => {
+    const scene = assembleScene();
+    const offenders = meshesDrawing(scene, STOP_TEXT).filter((mesh) => new THREE.Box3().setFromObject(mesh, true).max.x < -5);
+    expect(offenders).toHaveLength(0);
+  });
+});
+
+describe('the stop sign is an upside-down triangle facing traffic on the side street', () => {
+  test('every non-post mesh of the sign group is a single triangle, with no rectangular backing plate', () => {
+    const scene = assembleScene();
+    const parts = signParts(scene);
+    expect(parts.length).toBeGreaterThan(0);
+    for (const part of parts) expect(triangleCount(part.geometry)).toBe(1);
+  });
+
+  test('the textured sign face normal points to world -z, toward vehicles driving +z to the junction', () => {
+    const scene = assembleScene();
+    const faces = signParts(scene).filter((mesh) => textureCanvas(mesh));
+    expect(faces).toHaveLength(1);
+    expect(firstTriangleWorldNormal(faces[0]).dot(new THREE.Vector3(0, 0, -1))).toBeGreaterThan(0.999);
+  });
+
+  test('the textured sign face has its apex at the bottom: lowest vertex centered under two equal-height upper vertices', () => {
+    const scene = assembleScene();
+    const faces = signParts(scene).filter((mesh) => textureCanvas(mesh));
+    expect(faces).toHaveLength(1);
+    const position = faces[0].geometry.attributes.position;
+    const index = faces[0].geometry.index;
+    const corner = (i: number) => new THREE.Vector3().fromBufferAttribute(position, index ? index.getX(i) : i).applyMatrix4(faces[0].matrixWorld);
+    const [apex, ...upper] = [corner(0), corner(1), corner(2)].sort((a, b) => a.y - b.y);
+    expect(upper[0].y).toBeCloseTo(upper[1].y, 4);
+    expect(upper[0].y).toBeGreaterThan(apex.y + 1e-4);
+    expect(apex.x).toBeCloseTo((upper[0].x + upper[1].x) / 2, 4);
+  });
+
+  test('the untextured sign back normal points to world +z, opposite the face', () => {
+    const scene = assembleScene();
+    const backs = signParts(scene).filter((mesh) => !textureCanvas(mesh));
+    expect(backs.length).toBeGreaterThan(0);
+    for (const back of backs) expect(firstTriangleWorldNormal(back).dot(new THREE.Vector3(0, 0, 1))).toBeGreaterThan(0.999);
   });
 });
 
@@ -302,4 +408,76 @@ test('the font preload text contains no character beyond what canvas textures ac
   const extra = [...new Set(CANVAS_TEXT)].filter((char) => char.trim() && !drawn.has(char));
   expect(extra).toEqual([]);
   setCanvasFactory(createFakeCanvasFactory());
+});
+
+describe('store roof and outer walls ignore lights behind them', () => {
+  function toonMeshes(root: THREE.Object3D, pick: (mesh: THREE.Mesh, material: THREE.MeshToonMaterial) => boolean): THREE.MeshToonMaterial[] {
+    const found: THREE.MeshToonMaterial[] = [];
+    root.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      const material = mesh.material as THREE.MeshToonMaterial;
+      if (mesh.isMesh && material.isMeshToonMaterial && pick(mesh, material)) found.push(material);
+    });
+    return found;
+  }
+
+  function shadeTable(material: THREE.MeshToonMaterial): number[] {
+    return Array.from((material.gradientMap!.image as { data: ArrayLike<number> }).data);
+  }
+
+  function roofSlabs(scene: THREE.Scene): THREE.MeshToonMaterial[] {
+    return toonMeshes(scene.getObjectByName('store')!, (mesh) => {
+      const p = (mesh.geometry as THREE.BoxGeometry).parameters;
+      return mesh.geometry.type === 'BoxGeometry' && p.width === 9.9 && p.height === 0.3 && p.depth === 6.4;
+    });
+  }
+
+  function outerWalls(scene: THREE.Scene): THREE.MeshToonMaterial[] {
+    return toonMeshes(scene.getObjectByName('store')!, (_, material) => material.color.getHexString() === 'dde2ea');
+  }
+
+  function roofAndOuterWalls(scene: THREE.Scene): THREE.MeshToonMaterial[] {
+    return [...roofSlabs(scene), ...outerWalls(scene)];
+  }
+
+  test('the store has exactly one roof slab and at least one outer wall', () => {
+    const scene = assembleScene();
+    expect(roofSlabs(scene)).toHaveLength(1);
+    expect(outerWalls(scene).length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('the roof slab and every outer wall are toon materials with a gradient map', () => {
+    for (const material of roofAndOuterWalls(assembleScene())) expect(material.gradientMap).toBeTruthy();
+  });
+
+  test('back-lit half of their gradient map contributes no brightness', () => {
+    for (const material of roofAndOuterWalls(assembleScene())) {
+      const table = shadeTable(material);
+      expect(table.slice(0, table.length / 2)).toEqual(table.slice(0, table.length / 2).map(() => 0));
+    }
+  });
+
+  test('front-lit half of their gradient map keeps the regular shading steps', () => {
+    for (const material of roofAndOuterWalls(assembleScene())) {
+      const table = shadeTable(material);
+      expect(table.slice(table.length / 2)).toEqual([215, 255]);
+    }
+  });
+
+  test('the interior wall and street objects keep the regular four-step shading', () => {
+    const scene = assembleScene();
+    const store = scene.getObjectByName('store')!;
+    const interior = toonMeshes(store, (_, material) => material.color.getHexString() === 'fff3de');
+    const outsideStore = toonMeshes(scene, (mesh) => {
+      let node: THREE.Object3D | null = mesh;
+      while (node) {
+        if (node === store) return false;
+        node = node.parent;
+      }
+      return true;
+    });
+    expect(interior.length).toBeGreaterThan(0);
+    expect(outsideStore.length).toBeGreaterThan(0);
+    for (const material of [...interior, ...outsideStore]) expect(shadeTable(material)).toEqual([70, 150, 215, 255]);
+  });
 });

@@ -24,6 +24,17 @@ function signalHead(parent: THREE.Object3D, x: number, y: number, z: number, ry:
   });
 }
 
+function stopSignGeometry(): THREE.BufferGeometry {
+  const w = 256;
+  const h = 230;
+  const corners = [[4, 4], [128, 226], [252, 4]];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(corners.flatMap(([px, py]) => [(px / w - 0.5) * 0.8, (0.5 - py / h) * 0.72, 0]), 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(corners.flatMap(([px, py]) => [px / w, 1 - py / h]), 2));
+  g.computeVertexNormals();
+  return g;
+}
+
 function pedHead(parent: THREE.Object3D, x: number, y: number, z: number, ry: number): Lamp[] {
   const g = new THREE.Group();
   g.position.set(x, y, z);
@@ -282,13 +293,12 @@ export function buildStreet(scene: THREE.Scene, textures: Textures): Street {
     stopSignSide.name = 'stop-sign-side';
     scene.add(stopSignSide);
     cyl(stopSignSide, 0.03, 0.03, 2.6, toon('#dfe3ea'), 11.55, 0.15, 0.3, 8);
-    plane(stopSignSide, 0.8, 0.72, toon('#fff', { map: textures.stopSign, glow: 0.3 }), 11.55, 2.45, 0.26, Math.PI - 0.35);
-    plane(stopSignSide, 0.8, 0.72, toon('#8e96a3'), 11.55, 2.45, 0.28, -0.35);
+    const face = stopSignGeometry();
+    add(stopSignSide, face, toon('#fff', { map: textures.stopSign, glow: 0.3 }), 11.55, 2.45, 0.26, Math.PI);
+    add(stopSignSide, face, toon('#8e96a3'), 11.55, 2.45, 0.28, 0);
   }
 
   {
-    cyl(scene, 0.03, 0.03, 2.6, toon('#dfe3ea'), -7.35, 0.15, -2.7, 8);
-    plane(scene, 0.62, 0.56, toon('#fff', { map: textures.stopSign, glow: 0.25, side: THREE.DoubleSide }), -7.35, 2.45, -2.74, Math.PI);
     cyl(scene, 0.04, 0.04, 2.9, toon('#ff7a1a'), -6.25, 0.15, -2.75, 8);
     const mg = new THREE.Group();
     mg.position.set(-6.25, 3.0, -2.75);

@@ -49,15 +49,22 @@ export function noOutline<T extends THREE.Material>(material: T): T {
   return material;
 }
 
+function shadeTable(steps: number[]): THREE.DataTexture {
+  const texture = new THREE.DataTexture(new Uint8Array(steps), 4, 1, THREE.RedFormat);
+  texture.minFilter = texture.magFilter = THREE.NearestFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
 let gradientMap: THREE.DataTexture | null = null;
+let frontLitGradientMap: THREE.DataTexture | null = null;
 
 export function toonGradientMap(): THREE.DataTexture {
-  if (!gradientMap) {
-    gradientMap = new THREE.DataTexture(new Uint8Array([70, 150, 215, 255]), 4, 1, THREE.RedFormat);
-    gradientMap.minFilter = gradientMap.magFilter = THREE.NearestFilter;
-    gradientMap.needsUpdate = true;
-  }
-  return gradientMap;
+  return (gradientMap ??= shadeTable([70, 150, 215, 255]));
+}
+
+function toonFrontLitGradientMap(): THREE.DataTexture {
+  return (frontLitGradientMap ??= shadeTable([0, 0, 215, 255]));
 }
 
 export interface ToonOptions {
@@ -66,6 +73,7 @@ export interface ToonOptions {
   opacity?: number;
   side?: THREE.Side;
   noOutline?: boolean;
+  frontLitOnly?: boolean;
 }
 
 const matCache = new Map<string, THREE.MeshToonMaterial>();
@@ -74,7 +82,7 @@ export function toon(color: THREE.ColorRepresentation, o: ToonOptions = {}): THR
   const key = o.map ? null : `${new THREE.Color(color).getHexString()}${JSON.stringify(o)}`;
   const cached = key ? matCache.get(key) : undefined;
   if (cached) return cached;
-  const material = new THREE.MeshToonMaterial({ color, gradientMap: toonGradientMap() });
+  const material = new THREE.MeshToonMaterial({ color, gradientMap: o.frontLitOnly ? toonFrontLitGradientMap() : toonGradientMap() });
   if (o.glow) material.emissive = new THREE.Color(color).multiplyScalar(o.glow);
   if (o.map) {
     material.map = o.map;
