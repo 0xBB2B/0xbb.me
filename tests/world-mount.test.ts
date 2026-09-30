@@ -618,25 +618,30 @@ describe('首帧渲染出错', () => {
           const pending = new Map();
           let nextId = 0;
           let armed = true;
-          let loopStarted = false;
+          let boundFramebuffer = null;
           window.__failed = false;
           window.__drawsAfter = 0;
-          window.requestAnimationFrame = (cb) => { const id = ++nextId; pending.set(id, cb); loopStarted = true; return id; };
+          window.requestAnimationFrame = (cb) => { const id = ++nextId; pending.set(id, cb); return id; };
           window.cancelAnimationFrame = (id) => { pending.delete(id); };
           window.__pump = () => {
             const callbacks = [...pending.values()];
             pending.clear();
-            callbacks.forEach((cb) => cb(performance.now()));
+            callbacks.forEach((cb) => { try { cb(performance.now()); } catch (e) {} });
             return callbacks.length;
           };
           for (const Context of [window.WebGL2RenderingContext, window.WebGLRenderingContext]) {
             if (!Context) continue;
+            const originalBind = Context.prototype.bindFramebuffer;
+            Context.prototype.bindFramebuffer = function (target, framebuffer) {
+              boundFramebuffer = framebuffer;
+              return originalBind.call(this, target, framebuffer);
+            };
             for (const name of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']) {
               const original = Context.prototype[name];
               if (!original) continue;
               Context.prototype[name] = function (...args) {
                 if (window.__failed) window.__drawsAfter++;
-                if (armed && loopStarted) { armed = false; window.__failed = true; throw new Error('first draw failed'); }
+                if (armed && boundFramebuffer === null) { armed = false; window.__failed = true; throw new Error('first draw failed'); }
                 return original.apply(this, args);
               };
             }
@@ -655,6 +660,67 @@ describe('首帧渲染出错', () => {
     `);
     expect(result.mountError).not.toBeNull();
     expect(result.ready).toBe(false);
+    expect(result.drawsAfter).toBe(0);
+    expect(result.callbacksRun).toBe(0);
+  }, 60_000);
+
+  test('运行中首帧之后某一帧画帧出错后，推进刷新不再执行渲染循环', async () => {
+    const result = await runBrowser<{ ready: boolean; failed: boolean; drawsAfter: number; callbacksRun: number }>(`
+      await cdp('Page.addScriptToEvaluateOnNewDocument', { source: \`
+        (() => {
+          const pending = new Map();
+          let nextId = 0;
+          let loopStarted = false;
+          let frameNo = 0;
+          let frameOpen = false;
+          window.__failed = false;
+          window.__drawsAfter = 0;
+          window.requestAnimationFrame = (cb) => { const id = ++nextId; pending.set(id, cb); loopStarted = true; return id; };
+          window.cancelAnimationFrame = (id) => { pending.delete(id); };
+          window.__pump = () => {
+            const callbacks = [...pending.values()];
+            pending.clear();
+            for (const cb of callbacks) {
+              frameOpen = false;
+              try { cb(performance.now()); } catch (e) {}
+            }
+            return callbacks.length;
+          };
+          for (const Context of [window.WebGL2RenderingContext, window.WebGLRenderingContext]) {
+            if (!Context) continue;
+            for (const name of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']) {
+              const original = Context.prototype[name];
+              if (!original) continue;
+              Context.prototype[name] = function (...args) {
+                if (window.__failed) window.__drawsAfter++;
+                if (loopStarted && !window.__failed && !frameOpen) {
+                  frameOpen = true;
+                  frameNo++;
+                  if (frameNo === 3) { window.__failed = true; throw new Error('third frame draw failed'); }
+                }
+                return original.apply(this, args);
+              };
+            }
+          }
+        })();
+      \` });
+      ${BOOT}
+      await wait(0.3);
+      for (let i = 0; i < 30 && !(await js('window.__failed')); i++) {
+        await js('window.__pump()');
+        await wait(0.02);
+      }
+      const failed = await js('window.__failed');
+      let callbacksRun = 0;
+      for (let i = 0; i < 20; i++) {
+        callbacksRun += await js('window.__pump()');
+        await wait(0.02);
+      }
+      const drawsAfter = await js('window.__drawsAfter');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, failed, drawsAfter, callbacksRun }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.failed).toBe(true);
     expect(result.drawsAfter).toBe(0);
     expect(result.callbacksRun).toBe(0);
   }, 60_000);

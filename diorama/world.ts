@@ -54,7 +54,6 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
 
   let wetGround: ReturnType<typeof createWetGround> | undefined;
   let handleResize: () => void = () => {};
-  let rafId = 0;
   let handleVisibility: () => void = () => {};
   let handleContextLost: () => void = () => {};
 
@@ -237,9 +236,12 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
 
     const pacer = createFramePacer();
     const clock = new THREE.Clock();
+    let rafId = 0;
     function loop(timestamp: number): void {
-      rafId = requestAnimationFrame(loop);
-      if (!pacer.shouldDraw(timestamp)) return;
+      if (!pacer.shouldDraw(timestamp)) {
+        rafId = requestAnimationFrame(loop);
+        return;
+      }
       const dt = Math.min(clock.getDelta(), 0.05);
       const t = clock.elapsedTime;
       sharedTime.value = t;
@@ -250,6 +252,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       updateCamera(t);
       if (currentTier === 'high') monitor.sample(performance.now(), document.visibilityState === 'visible');
       render();
+      rafId = requestAnimationFrame(loop);
     }
 
     handleResize = function (): void {
@@ -314,7 +317,6 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       },
     };
   } catch (error) {
-    cancelAnimationFrame(rafId);
     window.removeEventListener('resize', handleResize);
     document.removeEventListener('visibilitychange', handleVisibility);
     renderer.domElement.removeEventListener('webglcontextlost', handleContextLost);
