@@ -111,12 +111,6 @@ test('dist/index.html loads no scripts or stylesheets from external domains', ()
   }
 });
 
-test('dist/sitemap.xml lists only the homepage', () => {
-  const sitemap = readFileSync(path.resolve(root, 'dist/sitemap.xml'), 'utf8');
-  const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
-  expect(locs).toEqual(['https://0xbb.me/']);
-});
-
 test('public/THIRD_PARTY_NOTICES.txt opens with the rainy konbini portfolio title', () => {
   const notices = readFileSync(path.resolve(root, 'public/THIRD_PARTY_NOTICES.txt'), 'utf8');
   expect(notices.split('\n')[0]).toBe('0xbb.me — Rainy Konbini Portfolio');

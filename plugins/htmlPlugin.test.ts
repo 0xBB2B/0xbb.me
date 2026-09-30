@@ -178,7 +178,11 @@ test('metadata read failure fails the production build instead of shipping a pag
   }) as typeof fs.readFileSync);
   try {
     const plugin = htmlPlugin();
-    (plugin.configResolved as (config: { command: string }) => void)({ command: 'build' });
+    (plugin.configResolved as unknown as (config: { command: string; root: string; resolve: { alias: never[] } }) => void)({
+      command: 'build',
+      root: process.cwd(),
+      resolve: { alias: [] },
+    });
     expect(() => (plugin.transformIndexHtml as (html: string) => unknown)('<html><head><meta charset="UTF-8" /></head><body><div id="root"></div></body></html>')).toThrow(readError);
   } finally {
     readSpy.mockRestore();

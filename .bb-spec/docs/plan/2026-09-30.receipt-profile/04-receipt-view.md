@@ -18,7 +18,7 @@ description: 资料视角外层换成小票：返回按钮、语言开关、失�
 - 语言开关切换后，小票、相片文字、铭牌、`<html lang>` 同步更新；语言不持久化。整体视角下没有语言开关。
 
 ## 涉及文件
-- 新建 `components/ReceiptView.tsx`、`components/ReceiptView.css`
+- 新建 `components/ReceiptView.tsx`、`components/ReceiptView.css`（小票靠右 7vw 的外边距、竖屏居中由 `ReceiptView.css` 的外层容器负责；同时删掉 `components/Receipt.css` 里横屏 `margin-right: 7vw` 与竖屏 `margin-inline: auto` 这两条首页专用布局，以及 `components/ProfilePage.css` 里为抵消它们而加的 `.profile-page-main .receipt { margin: 0 }`）
 - 修改 `App.tsx`（用 `ReceiptView` 替换 `StoryScroller`；删掉 `onScrollChange` 接线）
 - 修改 `components/SceneViewport.tsx`（删除「资料视角时调用 `startStoryWithoutEntering` 和 `setScroll`」的 effect，删除句柄上的 `setScroll`）
 - 删除 `components/StoryScroller.tsx`、`components/StorySections.tsx`、`components/StorySections.css`

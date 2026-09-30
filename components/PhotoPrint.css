@@ -1,3 +1,8 @@
+.photo-print-overlay,
+.photo-print-overlay * {
+  box-sizing: border-box;
+}
+
 .photo-print-overlay {
   position: fixed;
   inset: 0;
@@ -113,6 +118,7 @@
   border: 1px solid rgba(232, 238, 252, 0.5);
   background: rgba(7, 10, 24, 0.6);
   color: #e8eefc;
+  font: inherit;
   font-size: 18px;
   cursor: pointer;
 }

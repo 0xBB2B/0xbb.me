@@ -1,3 +1,8 @@
+.receipt,
+.receipt * {
+  box-sizing: border-box;
+}
+
 .receipt {
   --paper: #f5f1e6;
   --paper-ink: #1d2233;
@@ -73,6 +78,7 @@
   padding: 0;
   border: 0;
   background: none;
+  font: inherit;
   cursor: zoom-in;
   border-radius: 50%;
   position: relative;

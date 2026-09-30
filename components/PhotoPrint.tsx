@@ -12,9 +12,10 @@ type PrintStatus = 'loading' | 'loaded' | 'failed';
 interface PhotoPrintProps {
   language: Language;
   onClose: () => void;
+  assetBase?: string;
 }
 
-export function PhotoPrint({ language, onClose }: PhotoPrintProps) {
+export function PhotoPrint({ language, onClose, assetBase = './' }: PhotoPrintProps) {
   const copy = COPY[language];
   const [status, setStatus] = useState<PrintStatus>('loading');
   const [attempt, setAttempt] = useState(0);
@@ -49,7 +50,7 @@ export function PhotoPrint({ language, onClose }: PhotoPrintProps) {
         <div className="photo-print-photo">
           <img
             key={attempt}
-            src="./profile-full-print.jpg"
+            src={`${assetBase}profile-full-print.jpg`}
             alt={copy.fullAlt}
             onLoad={() => setStatus('loaded')}
             onError={() => setStatus('failed')}

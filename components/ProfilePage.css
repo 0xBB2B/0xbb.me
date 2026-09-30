@@ -1,0 +1,63 @@
+body {
+  margin: 0;
+  background: #070a18;
+}
+
+.profile-page {
+  position: relative;
+  min-height: 100vh;
+  /* 小票掉落时旋转 -8°，手机浏览器会把布局视口撑宽去容纳它，动画结束也不缩回 */
+  overflow-x: clip;
+  color: #e8eefc;
+  background: radial-gradient(ellipse at 50% 20%, #1c2a5a 0%, #0d1430 50%, #070a18 100%);
+}
+
+.profile-page-rain-clip {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.profile-page-rain {
+  position: absolute;
+  inset: -20% -10%;
+  background-image: repeating-linear-gradient(115deg, rgba(200, 220, 255, 0.07) 0 1px, transparent 1px 14px);
+  animation: profile-rain-move 1.2s linear infinite;
+}
+
+@keyframes profile-rain-move {
+  to {
+    transform: translate(-6px, 14px);
+  }
+}
+
+.profile-page-back {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  z-index: 2;
+  color: #e8eefc;
+  text-decoration: none;
+  font-size: 13px;
+  border: 1px solid rgba(159, 177, 224, 0.6);
+  border-radius: 4px;
+  padding: 0.35rem 0.7rem;
+  background: rgba(7, 10, 24, 0.45);
+}
+
+.profile-page-back:hover {
+  border-color: #f3d9a0;
+  color: #f3d9a0;
+}
+
+.profile-page-main {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 88px 0 64px;
+}
+
+.profile-page-main .receipt {
+  margin: 0;
+}

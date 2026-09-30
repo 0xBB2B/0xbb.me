@@ -8,8 +8,9 @@
 }
 
 .language-toggle button {
-  font-family: inherit;
-  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  background: rgba(7, 10, 24, 0.45);
   border: 1px solid #9fb1e0;
   border-radius: 4px;
   color: #e8eefc;

@@ -6,10 +6,11 @@ import './Receipt.css';
 interface ReceiptProps {
   language: Language;
   onAvatarClick: () => void;
+  assetBase?: string;
 }
 
 const ReceiptAvatar = forwardRef<HTMLButtonElement, ReceiptProps>(function ReceiptAvatar(
-  { language, onAvatarClick },
+  { language, onAvatarClick, assetBase = './' },
   ref,
 ) {
   const [broken, setBroken] = useState(false);
@@ -27,7 +28,7 @@ const ReceiptAvatar = forwardRef<HTMLButtonElement, ReceiptProps>(function Recei
         <img
           ref={imgRef}
           className="receipt-avatar"
-          src="./profile.jpg"
+          src={`${assetBase}profile.jpg`}
           alt={COPY[language].avatarAlt}
           loading="lazy"
           onError={() => setBroken(true)}
@@ -51,7 +52,7 @@ function ReceiptRow({ name, children }: { name: string; children: ReactNode }) {
 }
 
 export const Receipt = forwardRef<HTMLButtonElement, ReceiptProps>(function Receipt(
-  { language, onAvatarClick },
+  { language, onAvatarClick, assetBase },
   avatarRef,
 ) {
   const copy = COPY[language];
@@ -59,7 +60,7 @@ export const Receipt = forwardRef<HTMLButtonElement, ReceiptProps>(function Rece
     <article className="receipt">
       <div className="receipt-center">
         <p className="receipt-store">{copy.receiptStore}</p>
-        <ReceiptAvatar ref={avatarRef} language={language} onAvatarClick={onAvatarClick} />
+        <ReceiptAvatar ref={avatarRef} language={language} onAvatarClick={onAvatarClick} assetBase={assetBase} />
         <p className="receipt-tap-hint">{copy.tapPhotoHint}</p>
         <h1 tabIndex={-1}>FUBUKI_BB</h1>
         {APP_DATA.profile.roles[language].map((role) => (
