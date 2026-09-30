@@ -31,7 +31,7 @@ export const WET_SHADER = {
       vec4 uv=vUv; uv.xy+=dist*uv.w;
       float smear=mix(.09,.005,pud);
       vec3 refl=vec3(0.); float ws=0.;
-      float lod=max(log2(smear*.25*float(textureSize(tDiffuse,0).y))+.5,0.);
+      float lod=max(log2(smear*.25*float(textureSize(tDiffuse,0).y))+.5,0.)*(1.-pud);
       for(int i=-4;i<=4;i++){ float o=float(i)/4.; float w=1.-abs(o)*.8; vec4 u=uv; u.y+=smear*o*uv.w; refl+=texture2DProj(tDiffuse,u,lod).rgb*w; ws+=w; }
       refl/=ws;
       vec3 wet=refl*.38*uK;

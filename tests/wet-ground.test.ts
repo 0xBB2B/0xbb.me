@@ -64,6 +64,25 @@ describe('wet ground reflection blur picks a smaller mip level for longer streak
   test('puddles keep the shortest streak', () => {
     expect(src).toContain('smear=mix(.09,.005,pud)');
   });
+
+  function evaluateBias(pud: number, texHeight: number): number {
+    const smear = 0.09 + (0.005 - 0.09) * pud;
+    const js = biasExpression()
+      .replace(/float\(textureSize\(tDiffuse,\s*0\)\.y\)/g, 'texHeight')
+      .replace(/\blog2\(/g, 'Math.log2(')
+      .replace(/\bmax\(/g, 'Math.max(');
+    return new Function('smear', 'pud', 'texHeight', `return ${js};`)(smear, pud, texHeight);
+  }
+
+  test('puddles get zero bias at every reflection height the high tier can produce', () => {
+    for (const texHeight of [300, 450, 900, 1080, 1440]) {
+      expect(evaluateBias(1, texHeight)).toBe(0);
+    }
+  });
+
+  test('open wet road gets a larger bias than a puddle at the same reflection height', () => {
+    expect(evaluateBias(0, 900)).toBeGreaterThan(evaluateBias(1, 900));
+  });
 });
 
 describe('wet ground reflection render targets carry mipmaps', () => {
