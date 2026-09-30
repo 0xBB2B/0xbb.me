@@ -23,6 +23,12 @@ test('README 描述雨夜便利店站点的玩法', () => {
   expect(readme).toContain('铭牌');
   expect(readme).toContain('资料视角');
   expect(readme).toContain('先看资料');
+  for (const term of ['小票', '全身照', '/profile/', '暂停']) {
+    expect(readme).toContain(term);
+  }
+  for (const term of ['三段', '翻一段', '进度点', 'SCROLL', '不依赖脚本的英文资料', 'PageDown']) {
+    expect(readme).not.toContain(term);
+  }
 });
 
 test('dist/index.html 不引用外部域名的脚本或样式表', () => {
