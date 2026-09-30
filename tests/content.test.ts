@@ -36,10 +36,10 @@ describe('APP_DATA.profile', () => {
 describe('APP_DATA.socialLinks', () => {
   test('lists GitHub, LinkedIn, Juejin, Email in that order', () => {
     expect(APP_DATA.socialLinks).toEqual([
-      { name: 'GitHub', url: 'https://github.com/0xBB2b' },
-      { name: 'LinkedIn', url: 'https://www.linkedin.com/in/0xbb2b' },
-      { name: 'Juejin', url: 'https://juejin.cn/user/1037558235795032' },
-      { name: 'Email', url: 'mailto:bb@yorha.xyz' },
+      { name: 'GitHub', label: 'github.com/0xBB2b', url: 'https://github.com/0xBB2b' },
+      { name: 'LinkedIn', label: 'in/0xbb2b', url: 'https://www.linkedin.com/in/0xbb2b' },
+      { name: 'Juejin', label: 'juejin.cn', url: 'https://juejin.cn/user/1037558235795032' },
+      { name: 'Email', label: 'bb@yorha.xyz', url: 'mailto:bb@yorha.xyz' },
     ]);
   });
 });
