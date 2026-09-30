@@ -876,17 +876,33 @@ describe('小票', () => {
     expect(result.overlapsToggle).toBe(false);
   }, 90_000);
 
-  test('1440×900 下小票右边距为视口宽度的 7% ±1%', async () => {
+  test('1440×900 下小票靠左，左边距为视口宽度的 7% ±1%', async () => {
     const result = await runBrowser<{ ratio: number }>(`
       ${HELPERS}
       ${boot(1440, 900)}
       await enterStoryByKeyboard();
       await settle();
       await wait(0.9);
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ratio: await js("(innerWidth - document.querySelector('.receipt').getBoundingClientRect().right) / innerWidth") }));
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ratio: await js("document.querySelector('.receipt').getBoundingClientRect().left / innerWidth") }));
     `);
     expect(result.ratio).toBeGreaterThanOrEqual(0.06);
     expect(result.ratio).toBeLessThanOrEqual(0.08);
+  }, 90_000);
+
+  test('1440×900 下返回全景按钮与小票矩形不相交', async () => {
+    const result = await runBrowser<{ intersects: boolean }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await enterStoryByKeyboard();
+      await settle();
+      await wait(0.9);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify(await js(\`(() => {
+        const b = (\${BACK}).getBoundingClientRect();
+        const r = document.querySelector('.receipt').getBoundingClientRect();
+        return { intersects: b.left < r.right && b.right > r.left && b.top < r.bottom && b.bottom > r.top };
+      })()\`)));
+    `);
+    expect(result.intersects).toBe(false);
   }, 90_000);
 
   test('390×844 下小票水平居中，左右留白差不超过 2 像素', async () => {
@@ -905,14 +921,14 @@ describe('小票', () => {
     expect(Math.abs(result.left - result.right)).toBeLessThanOrEqual(2);
   }, 90_000);
 
-  test('800×800（宽高比 1:1）下小票靠右，右边距为视口宽度的 7% ±1%', async () => {
+  test('800×800（宽高比 1:1）下小票靠左，左边距为视口宽度的 7% ±1%', async () => {
     const result = await runBrowser<{ ratio: number }>(`
       ${HELPERS}
       ${boot(800, 800)}
       await enterStoryByKeyboard();
       await settle();
       await wait(0.9);
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ratio: await js("(innerWidth - document.querySelector('.receipt').getBoundingClientRect().right) / innerWidth") }));
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ratio: await js("document.querySelector('.receipt').getBoundingClientRect().left / innerWidth") }));
     `);
     expect(result.ratio).toBeGreaterThanOrEqual(0.06);
     expect(result.ratio).toBeLessThanOrEqual(0.08);

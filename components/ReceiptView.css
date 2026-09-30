@@ -55,8 +55,8 @@
 
 @media (min-aspect-ratio: 1/1) {
   .receipt-view-layer {
-    justify-content: flex-end;
-    padding: 72px 7vw 48px 14px;
+    justify-content: flex-start;
+    padding: 72px 14px 48px 7vw;
   }
 }
 
