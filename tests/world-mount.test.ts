@@ -504,3 +504,158 @@ describe('地面倒影', () => {
     });
   }, 60_000);
 });
+
+interface RefreshTick {
+  t: number;
+  drawn: boolean;
+  animTime: number;
+}
+
+function frameDriverScript(stepMs: number): string {
+  return `
+    (() => {
+      const STEP = ${stepMs};
+      let now = 0, draws = 0;
+      const queue = [];
+      for (const Context of [window.WebGL2RenderingContext, window.WebGLRenderingContext]) {
+        if (!Context) continue;
+        for (const name of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']) {
+          const original = Context.prototype[name];
+          if (original) Context.prototype[name] = function (...args) { draws++; return original.apply(this, args); };
+        }
+      }
+      window.requestAnimationFrame = (cb) => { queue.push(cb); return queue.length; };
+      window.cancelAnimationFrame = () => {};
+      performance.now = () => now;
+      const animTime = () => {
+        let value = 0;
+        window.handle.scene.traverse((o) => { if (o.material && o.material.uniforms && o.material.uniforms.uTime) value = o.material.uniforms.uTime.value; });
+        return value;
+      };
+      const pump = setInterval(() => { now += STEP; queue.splice(0).forEach((cb) => cb(now)); }, 4);
+      window.stopRefreshPump = () => clearInterval(pump);
+      window.runRefreshes = (durationMs) => {
+        window.refreshTicks = null;
+        (async () => {
+          const ticks = [];
+          for (let i = 0; i * STEP < durationMs; i++) {
+            now += STEP;
+            const before = draws;
+            queue.splice(0).forEach((cb) => cb(now));
+            ticks.push({ t: now, drawn: draws > before, animTime: animTime() });
+            await new Promise((resolve) => setTimeout(resolve, 0));
+          }
+          window.refreshTicks = ticks;
+        })();
+      };
+    })();
+  `;
+}
+
+async function simulateRefreshes(stepMs: number): Promise<{ ready: boolean; ticks: RefreshTick[] }> {
+  return runBrowser<{ ready: boolean; ticks: RefreshTick[] }>(`
+    await cdp('Page.addScriptToEvaluateOnNewDocument', { source: ${JSON.stringify(frameDriverScript(stepMs))} });
+    ${BOOT}
+    await js('window.stopRefreshPump()');
+    await js('window.runRefreshes(1000)');
+    let ticks = null;
+    const runDeadline = Date.now() + 100000;
+    while (Date.now() < runDeadline) {
+      ticks = await js('window.refreshTicks');
+      if (ticks) break;
+      await wait(0.2);
+    }
+    cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, ticks }));
+  `);
+}
+
+describe('帧率上限 60 帧', () => {
+  const cases = [
+    { hz: 60, stepMs: 1000 / 60, every: 1, frames: 60 },
+    { hz: 120, stepMs: 1000 / 120, every: 2, frames: 60 },
+    { hz: 144, stepMs: 6.94, every: 3, frames: 48 },
+    { hz: 165, stepMs: 6.06, every: 3, frames: 55 },
+  ];
+
+  for (const { hz, stepMs, every, frames } of cases) {
+    test(`${hz}Hz 刷新跑 1 秒画出约 ${frames} 帧，帧间隔均匀，跳过的刷新不推进动画时间`, async () => {
+      const { ready, ticks } = await simulateRefreshes(stepMs);
+      expect(ready).toBe(true);
+      const drawn = ticks.filter((tick) => tick.drawn);
+      expect(Math.abs(drawn.length - frames)).toBeLessThanOrEqual(1);
+      for (let i = 1; i < drawn.length; i++) {
+        expect(drawn[i].t - drawn[i - 1].t).toBeCloseTo(every * stepMs, 0);
+        expect(drawn[i].animTime - drawn[i - 1].animTime).toBeCloseTo((every * stepMs) / 1000, 3);
+      }
+      for (let i = 1; i < ticks.length; i++) {
+        if (!ticks[i].drawn) expect(ticks[i].animTime).toBe(ticks[i - 1].animTime);
+      }
+    }, 150_000);
+  }
+});
+
+describe('渲染器不开默认画布抗锯齿', () => {
+  test('舞台画布的 WebGL 上下文 antialias 为 false', async () => {
+    const result = await runBrowser<{ ready: boolean; antialias: boolean | null }>(`
+      ${BOOT}
+      const antialias = await js(\`(() => {
+        const canvas = document.querySelector('#stage canvas');
+        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+        return gl ? gl.getContextAttributes().antialias : null;
+      })()\`);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, antialias }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.antialias).toBe(false);
+  }, 60_000);
+});
+
+describe('首帧渲染出错', () => {
+  test('首帧 draw 抛错导致挂载失败后，推进刷新不再执行渲染循环', async () => {
+    const result = await runBrowser<{ mountError: string | null; ready: boolean; drawsAfter: number; callbacksRun: number }>(`
+      await cdp('Page.addScriptToEvaluateOnNewDocument', { source: \`
+        (() => {
+          const pending = new Map();
+          let nextId = 0;
+          let armed = true;
+          let loopStarted = false;
+          window.__failed = false;
+          window.__drawsAfter = 0;
+          window.requestAnimationFrame = (cb) => { const id = ++nextId; pending.set(id, cb); loopStarted = true; return id; };
+          window.cancelAnimationFrame = (id) => { pending.delete(id); };
+          window.__pump = () => {
+            const callbacks = [...pending.values()];
+            pending.clear();
+            callbacks.forEach((cb) => cb(performance.now()));
+            return callbacks.length;
+          };
+          for (const Context of [window.WebGL2RenderingContext, window.WebGLRenderingContext]) {
+            if (!Context) continue;
+            for (const name of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']) {
+              const original = Context.prototype[name];
+              if (!original) continue;
+              Context.prototype[name] = function (...args) {
+                if (window.__failed) window.__drawsAfter++;
+                if (armed && loopStarted) { armed = false; window.__failed = true; throw new Error('first draw failed'); }
+                return original.apply(this, args);
+              };
+            }
+          }
+        })();
+      \` });
+      ${BOOT}
+      await wait(0.3);
+      let callbacksRun = 0;
+      for (let i = 0; i < 20; i++) {
+        callbacksRun += await js('window.__pump()');
+        await wait(0.02);
+      }
+      const drawsAfter = await js('window.__drawsAfter');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, mountError, drawsAfter, callbacksRun }));
+    `);
+    expect(result.mountError).not.toBeNull();
+    expect(result.ready).toBe(false);
+    expect(result.drawsAfter).toBe(0);
+    expect(result.callbacksRun).toBe(0);
+  }, 60_000);
+});

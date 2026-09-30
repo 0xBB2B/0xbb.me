@@ -68,7 +68,7 @@ export function createRenderer(container: HTMLElement, pixelRatio: number): Dior
   const width = container.clientWidth || 1;
   const height = container.clientHeight || 1;
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: false });
   renderer.toneMapping = THREE.NoToneMapping;
   container.appendChild(renderer.domElement);
 

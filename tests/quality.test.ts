@@ -1,5 +1,5 @@
 import { expect, test, describe } from 'bun:test';
-import { initialTier, percentile95, createFrameMonitor, TIER_SETTINGS } from '../diorama/quality';
+import { initialTier, percentile95, createFrameMonitor, createFramePacer, TIER_SETTINGS } from '../diorama/quality';
 
 function feedFrames(
   sample: (timestampMs: number, visible: boolean) => void,
@@ -165,5 +165,55 @@ describe('createFrameMonitor windowing and page visibility', () => {
     t = feedFrames(monitor.sample, { startMs: t, intervalMs: 100, durationMs: 2000, visible: false });
     feedFrames(monitor.sample, { startMs: t, intervalMs: 48, durationMs: 600, visible: true });
     expect(calls).toBe(0);
+  });
+});
+
+describe('createFramePacer', () => {
+  function measureEvery(
+    refreshHz: number,
+    toTimestamp: (idealMs: number) => number,
+    options: { jumpAtIndex?: number; jumpMs?: number } = {},
+  ): number[] {
+    const pacer = createFramePacer();
+    const period = 1000 / refreshHz;
+    const drawnIndexes: number[] = [];
+    const total = 400;
+    let offset = 0;
+    for (let k = 0; k < total; k++) {
+      if (k === options.jumpAtIndex) offset += options.jumpMs ?? 0;
+      if (pacer.shouldDraw(toTimestamp(k * period + offset))) drawnIndexes.push(k);
+    }
+    const settled = drawnIndexes.filter((k) => k >= 200);
+    return settled.slice(1).map((k, i) => k - settled[i]);
+  }
+
+  const cases = [
+    { hz: 60, every: 1 },
+    { hz: 120, every: 2 },
+    { hz: 144, every: 3 },
+    { hz: 165, every: 3 },
+    { hz: 240, every: 4 },
+  ];
+
+  for (const { hz, every } of cases) {
+    test(`${hz}Hz 精确时间戳下每 ${every} 次刷新画一帧`, () => {
+      const gaps = measureEvery(hz, (t) => t);
+      expect(gaps.length).toBeGreaterThan(10);
+      expect(new Set(gaps)).toEqual(new Set([every]));
+    });
+  }
+
+  for (const { hz, every } of cases.filter((c) => c.hz !== 165)) {
+    test(`${hz}Hz 时间戳只精确到 1 毫秒（向下取整）时每 ${every} 次刷新画一帧`, () => {
+      const gaps = measureEvery(hz, Math.floor);
+      expect(gaps.length).toBeGreaterThan(10);
+      expect(new Set(gaps)).toEqual(new Set([every]));
+    });
+  }
+
+  test('144Hz 序列中混入一次 500 毫秒的长间隔后仍每 3 次刷新画一帧', () => {
+    const gaps = measureEvery(144, Math.floor, { jumpAtIndex: 100, jumpMs: 500 });
+    expect(gaps.length).toBeGreaterThan(10);
+    expect(new Set(gaps)).toEqual(new Set([3]));
   });
 });
