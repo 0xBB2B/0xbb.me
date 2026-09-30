@@ -18,8 +18,7 @@ import { createAmbient } from './ambient';
 import { plaqueGlow } from './rhythm';
 import { sharedTime } from './materials';
 import { DEFAULT_CAMERA, ORBIT_LIMITS, viewFov } from './layout';
-import { poseAtScroll, enterSequence, stopPose, framingOffset, type Pose } from './story-camera';
-import { storyLayout } from './story-scroll';
+import { enterSequence, storyPose, framingOffset, type Pose } from './story-camera';
 import { createInteraction } from './interaction';
 import { acceptsSceneInput, type View } from './view-state';
 
@@ -28,8 +27,6 @@ export interface DioramaHandle {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   enterStory(): void;
-  startStoryWithoutEntering(): void;
-  setScroll(scrollY: number): void;
   exitToDiorama(): void;
   setLanguage(language: Language): void;
   onViewChange(cb: (view: View) => void): void;
@@ -110,9 +107,11 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       if (!loaded || disposed) return;
       textures.redraw();
       setPlaqueLanguage(plaque, currentLanguage);
+      if (paused) render();
     });
     let savedPose: Pose | null = null;
-    let scrollY = 0;
+    let paused = false;
+    let pausedTotal = 0;
     let enterAnim: { seq: ReturnType<typeof enterSequence>; startT: number } | null = null;
     let exitAnim: { seq: ReturnType<typeof enterSequence>; startT: number; fromRatio: number } | null = null;
     let framingRatio = 0;
@@ -145,22 +144,16 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       if (view === 'entering' && enterAnim) {
         const seconds = t - enterAnim.startT;
         if (seconds >= enterAnim.seq.duration) {
-          applyPose(enterAnim.seq.sample(enterAnim.seq.duration));
+          applyPose(storyPose());
           setFraming(1);
           enterAnim = null;
           view = 'story';
-          scrollY = storyLayout(height).sectionStarts[0];
+          pauseRendering();
           emitView('story');
           return;
         }
         applyPose(enterAnim.seq.sample(seconds));
         setFraming(seconds / enterAnim.seq.duration);
-        return;
-      }
-      if (view === 'story') {
-        const result = poseAtScroll(scrollY, height);
-        applyPose({ position: result.position, target: result.target });
-        setFraming(1);
         return;
       }
       if (view === 'exiting' && exitAnim) {
@@ -194,30 +187,15 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       interaction.clearHover();
       view = 'entering';
       emitView('entering');
-      enterAnim = { seq: enterSequence(savedPose, stopPose(0)), startT: clock.elapsedTime };
-    }
-
-    function startStoryWithoutEntering(): void {
-      if (view !== 'diorama') return;
-      savedPose = {
-        position: new THREE.Vector3(...DEFAULT_CAMERA.position),
-        target: new THREE.Vector3(...DEFAULT_CAMERA.target),
-      };
-      controls.enabled = false;
-      interaction.clearHover();
-      view = 'story';
-      scrollY = storyLayout(height).sectionStarts[0];
-    }
-
-    function setScroll(nextScrollY: number): void {
-      scrollY = nextScrollY;
+      enterAnim = { seq: enterSequence(savedPose, storyPose()), startT: animTime() };
     }
 
     function exitToDiorama(): void {
       if (view !== 'story') return;
+      resumeRendering();
       view = 'exiting';
       emitView('exiting');
-      exitAnim = { seq: enterSequence(currentPose, savedPose!), startT: clock.elapsedTime, fromRatio: framingRatio };
+      exitAnim = { seq: enterSequence(currentPose, savedPose!), startT: animTime(), fromRatio: framingRatio };
     }
 
     const interaction = createInteraction({
@@ -237,13 +215,38 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
     const pacer = createFramePacer();
     const clock = new THREE.Clock();
     let rafId = 0;
+    let scheduled = false;
+
+    function animTime(): number {
+      return clock.elapsedTime - pausedTotal;
+    }
+
+    function pauseRendering(): void {
+      paused = true;
+    }
+
+    function resumeRendering(): void {
+      pausedTotal += clock.getDelta();
+      monitor.sample(performance.now(), false);
+      paused = false;
+      scheduleNext();
+    }
+
+    function scheduleNext(): void {
+      if (scheduled) return;
+      scheduled = true;
+      rafId = requestAnimationFrame(loop);
+    }
+
     function loop(timestamp: number): void {
+      scheduled = false;
+      if (paused) return;
       if (!pacer.shouldDraw(timestamp)) {
-        rafId = requestAnimationFrame(loop);
+        scheduleNext();
         return;
       }
       const dt = Math.min(clock.getDelta(), 0.05);
-      const t = clock.elapsedTime;
+      const t = animTime();
       sharedTime.value = t;
       ambient.tick(t, dt);
       drips.update(t);
@@ -252,7 +255,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       updateCamera(t);
       if (currentTier === 'high') monitor.sample(performance.now(), document.visibilityState === 'visible');
       render();
-      rafId = requestAnimationFrame(loop);
+      if (!paused) scheduleNext();
     }
 
     handleResize = function (): void {
@@ -265,7 +268,10 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       camera.fov = viewFov(w, h);
       camera.updateProjectionMatrix();
       wetGround!.resize(w, h, pixelRatio);
-      if (view !== 'diorama') updateCamera(clock.elapsedTime);
+      if (paused) {
+        setFraming(1);
+        render();
+      } else if (view !== 'diorama') updateCamera(animTime());
     };
     window.addEventListener('resize', handleResize);
 
@@ -288,12 +294,11 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       scene,
       camera,
       enterStory,
-      startStoryWithoutEntering,
-      setScroll,
       exitToDiorama,
       setLanguage(language: Language): void {
         currentLanguage = language;
         setPlaqueLanguage(plaque, language);
+        if (paused) render();
       },
       onViewChange(cb: (view: View) => void): void {
         viewListeners.push(cb);

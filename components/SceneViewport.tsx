@@ -104,7 +104,7 @@ export const SceneViewport = forwardRef<SceneViewportHandle, SceneViewportProps>
       id="scene"
       ref={containerRef}
       aria-busy={loading || !ready}
-      className={`scene-viewport${ready ? ' scene-viewport--ready' : ''}${failed ? ' scene-viewport--hidden' : ''}`}
+      className={`scene-viewport${ready ? ' scene-viewport--ready' : ''}${failed ? ' scene-viewport--hidden' : ''}${view === 'story' && !failed ? ' scene-viewport--paused' : ''}`}
     />
   );
 });

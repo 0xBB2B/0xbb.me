@@ -1252,3 +1252,39 @@ describe('铭牌', () => {
     expect(Math.abs(bottomPixelY - topPixelY)).toBeGreaterThanOrEqual(10);
   });
 });
+
+describe('资料视角画面暂停与变暗', () => {
+  test('整体视角下画布没有滤镜；进入资料视角后 #scene 带 scene-viewport--paused，画布变暗变糊；退出后滤镜消失', async () => {
+    const result = await runBrowser<{ idleClass: string; idleFilter: string; storyClass: string; storyFilter: string; transition: string; exitedClass: string; exitedFilter: string }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      const read = () => js(\`(() => ({
+        cls: document.querySelector('#scene').className,
+        filter: getComputedStyle(document.querySelector('#scene canvas')).filter,
+        transition: getComputedStyle(document.querySelector('#scene canvas')).transition,
+      }))()\`);
+      const idle = await read();
+      await enterStoryByKeyboard();
+      await wait(1);
+      const story = await read();
+      await pressKey('Escape', 'Escape', 27);
+      await waitExited();
+      await wait(1);
+      const exited = await read();
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({
+        idleClass: idle.cls, idleFilter: idle.filter,
+        storyClass: story.cls, storyFilter: story.filter, transition: story.transition,
+        exitedClass: exited.cls, exitedFilter: exited.filter,
+      }));
+    `);
+    expect(result.idleClass).not.toContain('scene-viewport--paused');
+    expect(result.idleFilter).toBe('none');
+    expect(result.storyClass).toContain('scene-viewport--paused');
+    expect(result.storyFilter).toContain('brightness(0.55)');
+    expect(result.storyFilter).toContain('saturate(0.8)');
+    expect(result.storyFilter).toContain('blur(1.5px)');
+    expect(result.transition).toMatch(/filter 0\.6s/);
+    expect(result.exitedClass).not.toContain('scene-viewport--paused');
+    expect(result.exitedFilter).toBe('none');
+  }, 90_000);
+});
