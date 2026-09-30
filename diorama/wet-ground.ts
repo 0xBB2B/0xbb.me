@@ -31,8 +31,8 @@ export const WET_SHADER = {
       vec4 uv=vUv; uv.xy+=dist*uv.w;
       float smear=mix(.09,.005,pud);
       vec3 refl=vec3(0.); float ws=0.;
-      float j=hash(mod(gl_FragCoord.xy, 1024.));
-      for(int i=-4;i<=4;i++){ float o=float(i)/4.; float w=1.-abs(o)*.8; vec4 u=uv; u.y+=smear*(o+(j-.5)/4.)*uv.w; refl+=texture2DProj(tDiffuse,u).rgb*w; ws+=w; }
+      float lod=max(log2(smear*.25*float(textureSize(tDiffuse,0).y))+.5,0.);
+      for(int i=-4;i<=4;i++){ float o=float(i)/4.; float w=1.-abs(o)*.8; vec4 u=uv; u.y+=smear*o*uv.w; refl+=texture2DProj(tDiffuse,u,lod).rgb*w; ws+=w; }
       refl/=ws;
       vec3 wet=refl*.38*uK;
       vec3 mirror=refl*.95+vec3(.012,.018,.04);
@@ -123,6 +123,9 @@ function wetMirror(scene: THREE.Scene, reflectors: Reflector[], size: number, y:
     multisample: 0,
     shader: WET_SHADER,
   });
+  const target = reflector.getRenderTarget().texture;
+  target.generateMipmaps = true;
+  target.minFilter = THREE.LinearMipmapLinearFilter;
   reflector.rotation.x = -Math.PI / 2;
   reflector.position.set(0, y, 0);
   reflector.renderOrder = 2;
