@@ -9,7 +9,9 @@
 
 ## profile
 
-- [language](profile/language.md) — 初始语言按浏览器语言判定，只能在资料视角右上角切换，切换后全站文字同步
+- [full-photo](profile/full-photo.md) — 点小票头像弹出一张贴着胶带的全身照相片，含加载中、失败重试与关闭规则
+- [language](profile/language.md) — 初始语言按浏览器语言判定，在资料视角和独立资料页右上角切换，切换后全站文字同步
+- [receipt](profile/receipt.md) — 小票的内容、中英文案、链接、版式与贴上来的动画，资料视角、独立资料页和三维失败时共用
 
 ## scene
 
@@ -21,14 +23,14 @@
 ## site
 
 - [favicon](site/favicon.md) — 网站图标为按 profile.jpg 头像缩成 32×32 格的圆形像素画 SVG
-- [loading-shell](site/loading-shell.md) — 脚本下载前就可显示的雨夜风格加载页、「先看资料」入口与退出时机
+- [loading-shell](site/loading-shell.md) — 脚本下载前就可显示的雨夜风格加载页、通往独立资料页的「先看资料」链接与退出时机
+- [profile-page](site/profile-page.md) — 不带三维的独立资料页 /profile/：静态可读、语言切换、返回 3D 的链接与页面元信息
 - [profile-images](site/profile-images.md) — 三张头像图片永久保留在仓库并随网站发布，搜索与分享元信息引用的图片必须真实存在
-- [scene-failure](site/scene-failure.md) — 三维场景加载或运行失败时，移除加载页并直接进入无 3D 的资料视角
-- [static-profile-html](site/static-profile-html.md) — 构建产物不执行脚本即可读到的个人信息，以及搜索、分享元信息与站点地图
+- [scene-failure](site/scene-failure.md) — 三维场景加载或运行失败时，移除加载页，在深蓝背景上直接显示小票和失败提示
+- [static-profile-html](site/static-profile-html.md) — 首页与独立资料页的搜索、分享元信息，站点地图，以及首页不藏看不见的资料文字
 
 ## story
 
-- [enter-story-view](story/enter-story-view.md) — 点击铭牌或键盘隐藏按钮后，从整体视角进入资料视角的过程、时长、输入屏蔽与落点
-- [exit-story-view](story/exit-story-view.md) — 资料视角下按 Esc 或点左上角「返回全景」按钮，镜头动画退回并回到整体视角
-- [scroll-camera](story/scroll-camera.md) — 资料视角下一次滚动翻一段：镜头约 1 秒动画移到下一停靠点，动画期间不再响应滚动，以及各停靠点的取景
-- [story-sections](story/story-sections.md) — 资料视角下 3 段资料的内容、中英文文案、排版、进度点、滚动提示与语言开关
+- [enter-story-view](story/enter-story-view.md) — 点击铭牌或键盘隐藏按钮后，镜头推到店门口、小票贴上来，进入资料视角的过程、时长、输入屏蔽与落点
+- [exit-story-view](story/exit-story-view.md) — 资料视角下按 Esc 或点左上角「返回全景」按钮，小票淡出、三维恢复，镜头退回整体视角
+- [story-pause](story/story-pause.md) — 资料视角下小票贴好后三维画面停止刷新并变暗成静止背景，退出时恢复且动画时间不跳变
