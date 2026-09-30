@@ -181,7 +181,7 @@ describe('dispose', () => {
 });
 
 describe('资料视角退出镜头位姿', () => {
-  test('规则1: exitToDiorama 后依次经过 exiting、diorama，间隔不超过 1.2 秒，1 秒后镜头回到进入前记录的位姿', async () => {
+  test('exitToDiorama 后依次经过 exiting、diorama，间隔不超过 1.2 秒，1 秒后镜头回到进入前记录的位姿', async () => {
     const px = ROAD_PIXEL.x;
     const py = ROAD_PIXEL.y;
     const result = await runBrowser<{ ready: boolean; views: string[]; times: number[]; distance: number }>(`
@@ -225,7 +225,7 @@ describe('资料视角退出镜头位姿', () => {
     expect(result.distance).toBeLessThanOrEqual(0.1);
   }, 60_000);
 
-  test('规则2: 进入动画结束的瞬间镜头已停在资料镜头位，不闪回进入前的位置', async () => {
+  test('进入动画结束的瞬间镜头已停在资料镜头位，不闪回进入前的位置', async () => {
     const px = PLAQUE_PIXEL.x;
     const py = PLAQUE_PIXEL.y;
     const storyPosition = storyCamera.storyPose().position;
@@ -252,7 +252,7 @@ describe('资料视角退出镜头位姿', () => {
 });
 
 describe('离开整体视角后的悬停状态', () => {
-  test('规则3: 离开整体视角后悬停不改变光标和边框亮度，资料视角暂停后边框亮度不再变化', async () => {
+  test('离开整体视角后悬停不改变光标和边框亮度，资料视角暂停后边框亮度不再变化', async () => {
     const px = PLAQUE_PIXEL.x;
     const py = PLAQUE_PIXEL.y;
     const result = await runBrowser<{ ready: boolean; views: string[]; hoverCursor: string; cursorAfter: string; pair: [number, number] }>(`
@@ -289,7 +289,7 @@ describe('离开整体视角后的悬停状态', () => {
 });
 
 describe('铭牌右键点击', () => {
-  test('规则4: 右键点击铭牌不进入资料视角', async () => {
+  test('右键点击铭牌不进入资料视角', async () => {
     const px = PLAQUE_PIXEL.x;
     const py = PLAQUE_PIXEL.y;
     const result = await runBrowser<{ ready: boolean; views: string[] }>(`
