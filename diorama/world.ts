@@ -88,7 +88,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
     if (tier === 'low') applyTier('low');
 
     const car = buildCar();
-    scene.add(car.group);
+    scene.add(car.group, car.ground);
     const ambient = createAmbient({ store, street, hazard: { material: car.hazardMaterial, lights: car.hazardLights } });
 
     disableFogOnEmissive(scene);

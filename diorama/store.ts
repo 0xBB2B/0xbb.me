@@ -78,7 +78,7 @@ export function buildStore(scene: THREE.Scene, textures: Textures): Store {
   const steel = toon('#b9c1cc');
   const floorMat = toon('#f1ece1', { map: textures.floor, glow: 0.3 });
 
-  box(st, 9.5, 0.1, 6, floorMat, -1.25, 0.15, -4);
+  box(st, 9.48, 0.1, 5.98, floorMat, -1.25, 0.15, -4);
   box(st, 9.5, 3.65, 0.2, extWall, -1.25, 0.15, -6.9);
   box(st, 0.2, 3.65, 6, extWall, -5.9, 0.15, -4);
   box(st, 0.2, 3.65, 1.8, extWall, 3.4, 0.15, -6.1);
@@ -87,10 +87,10 @@ export function buildStore(scene: THREE.Scene, textures: Textures): Store {
   box(st, 0.2, 1.4, 3.6, extWall, 3.4, 2.4, -3.4);
   glassPane(st, 3.6, 1.55, 3.51, 1.625, -3.4, Math.PI / 2);
   box(st, 9.5, 1.25, 0.2, extWall, -1.25, 2.55, -1.1);
-  box(st, 5.4, 0.2, 0.2, metal, -3.3, 0.15, -1.1);
-  box(st, 2.1, 0.2, 0.2, metal, 2.45, 0.15, -1.1);
+  box(st, 5.2, 0.2, 0.2, metal, -3.2, 0.15, -1.1);
+  box(st, 1.9, 0.2, 0.2, metal, 2.35, 0.15, -1.1);
   for (const x of [-4.2, -2.4, -0.6, 1.4, 2.45]) box(st, 0.09, 2.2, 0.14, metal, x, 0.35, -1.05);
-  box(st, 9.5, 0.1, 0.14, metal, -1.25, 2.5, -1.05);
+  box(st, 9.1, 0.1, 0.14, metal, -1.25, 2.5, -1.05);
   const frontPanes: [number, number][] = [
     [-5.0, 1.6],
     [-3.3, 1.71],

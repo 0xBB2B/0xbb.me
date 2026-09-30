@@ -1,10 +1,11 @@
 import * as THREE from 'three';
-import { toon, glow } from './materials';
+import { toon, glow, ctex, roundRect, noOutline, toonGradientMap } from './materials';
 import { add, box } from './primitives';
 import { CAR_CENTER } from './layout';
 
 export interface CarBuild {
   group: THREE.Group;
+  ground: THREE.Group;
   hazardMaterial: THREE.MeshBasicMaterial;
   hazardLights: THREE.PointLight[];
 }
@@ -13,7 +14,24 @@ export function buildCar(): CarBuild {
   const car = new THREE.Group();
   car.name = 'porsche';
   const hazardMaterial = glow('#ffa21a', 1, { noOutline: true });
-  const red = toon('#c8102a');
+  const red = new THREE.MeshToonMaterial({ color: '#c8102a', gradientMap: toonGradientMap() });
+  const rimUniforms = {
+    uRimColor: { value: new THREE.Color(1.0, 0.9, 0.75) },
+    uRimDir: { value: new THREE.Vector3(0, 0.25, -1).normalize() },
+  };
+  red.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, rimUniforms);
+    shader.fragmentShader = shader.fragmentShader
+      .replace('void main() {', 'uniform vec3 uRimColor;\nuniform vec3 uRimDir;\nvoid main() {')
+      .replace('#include <opaque_fragment>', `
+        vec3 rimDirView = normalize((viewMatrix * vec4(uRimDir, 0.)).xyz);
+        vec3 rimViewDir = normalize(vViewPosition);
+        float fres = 1. - max(dot(normal, rimViewDir), 0.);
+        float rim = step(0.72, fres) * step(0.5, dot(normal, rimDirView));
+        outgoingLight += uRimColor * rim * 0.45;
+        #include <opaque_fragment>`);
+  };
+  red.customProgramCacheKey = () => 'car-paint-rim';
   const black = toon('#16171d');
   const darkGlass = toon('#1b2436', { glow: 0.05 });
   const wf = 1.2;
@@ -164,8 +182,81 @@ export function buildCar(): CarBuild {
     }
   }
 
-  car.position.set(...CAR_CENTER);
-  car.rotation.y = -Math.PI / 2;
+  const bounds = new THREE.Box3().setFromObject(car);
+  const center = bounds.getCenter(new THREE.Vector3());
+  const size = bounds.getSize(new THREE.Vector3());
 
-  return { group: car, hazardMaterial, hazardLights };
+  const ground = new THREE.Group();
+  ground.name = 'porsche-ground';
+  const decal = (
+    name: string, geo: THREE.PlaneGeometry, mat: THREE.Material, x: number, z: number, renderOrder: number,
+  ): void => {
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.name = name;
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(x, 0.02, z);
+    mesh.renderOrder = renderOrder;
+    ground.add(mesh);
+  };
+  const maskTex = (tex: THREE.CanvasTexture) => {
+    tex.colorSpace = THREE.NoColorSpace;
+    return tex;
+  };
+  const blobAlpha = () => maskTex(ctex(128, 128, (g, w, h) => {
+    g.fillStyle = '#000';
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = 'rgba(255,255,255,0.12)';
+    const layers = 12;
+    for (let i = 0; i < layers; i++) {
+      const inset = 1.5 + (i / (layers - 1)) * (w * 0.15 - 1.5);
+      const iw = w - inset * 2, ih = h - inset * 2;
+      roundRect(g, inset, inset, iw, ih, Math.min(iw, ih) * 0.25);
+      g.fill();
+    }
+  }));
+  const ellipseAlpha = () => maskTex(ctex(128, 128, (g, w, h) => {
+    g.fillStyle = '#000';
+    g.fillRect(0, 0, w, h);
+    g.translate(w / 2, h / 2);
+    g.scale(w / 2, h / 2);
+    const grad = g.createRadialGradient(0, 0, 0, 0, 0, 1);
+    grad.addColorStop(0, '#fff');
+    grad.addColorStop(0.5, '#fff');
+    grad.addColorStop(1, '#000');
+    g.fillStyle = grad;
+    g.fillRect(-1, -1, 2, 2);
+  }));
+  const shadowMaterial = (opacity: number, alphaMap: THREE.Texture) => noOutline(new THREE.MeshBasicMaterial({
+    color: '#04050b', alphaMap, transparent: true, opacity, depthWrite: false, side: THREE.FrontSide,
+  }));
+
+  decal('car-contact-shadow', new THREE.PlaneGeometry(size.x + 0.5, size.z + 0.5), shadowMaterial(0.8, blobAlpha()), center.x, center.z, 3);
+
+  const tireShadowGeo = new THREE.PlaneGeometry(0.5, 0.3);
+  const tireShadowMat = shadowMaterial(0.9, ellipseAlpha());
+  for (const [wx, sz] of wheelPositions) decal('car-tire-shadow', tireShadowGeo, tireShadowMat, wx, sz * 0.8, 4);
+
+  const tailAlpha = maskTex(ctex(128, 128, (g, w, h) => {
+    g.fillStyle = '#000';
+    g.fillRect(0, 0, w, h);
+    g.translate(w, h / 2);
+    g.scale(w, h / 2);
+    const grad = g.createRadialGradient(0, 0, 0, 0, 0, 1);
+    grad.addColorStop(0, '#fff');
+    grad.addColorStop(1, '#000');
+    g.fillStyle = grad;
+    g.fillRect(-1, -1, 2, 2);
+  }));
+  const tailGlowMat = noOutline(new THREE.MeshBasicMaterial({
+    color: new THREE.Color(1.0, 0.14, 0.18), alphaMap: tailAlpha, transparent: true, opacity: 0.8,
+    blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, side: THREE.FrontSide,
+  }));
+  decal('car-tail-glow', new THREE.PlaneGeometry(0.9, 1.4), tailGlowMat, bounds.min.x - 0.45, 0, 3);
+
+  for (const obj of [car, ground]) {
+    obj.position.set(...CAR_CENTER);
+    obj.rotation.y = -Math.PI / 2;
+  }
+
+  return { group: car, ground, hazardMaterial, hazardLights };
 }
