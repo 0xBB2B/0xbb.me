@@ -42,16 +42,9 @@
 
 @media (min-aspect-ratio: 1/1) {
   .receipt {
-    margin-right: 7vw;
     padding: 34px 28px 30px;
     font-size: 14px;
     transform: rotate(-0.6deg);
-  }
-}
-
-@media (aspect-ratio < 1) {
-  .receipt {
-    margin-inline: auto;
   }
 }
 

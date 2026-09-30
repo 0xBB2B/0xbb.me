@@ -38,7 +38,7 @@ test('首页注入只有加载页，不含资料正文与资料段样式', async
   const styleMatch = html.match(/<style data-shell-styles>([\s\S]*?)<\/style>/);
   expect(styleMatch).not.toBeNull();
   expect(styleMatch![1]).toContain('.loading-shell');
-  expect(styleMatch![1]).not.toContain('.story-sections');
+  expect(styleMatch![1]).not.toContain('.receipt-view');
   expect(html).not.toContain('data-static-profile');
   expect(html).not.toContain(APP_DATA.profile.bio.en);
   expect(html).toContain('href="./profile/"');

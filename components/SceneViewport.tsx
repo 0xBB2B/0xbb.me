@@ -7,7 +7,6 @@ import './SceneViewport.css';
 
 export interface SceneViewportHandle {
   enterStory(): void;
-  setScroll(scrollY: number): void;
   exitToDiorama(): void;
 }
 
@@ -40,7 +39,6 @@ export const SceneViewport = forwardRef<SceneViewportHandle, SceneViewportProps>
     ref,
     () => ({
       enterStory: () => handleRef.current?.enterStory(),
-      setScroll: (scrollY: number) => handleRef.current?.setScroll(scrollY),
       exitToDiorama: () => handleRef.current?.exitToDiorama(),
     }),
     [],
@@ -100,13 +98,6 @@ export const SceneViewport = forwardRef<SceneViewportHandle, SceneViewportProps>
   useEffect(() => {
     handleRef.current?.setLanguage(language);
   }, [language]);
-
-  useEffect(() => {
-    if (ready && view === 'story') {
-      handleRef.current?.startStoryWithoutEntering();
-      handleRef.current?.setScroll(window.scrollY);
-    }
-  }, [ready, view]);
 
   return (
     <div

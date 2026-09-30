@@ -1,0 +1,68 @@
+.receipt-view {
+  transition: opacity 0.3s;
+}
+
+.receipt-view--leaving {
+  opacity: 0;
+}
+
+.receipt-view-layer {
+  position: fixed;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  padding: 74px 14px 40px;
+}
+
+.receipt-view-slot {
+  position: relative;
+  height: max-content;
+  min-width: 0;
+}
+
+.receipt-view-alert {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin: 0 0 24px;
+  text-align: center;
+  color: #f3d9a0;
+  font-size: 0.95rem;
+}
+
+.receipt-view h1[tabindex='-1']:focus {
+  outline: none;
+}
+
+.receipt-view-back {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  font: inherit;
+  font-size: 13px;
+  background: rgba(7, 10, 24, 0.45);
+  border: 1px solid #9fb1e0;
+  border-radius: 4px;
+  color: #e8eefc;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  z-index: 2;
+}
+
+@media (min-aspect-ratio: 1/1) {
+  .receipt-view-layer {
+    justify-content: flex-end;
+    padding: 72px 7vw 48px 14px;
+  }
+}
+
+@media (aspect-ratio < 1) {
+  .receipt-view-alert {
+    text-align: left;
+    padding-right: 110px;
+  }
+}

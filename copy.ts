@@ -9,14 +9,9 @@ export const COPY = {
     viewProfile: 'View profile',
     aboutTitle: 'Still open on a rainy night',
     linksTitle: "Let's get going",
-    scrollHint: 'SCROLL ↓',
-    progressLabel: 'Profile progress',
-    sectionLabels: ['01 · WHO', '02 · ABOUT', '03 · FOCUS & LINKS'],
     languageLabel: 'Language',
     avatarAlt: 'Portrait of FUBUKI_BB',
     locationLabel: 'Based in',
-    directionsLabel: 'Focus',
-    linksLabel: 'Links',
     backToOverview: 'Back to overview',
     seeScene: '← See the 3D rainy corner',
     receiptStore: 'RAINY NIGHT · 24H',
@@ -40,14 +35,9 @@ export const COPY = {
     viewProfile: '查看资料',
     aboutTitle: '雨夜里还亮着的店',
     linksTitle: '一起出发',
-    scrollHint: 'SCROLL ↓',
-    progressLabel: '资料进度',
-    sectionLabels: ['01 · WHO', '02 · ABOUT', '03 · FOCUS & LINKS'],
     languageLabel: '语言',
     avatarAlt: 'FUBUKI_BB 的头像',
     locationLabel: '所在地',
-    directionsLabel: '方向',
-    linksLabel: '链接',
     backToOverview: '返回全景',
     seeScene: '← 去看 3D 雨夜街角',
     receiptStore: 'RAINY NIGHT · 24H',
@@ -63,7 +53,7 @@ export const COPY = {
     fullAlt: 'FUBUKI_BB 的全身像',
     photoCaption: '0xBB MART PHOTO · L',
   },
-} satisfies Record<Language, Record<string, string | string[]>>;
+} satisfies Record<Language, Record<string, string>>;
 
 export const AVATAR_FALLBACK = 'F';
 

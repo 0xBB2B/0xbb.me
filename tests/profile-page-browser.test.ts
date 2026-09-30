@@ -280,6 +280,30 @@ describe('点头像弹出全身照相片', () => {
     expect(result.active).toBe('Close');
   }, TIMEOUT);
 
+  test('相片打开时 Tab 与 Shift+Tab 各 6 次，焦点始终留在相片内', async () => {
+    const result = await session<{ initialInside: boolean; forward: boolean[]; backward: boolean[] }>(`
+      await open('en-US');
+      await wait(1);
+      await openPhoto();
+      const initialInside = await js('!!document.activeElement?.closest(".photo-print-overlay")');
+
+      const tabInside = async (modifiers) => {
+        await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, modifiers });
+        await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, modifiers });
+        await js('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+        return js("!!document.activeElement?.closest('.photo-print-overlay')");
+      };
+      const forward = [];
+      const backward = [];
+      for (let i = 0; i < 6; i++) forward.push(await tabInside(0));
+      for (let i = 0; i < 6; i++) backward.push(await tabInside(8));
+      done({ initialInside, forward, backward });
+    `);
+    expect(result.initialInside).toBe(true);
+    expect(result.forward).toEqual(Array(6).fill(true));
+    expect(result.backward).toEqual(Array(6).fill(true));
+  }, TIMEOUT);
+
   test('中文界面下 ✕ 的 aria-label 为「关闭」', async () => {
     const result = await session<{ active: string | null }>(`
       await open('zh-CN');

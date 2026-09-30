@@ -72,7 +72,7 @@ export const Receipt = forwardRef<HTMLButtonElement, ReceiptProps>(function Rece
       <hr className="receipt-cut" />
       <ReceiptRow name={copy.locationLabel}>{locationLine()}</ReceiptRow>
       <hr className="receipt-cut" />
-      <p className="receipt-sec">{copy.sectionLabels[1]}</p>
+      <p className="receipt-sec">02 · ABOUT</p>
       <h2>{copy.aboutTitle}</h2>
       <p className="receipt-bio">{APP_DATA.profile.bio[language]}</p>
       <hr className="receipt-cut" />

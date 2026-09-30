@@ -59,6 +59,7 @@ description: 资料视角外层换成小票：返回按钮、语言开关、失�
   - [ ] 资料视角下有「返回全景」按钮和语言开关；点「EN」后小票、铭牌、`<html lang>` 变英文。
   - [ ] 小票高于视口时滚轮滚动：小票层 `scrollTop` 增加，`window.scrollY` 为 0，`data-view` 仍为 `story`。
   - [ ] 1440×900 下小票右边距为视口宽度 7% ±1%；390×844 下左右留白差 ≤ 2 像素。
+  - [ ] 资料视角下小票正文的计算字体（`getComputedStyle(小票).fontFamily`）以 `"JetBrains Mono Variable"` 开头。
   - [ ] 小票的出现动画时长（`getComputedStyle(小票).animationDuration`）在 0.5～0.7 秒之间。
   - [ ] 全身照相片的遮罩铺满整个视口（遮罩元素的尺寸等于视口尺寸）：相片不能放在带 `transform` / `filter` 的父元素里。
   - [ ] 按 Esc 后 `data-view` 依次为 `exiting`、`diorama`，间隔 ≤ 1.2 秒；点返回按钮效果相同；退出后 Tab 聚焦不到小票里的链接。

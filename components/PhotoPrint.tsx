@@ -20,12 +20,22 @@ export function PhotoPrint({ language, onClose, assetBase = './' }: PhotoPrintPr
   const [status, setStatus] = useState<PrintStatus>('loading');
   const [attempt, setAttempt] = useState(0);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
   useEffect(() => {
     closeRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Tab') {
+        const items = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button') ?? []);
+        if (items.length === 0) return;
+        event.preventDefault();
+        const at = items.indexOf(document.activeElement as HTMLElement);
+        const step = event.shiftKey ? -1 : 1;
+        items[(at + step + items.length) % items.length].focus();
+        return;
+      }
       if (event.key !== 'Escape') return;
       event.preventDefault();
       event.stopPropagation();
@@ -42,7 +52,7 @@ export function PhotoPrint({ language, onClose, assetBase = './' }: PhotoPrintPr
   };
 
   return (
-    <div className="photo-print-overlay" role="dialog" aria-modal="true" aria-label={copy.fullAlt}>
+    <div className="photo-print-overlay" ref={dialogRef} role="dialog" aria-modal="true" aria-label={copy.fullAlt}>
       <div className="photo-print-backdrop" onClick={onClose} />
       <figure className="photo-print">
         <span className="photo-print-tape photo-print-tape--l" />

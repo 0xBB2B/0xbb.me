@@ -83,13 +83,5 @@ describe('copy', () => {
     expect(COPY.en.aboutTitle).toBe('Still open on a rainy night');
     expect(COPY.zh.linksTitle).toBe('一起出发');
     expect(COPY.en.linksTitle).toBe("Let's get going");
-    expect(COPY.zh.scrollHint).toBe('SCROLL ↓');
-    expect(COPY.en.scrollHint).toBe('SCROLL ↓');
-  });
-
-  test('the three story section tags are identical and ordered in both languages', () => {
-    const tags = ['01 · WHO', '02 · ABOUT', '03 · FOCUS & LINKS'];
-    expect(COPY.zh.sectionLabels).toEqual(tags);
-    expect(COPY.en.sectionLabels).toEqual(tags);
   });
 });
