@@ -456,3 +456,51 @@ describe('铭牌贴图随网页字体到达重画', () => {
     expect(result.versionAfter).toBeGreaterThan(result.versionBefore);
   }, 60_000);
 });
+
+describe('地面倒影', () => {
+  test('滚轮拉近拉远后回到默认视角，两面地面镜子拍到的最亮处与滚轮前相差不超过 10%', async () => {
+    const result = await runBrowser<{ ready: boolean; before: number[]; after: number[] }>(`
+      await cdp('Page.addScriptToEvaluateOnNewDocument', { source: \`
+        let now = 0;
+        const raf = window.requestAnimationFrame.bind(window);
+        window.requestAnimationFrame = (cb) => raf(() => { now += 16.667; cb(now); });
+        performance.now = () => now;
+      \` });
+      ${BOOT}
+      await js(\`(() => {
+        const scene = window.handle.scene;
+        scene.onBeforeRender = (renderer) => { window.renderer = renderer; };
+        window.mirrorPeaks = () => scene.children.filter((o) => o.isReflector).map((mirror) => {
+          const target = mirror.getRenderTarget();
+          const pixels = new Uint16Array(target.width * target.height * 4);
+          window.renderer.readRenderTargetPixels(target, 0, 0, target.width, target.height, pixels);
+          const half = (h) => { const e = (h >> 10) & 31, f = h & 1023; return e === 0 ? f / 16777216 : e === 31 ? 0 : (1 + f / 1024) * 2 ** (e - 15); };
+          let peak = 0;
+          for (let i = 0; i < pixels.length; i += 4) peak = Math.max(peak, half(pixels[i]) + half(pixels[i + 1]) + half(pixels[i + 2]));
+          return peak;
+        });
+      })()\`);
+      await wait(2);
+      const before = await js('window.mirrorPeaks()');
+      for (const deltaY of [-400, 400, -400, 400]) {
+        for (let i = 0; i < 10; i++) {
+          await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 720, y: 450, deltaX: 0, deltaY });
+          await wait(0.03);
+        }
+        await wait(0.3);
+      }
+      await wait(2);
+      await js('window.handle.camera.position.set(${DEFAULT_CAMERA.position.join(', ')})');
+      await wait(1.5);
+      const after = await js('window.mirrorPeaks()');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, before, after }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.before).toHaveLength(2);
+    result.before.forEach((peak, i) => {
+      expect(peak).toBeGreaterThan(1);
+      expect(result.after[i]).toBeGreaterThan(peak * 0.9);
+      expect(result.after[i]).toBeLessThan(peak * 1.1);
+    });
+  }, 60_000);
+});

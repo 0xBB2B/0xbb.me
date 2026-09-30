@@ -83,6 +83,8 @@ export function createRenderer(container: HTMLElement, pixelRatio: number): Dior
   renderer.setSize(width, height);
 
   const effect = new OutlineEffect(renderer, { defaultThickness: 0.0018, defaultColor: [0.05, 0.07, 0.15] });
+  // OutlineEffect 从不初始化 autoClear，却在渲染时把它赋给 renderer；为 undefined 时地面镜子的倒影渲染目标不会清空深度。
+  effect.autoClear = true;
 
   const renderTarget = new THREE.WebGLRenderTarget(width * pixelRatio, height * pixelRatio, {
     type: THREE.HalfFloatType,

@@ -1,7 +1,20 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { toon, glow, noOutline } from './materials';
 import { add, box, cyl, plane, rod, rand, pick, acUnit } from './primitives';
 import type { Textures } from './textures';
+
+const WALL_TILE_METERS = 1.2;
+
+function wallMaterials(tex: THREE.Texture, w: number, h: number, d: number, tileY = true): THREE.Material[] {
+  const faceSizes = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
+  return faceSizes.map(([fw, fh]) => {
+    const face = tex.clone();
+    face.wrapS = face.wrapT = THREE.RepeatWrapping;
+    face.repeat.set(fw / WALL_TILE_METERS, tileY ? fh / WALL_TILE_METERS : 1);
+    return toon('#fff', { map: face });
+  });
+}
 
 interface Lamp {
   m: THREE.MeshBasicMaterial;
@@ -22,6 +35,17 @@ function signalHead(parent: THREE.Object3D, x: number, y: number, z: number, ry:
     box(g, 0.32, 0.03, 0.18, toon('#2b303b'), -0.36 + i * 0.36, 0.15, 0.2);
     return { m, base: new THREE.Color(color) };
   });
+}
+
+function stopSignGeometry(): THREE.BufferGeometry {
+  const w = 256;
+  const h = 230;
+  const corners = [[4, 4], [128, 226], [252, 4]];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(corners.flatMap(([px, py]) => [(px / w - 0.5) * 0.8, (0.5 - py / h) * 0.72, 0]), 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(corners.flatMap(([px, py]) => [px / w, 1 - py / h]), 2));
+  g.computeVertexNormals();
+  return g;
 }
 
 function pedHead(parent: THREE.Object3D, x: number, y: number, z: number, ry: number): Lamp[] {
@@ -227,9 +251,19 @@ export function buildStreet(scene: THREE.Scene, textures: Textures): Street {
     neighborBuilding.name = 'neighbor-building';
     scene.add(neighborBuilding);
     const b = neighborBuilding;
-    box(b, 5.4, 6.8, 9.5, toon('#7d8497'), -10.3, 0.15, -8.25);
+    box(b, 5.4, 3.35, 9.5, wallMaterials(textures.wallTile1f, 5.4, 3.35, 9.5), -10.3, 0.15, -8.25).name = 'neighbor-wall-1f';
+    box(b, 5.4, 3.45, 9.5, wallMaterials(textures.wallMortar2f, 5.4, 3.45, 9.5, false), -10.3, 3.5, -8.25).name = 'neighbor-wall-2f';
+    box(b, 5.5, 0.12, 9.6, toon('#c9c5ba'), -10.3, 3.44, -8.25).name = 'neighbor-floor-line';
+    cyl(b, 0.04, 0.04, 6.8, toon('#9aa0aa'), -7.75, 0.15, -3.4, 8).name = 'neighbor-rain-pipe';
+    box(b, 0.15, 0.5, 0.4, toon('#8e96a3'), -7.525, 1.15, -6.4).name = 'neighbor-meter';
     box(b, 5.6, 0.25, 9.7, toon('#5f6678'), -10.3, 6.95, -8.25);
-    plane(b, 3.2, 2.3, toon('#fff', { map: textures.shutter }), -10.6, 1.35, -3.49);
+    plane(b, 3.2, 2.3, glow('#fff', 0.06, { map: textures.kissaFront, noOutline: true }), -10.6, 1.35, -3.49).name = 'kissa-front';
+    const closedSign = new THREE.Group();
+    closedSign.name = 'kissa-closed-sign';
+    closedSign.position.set(-9.52, 1.7, -3.47);
+    b.add(closedSign);
+    box(closedSign, 0.4, 0.2, 0.02, toon('#5b3520'), 0, -0.1, 0);
+    plane(closedSign, 0.36, 0.16, glow('#fff', 0.85, { map: textures.kissaClosed, noOutline: true }), 0, 0, 0.011);
     box(b, 3.6, 0.08, 0.6, toon('#a8454a'), -10.6, 2.65, -3.2);
     plane(b, 2.2, 0.55, toon('#fff', { map: textures.kissa, glow: 0.15 }), -10.6, 3.1, -3.49);
     function win(x: number, y: number, z: number, ry: number, mat: THREE.Material): THREE.Group {
@@ -242,24 +276,76 @@ export function buildStreet(scene: THREE.Scene, textures: Textures): Street {
       box(g, 0.03, 0.96, 0.02, toon('#3b4150'), 0, -0.48, 0.05);
       return g;
     }
-    win(-11.6, 4.8, -3.5, 0, glow('#ffc97a', 1.05));
-    win(-9.2, 4.8, -3.5, 0, toon('#26304a'));
+    win(-11.6, 4.8, -3.5, 0, glow('#ffc97a', 1.05, { map: textures.curtain }));
+    win(-9.2, 4.8, -3.5, 0, toon('#26304a', { map: textures.curtain }));
     box(b, 3.8, 0.06, 0.7, toon('#4f5666'), -10.4, 3.9, -3.15);
     for (let i = 0; i <= 12; i++) box(b, 0.03, 0.8, 0.03, toon('#c3c8d0'), -12.3 + i * 0.32, 3.96, -2.82);
     box(b, 3.84, 0.04, 0.05, toon('#c3c8d0'), -10.4, 4.76, -2.82);
-    win(-7.59, 4.8, -5.2, Math.PI / 2, glow('#e8f2ff', 0.85));
-    const tvWin = win(-7.59, 4.8, -8.4, Math.PI / 2, glow('#7fa8ff', 0.9));
+    win(-7.59, 4.8, -5.2, Math.PI / 2, glow('#e8f2ff', 0.85, { map: textures.curtain }));
+    const tvWin = win(-7.59, 4.8, -8.4, Math.PI / 2, glow('#7fa8ff', 0.9, { map: textures.curtain }));
     tvMaterial = (tvWin.children[1] as THREE.Mesh).material as THREE.Material;
-    win(-7.59, 2.2, -10.4, Math.PI / 2, toon('#26304a'));
-    cyl(b, 0.6, 0.6, 1.2, toon('#b8bec8'), -11.5, 7.2, -10.5, 16);
+    win(-7.59, 2.2, -10.4, Math.PI / 2, toon('#26304a', { map: textures.curtain }));
+    const waterTank = new THREE.Group();
+    waterTank.name = 'neighbor-water-tank';
+    b.add(waterTank);
+    cyl(waterTank, 0.6, 0.6, 1.2, toon('#b8bec8'), -11.5, 7.2, -10.5, 16);
     for (const [dx, dz] of [
       [-0.4, -0.4],
       [0.4, -0.4],
       [-0.4, 0.4],
       [0.4, 0.4],
-    ]) box(b, 0.06, 0.4, 0.06, toon('#6b727d'), -11.5 + dx, 7.2, -10.5 + dz);
-    rod(b, new THREE.Vector3(-9, 7.2, -6), new THREE.Vector3(-9, 8.6, -6), 0.02, toon('#8e96a3'));
-    box(b, 1.2, 0.03, 0.03, toon('#8e96a3'), -9, 8.3, -6);
+    ]) box(waterTank, 0.06, 0.4, 0.06, toon('#6b727d'), -11.5 + dx, 7.2, -10.5 + dz);
+    const antenna = new THREE.Group();
+    antenna.name = 'neighbor-antenna';
+    b.add(antenna);
+    rod(antenna, new THREE.Vector3(-9, 7.2, -6), new THREE.Vector3(-9, 8.6, -6), 0.02, toon('#8e96a3'));
+    box(antenna, 1.2, 0.03, 0.03, toon('#8e96a3'), -9, 8.3, -6);
+
+    const balconyPole = rod(b, new THREE.Vector3(-12.2, 5.1, -3.0), new THREE.Vector3(-8.6, 5.1, -3.0), 0.02, toon('#c3c8d0'));
+    balconyPole.name = 'balcony-pole';
+    for (const x of [-12.2, -8.6]) box(b, 0.05, 1.14, 0.05, toon('#c3c8d0'), x, 3.96, -3.0).name = 'balcony-pole-bracket';
+    const hangerLeg = (side: number): THREE.BufferGeometry =>
+      new THREE.BoxGeometry(0.012, 0.227, 0.012).rotateZ(side * Math.atan(0.15 / 0.17)).translate(side * 0.075, -0.115, 0);
+    const hanger = mergeGeometries([
+      new THREE.TorusGeometry(0.03, 0.006, 6, 12).rotateY(Math.PI / 2),
+      hangerLeg(1),
+      hangerLeg(-1),
+      new THREE.BoxGeometry(0.3, 0.012, 0.012).translate(0, -0.2, 0),
+    ]);
+    for (const x of [-11.6, -10.9, -10.2, -9.5]) add(b, hanger, toon('#9aa0aa'), x, 5.1, -3.0).name = 'balcony-hanger';
+    const potMaterials = [toon('#b5654a'), toon('#4f9a5c')];
+    for (const x of [-12.0, -11.5, -8.9]) {
+      const pot = new THREE.CylinderGeometry(0.14, 0.1, 0.22, 10).translate(0, 0.11, 0);
+      const plant = new THREE.SphereGeometry(0.16, 8, 6).translate(0, 0.36, 0);
+      add(b, mergeGeometries([pot, plant], true), potMaterials, x, 3.96, -3.15).name = 'balcony-pot';
+    }
+    const acSide = toon('#d5d9df');
+    box(b, 0.7, 0.5, 0.3, [acSide, acSide, acSide, acSide, toon('#fff', { map: textures.acFront }), acSide], -10.2, 3.96, -3.2).name = 'balcony-ac';
+
+    const parapet = new THREE.Group();
+    parapet.name = 'neighbor-parapet';
+    b.add(parapet);
+    const parapetMaterial = toon('#c9c5ba');
+    box(parapet, 5.6, 0.3, 0.14, parapetMaterial, -10.3, 7.2, -13.03);
+    box(parapet, 5.6, 0.3, 0.14, parapetMaterial, -10.3, 7.2, -3.47);
+    box(parapet, 0.14, 0.3, 9.4, parapetMaterial, -13.03, 7.2, -8.25);
+    box(parapet, 0.14, 0.3, 9.4, parapetMaterial, -7.57, 7.2, -8.25);
+    const stairHouse = new THREE.Group();
+    stairHouse.name = 'neighbor-stair-house';
+    stairHouse.position.set(-11.9, 7.2, -7.5);
+    b.add(stairHouse);
+    box(stairHouse, 1.6, 1.5, 1.6, toon('#b9b5aa'), 0, 0, 0);
+    plane(stairHouse, 0.6, 1.1, toon('#4a5566'), 0.81, 0.55, 0, Math.PI / 2).name = 'neighbor-stair-door';
+    const rackPost = (x: number, z: number): THREE.BufferGeometry => new THREE.BoxGeometry(0.04, 1.1, 0.04).translate(x, 0.55, z);
+    const rackBar = (z: number): THREE.BufferGeometry => new THREE.BoxGeometry(1.6, 0.03, 0.03).translate(0, 1.05, z);
+    add(
+      b,
+      mergeGeometries([rackPost(-0.75, -0.2), rackPost(-0.75, 0.2), rackPost(0.75, -0.2), rackPost(0.75, 0.2), rackBar(-0.2), rackBar(0.2)]),
+      toon('#8e96a3'),
+      -11.0,
+      7.2,
+      -12.3,
+    ).name = 'neighbor-drying-rack';
 
     acUnit(scene, -6.25, 0.15, -4.6, -Math.PI / 2);
     acUnit(scene, -6.25, 0.15, -6.0, -Math.PI / 2);
@@ -267,7 +353,6 @@ export function buildStreet(scene: THREE.Scene, textures: Textures): Street {
     box(scene, 0.35, 0.06, 1.2, toon('#6b727d'), -6.2, 1.85, -6.0);
     rod(scene, new THREE.Vector3(-6.05, 0.5, -4.6), new THREE.Vector3(-6.05, 3.6, -4.6), 0.035, toon('#d8dce2'));
     rod(scene, new THREE.Vector3(-6.05, 0.5, -6.3), new THREE.Vector3(-6.05, 3.6, -6.3), 0.035, toon('#d8dce2'));
-    rod(scene, new THREE.Vector3(-7.5, 0.15, -6.8), new THREE.Vector3(-7.5, 6.8, -6.8), 0.05, toon('#9aa0aa'));
     box(scene, 0.5, 0.35, 0.4, toon('#e0b83a'), -7.2, 0.15, -9.2);
     box(scene, 0.5, 0.35, 0.4, toon('#3a7bd5'), -7.2, 0.5, -9.2);
     for (let i = 0; i < 3; i++) {
@@ -282,13 +367,12 @@ export function buildStreet(scene: THREE.Scene, textures: Textures): Street {
     stopSignSide.name = 'stop-sign-side';
     scene.add(stopSignSide);
     cyl(stopSignSide, 0.03, 0.03, 2.6, toon('#dfe3ea'), 11.55, 0.15, 0.3, 8);
-    plane(stopSignSide, 0.8, 0.72, toon('#fff', { map: textures.stopSign, glow: 0.3 }), 11.55, 2.45, 0.26, Math.PI - 0.35);
-    plane(stopSignSide, 0.8, 0.72, toon('#8e96a3'), 11.55, 2.45, 0.28, -0.35);
+    const face = stopSignGeometry();
+    add(stopSignSide, face, toon('#fff', { map: textures.stopSign, glow: 0.3 }), 11.55, 2.45, 0.26, Math.PI);
+    add(stopSignSide, face, toon('#8e96a3'), 11.55, 2.45, 0.28, 0);
   }
 
   {
-    cyl(scene, 0.03, 0.03, 2.6, toon('#dfe3ea'), -7.35, 0.15, -2.7, 8);
-    plane(scene, 0.62, 0.56, toon('#fff', { map: textures.stopSign, glow: 0.25, side: THREE.DoubleSide }), -7.35, 2.45, -2.74, Math.PI);
     cyl(scene, 0.04, 0.04, 2.9, toon('#ff7a1a'), -6.25, 0.15, -2.75, 8);
     const mg = new THREE.Group();
     mg.position.set(-6.25, 3.0, -2.75);

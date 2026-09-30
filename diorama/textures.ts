@@ -38,7 +38,8 @@ const SIGNAGE_TEXT = [
   '夜野町三丁目',
   'いらっしゃいませ',
   '自動ドア',
-  '喫茶ルナ',
+  '喫茶フブキ',
+  '準備中',
   'STAFF ONLY',
 ].join('');
 
@@ -135,10 +136,15 @@ export interface Textures {
   grate: THREE.CanvasTexture;
   mat: THREE.CanvasTexture;
   door: THREE.CanvasTexture;
-  shutter: THREE.CanvasTexture;
+  wallTile1f: THREE.CanvasTexture;
+  wallMortar2f: THREE.CanvasTexture;
+  kissaFront: THREE.CanvasTexture;
+  kissaClosed: THREE.CanvasTexture;
   kissa: THREE.CanvasTexture;
   nobori: THREE.CanvasTexture;
   staffOnly: THREE.CanvasTexture;
+  curtain: THREE.CanvasTexture;
+  acFront: THREE.CanvasTexture;
 }
 
 export function createTextures(): Textures {
@@ -425,15 +431,120 @@ export function createTextures(): Textures {
     g.fillText('自動ドア', w / 2, h / 2 + 1);
   });
 
-  const shutter = ctex(256, 256, (g, w, h) => {
-    g.fillStyle = '#8c929c';
+  const wallTile1f = ctex(128, 128, (g, w, h) => {
+    g.fillStyle = '#5a3a2c';
     g.fillRect(0, 0, w, h);
-    for (let y = 0; y < h; y += 10) {
-      g.fillStyle = '#6f7580';
-      g.fillRect(0, y, w, 3);
+    const shades = ['#8a5a3f', '#7d4f38', '#946347'];
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        g.fillStyle = shades[(row * 3 + col * 5) % 3];
+        g.fillRect(col * 16 + 1, row * 16 + 1, 14, 14);
+      }
     }
-    g.fillStyle = 'rgba(40,40,60,.35)';
-    g.fillRect(0, h - 30, w, 30);
+  });
+
+  const wallMortar2f = ctex(128, 128, (g, w, h) => {
+    g.fillStyle = '#d9d6cc';
+    g.fillRect(0, 0, w, h);
+    for (const [x, len, alpha] of [
+      [18, 128, 0.22],
+      [61, 84, 0.15],
+      [97, 112, 0.25],
+    ]) {
+      g.fillStyle = `rgba(70,66,58,${alpha})`;
+      g.fillRect(x, 0, 5, len);
+    }
+  });
+
+  const kissaFront = ctex(256, 184, (g, w, h) => {
+    const wood = '#5b3520';
+    g.fillStyle = '#ffd98a';
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = '#ffe9b8';
+    g.fillRect(12, 16, 148, 114);
+    g.fillStyle = '#7a4a2a';
+    g.fillRect(80, 92, 74, 8);
+    g.fillRect(84, 100, 66, 30);
+    for (const x of [92, 118, 144]) {
+      g.fillRect(x - 8, 78, 16, 6);
+      g.fillRect(x - 1, 84, 2, 46);
+    }
+    for (const x of [104, 136]) {
+      g.fillRect(x, 16, 2, 26);
+      g.fillStyle = '#ffb347';
+      g.beginPath();
+      g.arc(x + 1, 52, 14, 0, Math.PI, true);
+      g.fill();
+      g.fillStyle = '#7a4a2a';
+    }
+    g.fillStyle = wood;
+    g.fillRect(0, 0, w, 16);
+    g.fillRect(0, 0, 12, h);
+    g.fillRect(160, 0, 12, h);
+    g.fillRect(w - 8, 0, 8, h);
+    g.fillRect(0, 130, 172, h - 130);
+    g.fillStyle = '#ffc860';
+    g.fillRect(180, 26, 68, h - 38);
+    g.fillStyle = '#ffe9b8';
+    g.fillRect(186, 32, 56, h - 50);
+    g.fillStyle = wood;
+    g.fillRect(180, h - 12, 68, 12);
+    g.fillRect(226, 80, 5, 36);
+  });
+
+  const kissaClosed = ctex(128, 64, (g, w, h) => {
+    g.fillStyle = '#efe4c8';
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#5b3520';
+    g.lineWidth = 6;
+    g.strokeRect(3, 3, w - 6, h - 6);
+    g.fillStyle = '#5b3520';
+    g.font = `34px ${FONT_D}`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText('準備中', w / 2, h / 2 + 2, w - 20);
+  });
+
+  const curtain = ctex(128, 128, (g, w, h) => {
+    g.fillStyle = '#efefec';
+    g.fillRect(0, 0, w, h);
+    const folds = 10;
+    for (let i = 0; i < folds; i++) {
+      const x = (i / folds) * w;
+      const shade = g.createLinearGradient(x, 0, x + w / folds, 0);
+      shade.addColorStop(0, 'rgba(60,60,60,0.05)');
+      shade.addColorStop(0.5, 'rgba(60,60,60,0.32)');
+      shade.addColorStop(1, 'rgba(60,60,60,0.05)');
+      g.fillStyle = shade;
+      g.fillRect(x, 0, w / folds, h);
+    }
+    g.fillStyle = 'rgba(40,30,20,0.55)';
+    g.fillRect(w / 2 - 2, 0, 4, h);
+  });
+
+  const acFront = ctex(128, 128, (g, w, h) => {
+    g.fillStyle = '#e4e7ec';
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#8a919c';
+    g.lineWidth = 2;
+    const cx = w * 0.4;
+    const cy = h / 2;
+    g.beginPath();
+    g.arc(cx, cy, 44, 0, Math.PI * 2);
+    g.stroke();
+    for (let r = 10; r < 44; r += 8) {
+      g.beginPath();
+      g.arc(cx, cy, r, 0, Math.PI * 2);
+      g.stroke();
+    }
+    for (let a = 0; a < 6; a++) {
+      g.beginPath();
+      g.moveTo(cx, cy);
+      g.lineTo(cx + Math.cos((a * Math.PI) / 3) * 44, cy + Math.sin((a * Math.PI) / 3) * 44);
+      g.stroke();
+    }
+    g.fillStyle = '#b9bfc9';
+    g.fillRect(w - 26, cy - 22, 18, 44);
   });
 
   const kissa = ctex(512, 128, (g, w, h) => {
@@ -443,7 +554,7 @@ export function createTextures(): Textures {
     g.font = `70px ${FONT_D}`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText('喫茶ルナ', w / 2, h / 2 + 4);
+    g.fillText('喫茶フブキ', w / 2, h / 2 + 4, w - 40);
   });
 
   const nobori = ctex(96, 480, (g, w, h) => {
@@ -490,10 +601,15 @@ export function createTextures(): Textures {
     grate,
     mat,
     door,
-    shutter,
+    wallTile1f,
+    wallMortar2f,
+    kissaFront,
+    kissaClosed,
     kissa,
     nobori,
     staffOnly,
+    curtain,
+    acFront,
   };
   return {
     ...textures,

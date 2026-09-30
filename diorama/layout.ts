@@ -28,18 +28,40 @@ export const ORBIT_LIMITS: OrbitLimits = {
 
 export const CAR_CENTER: [number, number, number] = [-0.85, 0.15, 1.15];
 
+export interface RoofPuddle {
+  x: number;
+  z: number;
+  rx: number;
+  rz: number;
+}
+
 export interface RoofZone {
   x0: number;
   x1: number;
   z0: number;
   z1: number;
   y: number;
+  puddles: RoofPuddle[];
 }
 
 export const ROOF_ZONES: RoofZone[] = [
-  { x0: -6.2, x1: 3.7, z0: -9.1, z1: -2.9, y: 4.1 },
-  { x0: -6.2, x1: 3.7, z0: -2.9, z1: -1.35, y: 2.72 },
-  { x0: -13, x1: -7.6, z0: -13, z1: -3.5, y: 7.1 },
+  {
+    x0: -6.2, x1: 3.7, z0: -9.1, z1: -2.9, y: 4.1,
+    puddles: [
+      { x: -1.8, z: -4.3, rx: 0.9, rz: 0.5 },
+      { x: 2.2, z: -6.6, rx: 0.7, rz: 0.45 },
+      { x: -4.6, z: -3.9, rx: 0.55, rz: 0.4 },
+    ],
+  },
+  { x0: -6.2, x1: 3.7, z0: -2.9, z1: -1.35, y: 2.72, puddles: [] },
+  {
+    x0: -13, x1: -7.6, z0: -13, z1: -3.5, y: 7.2,
+    puddles: [
+      { x: -9.4, z: -8.8, rx: 0.8, rz: 0.5 },
+      { x: -11.6, z: -5.2, rx: 0.6, rz: 0.4 },
+      { x: -9.0, z: -11.8, rx: 0.55, rz: 0.35 },
+    ],
+  },
 ];
 
 export function isOnLot(x: number, z: number): boolean {

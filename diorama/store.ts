@@ -72,7 +72,7 @@ export function buildStore(scene: THREE.Scene, textures: Textures): Store {
   st.position.set(0, 0, -2);
   scene.add(st);
 
-  const extWall = toon('#dde2ea');
+  const extWall = toon('#dde2ea', { frontLitOnly: true });
   const inWall = toon('#fff3de', { glow: 0.32 });
   const metal = toon('#4b5263');
   const steel = toon('#b9c1cc');
@@ -115,7 +115,7 @@ export function buildStore(scene: THREE.Scene, textures: Textures): Store {
   box(st, 9.9, 0.1, 1.62, toon('#2a3043'), -1.25, 2.6, -0.2);
   box(st, 9.9, 0.14, 0.06, toon(TEAL, { glow: 0.25 }), -1.25, 2.58, 0.6);
   for (const x of [-5, -3, -1, 1, 3]) cyl(st, 0.1, 0.1, 0.02, glow('#ffe9c4', 2.2, { noOutline: true }), x, 2.575, -0.2, 12);
-  box(st, 9.9, 0.3, 6.4, toon('#3a4052'), -1.25, 3.8, -4);
+  box(st, 9.9, 0.3, 6.4, toon('#3a4052', { frontLitOnly: true }), -1.25, 3.8, -4);
   box(st, 9.9, 0.28, 0.12, extWall, -1.25, 4.1, -0.86);
   box(st, 9.9, 0.28, 0.12, extWall, -1.25, 4.1, -7.14);
   box(st, 0.12, 0.28, 6.4, extWall, -6.14, 4.1, -4);
@@ -344,11 +344,6 @@ export function buildStore(scene: THREE.Scene, textures: Textures): Store {
   vending(st, 3.96, -6.42, Math.PI / 2, textures.vend1, '#f2f4f7');
   vending(st, 3.96, -5.48, Math.PI / 2, textures.vend2, '#d7263d');
   box(st, 0.35, 0.8, 0.3, toon('#e8e8e8'), 3.75, 0.156, -4.75);
-  {
-    const l = new THREE.PointLight('#d4e8ff', 3.5, 5, 1.4);
-    l.position.set(4.8, 1.3, -5.95);
-    st.add(l);
-  }
   box(st, 0.3, 0.4, 0.12, toon('#c9ced6'), 3.56, 1.4, -2.0);
   rod(st, new THREE.Vector3(3.56, 1.8, -2.0), new THREE.Vector3(3.56, 3.8, -2.0), 0.03, toon('#8f97a3'));
 
