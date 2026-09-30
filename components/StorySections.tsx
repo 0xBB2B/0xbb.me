@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { APP_DATA, type Language } from '../data';
 import { COPY, AVATAR_FALLBACK, rolesLine, locationLine } from '../copy';
+import './StorySections.css';
 
 interface StorySectionsProps {
   language: Language;

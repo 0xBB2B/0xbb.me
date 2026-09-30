@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer, type ViteDevServer } from 'vite';
+import { APP_DATA } from '../data';
 import { htmlPlugin } from './htmlPlugin';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -31,12 +32,16 @@ test('homepage allows large image previews without changing indexing permission'
   expect(page.meta.get('robots')).toBe('index, follow, max-image-preview:large');
 });
 
-test('内联样式来自资料段（story-sections）组件', async () => {
+test('首页注入只有加载页，不含资料正文与资料段样式', async () => {
   const template = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const html = await server.transformIndexHtml('/', template);
   const styleMatch = html.match(/<style data-shell-styles>([\s\S]*?)<\/style>/);
   expect(styleMatch).not.toBeNull();
-  expect(styleMatch![1]).toContain('.story-sections');
+  expect(styleMatch![1]).toContain('.loading-shell');
+  expect(styleMatch![1]).not.toContain('.story-sections');
+  expect(html).not.toContain('data-static-profile');
+  expect(html).not.toContain(APP_DATA.profile.bio.en);
+  expect(html).toContain('href="./profile/"');
 });
 
 function decodeEntities(value: string) {
@@ -111,6 +116,12 @@ describe('htmlPlugin public HTML transform', () => {
       expect(description).toMatch(/rainy|convenience store/i);
     },
   );
+
+  test('description 提示点铜牌看小票，不提 scroll', () => {
+    expect(page.meta.get('description')).toBe(
+      'FUBUKI_BB — full-stack engineer and AI agent developer. Explore a rainy-night Tokyo convenience store diorama, then tap the brass plaque to read the profile receipt.',
+    );
+  });
 
   test('JSON-LD describes a person and their personal website', () => {
     const person = page.schemas.find((schema) => schema['@type'] === 'Person');

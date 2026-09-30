@@ -4,11 +4,10 @@ import { COPY } from '../copy';
 interface LoadingShellProps {
   language?: Language;
   stage?: 'code' | 'scene';
-  onReadFirst?: () => void;
   leaving?: boolean;
 }
 
-export function LoadingShell({ language = 'en', stage = 'code', onReadFirst, leaving = false }: LoadingShellProps) {
+export function LoadingShell({ language = 'en', stage = 'code', leaving = false }: LoadingShellProps) {
   const copy = COPY[language];
   const statusText = stage === 'code' ? copy.loadingCode : copy.loadingScene;
   return (
@@ -19,9 +18,9 @@ export function LoadingShell({ language = 'en', stage = 'code', onReadFirst, lea
         {statusText}
       </p>
       <div className="loading-shell-spinner" aria-hidden="true" />
-      <button type="button" className="loading-shell-button" onClick={onReadFirst}>
+      <a className="loading-shell-button" href="./profile/">
         {copy.readFirst}
-      </button>
+      </a>
     </div>
   );
 }

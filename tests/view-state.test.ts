@@ -66,14 +66,6 @@ describe('exiting + exitDone', () => {
   });
 });
 
-describe('任意状态 + 先看资料 → story', () => {
-  for (const view of ['diorama', 'entering', 'story', 'exiting'] as const) {
-    test(`${view} + readFirst → story`, () => {
-      expect(viewState.transition(state(view), 'readFirst').view).toBe('story');
-    });
-  }
-});
-
 describe('任意状态 + 三维失败 → story 且标记失败', () => {
   for (const view of ['diorama', 'entering', 'story', 'exiting'] as const) {
     test(`${view} + sceneFailed → story 且 failed 为 true`, () => {

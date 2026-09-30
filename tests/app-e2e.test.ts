@@ -27,18 +27,29 @@ const HELPERS = `
   async function holdScene() {
     await cdp('Fetch.enable', { patterns: [{ urlPattern: '*/assets/world-*.js' }] });
   }
-  async function releaseScene() {
-    for (const event of drainEvents()) {
-      if (event.method === 'Fetch.requestPaused') await cdp('Fetch.continueRequest', { requestId: event.params.requestId });
-    }
-    await cdp('Fetch.disable');
-  }
   async function pressKey(key, code, vk, text) {
     await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: vk, ...(text ? { text } : {}) });
     await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: vk });
   }
   async function settle() {
     await js('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+  }
+  async function waitSceneReady() {
+    const deadline = Date.now() + 40000;
+    while (Date.now() < deadline) {
+      if (await js("document.documentElement.dataset.view === 'diorama' && document.querySelector('#scene')?.getAttribute('aria-busy') === 'false'")) return;
+      await wait(0.2);
+    }
+  }
+  async function enterStoryByKeyboard() {
+    await pressKey('Tab', 'Tab', 9);
+    await settle();
+    await pressKey('Enter', 'Enter', 13, '\\r');
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline) {
+      if ((await js('document.documentElement.dataset.view')) === 'story') return;
+      await wait(0.05);
+    }
   }
   async function screenshot() {
     const r = await cdp('Page.captureScreenshot', { format: 'png' });
@@ -59,36 +70,6 @@ const VIEW_TRACKER = `
     };
     new MutationObserver(record).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-view'] });
     record();
-  })();
-`;
-
-// 「场景就绪通知」与「点击先看资料」谁先谁后由 React 调度决定，正常时序下窗口不到 1 毫秒，
-// 无头浏览器里几乎撞不上；把 React 用来冲刷更新的 MessageChannel 消息延后 400 毫秒，
-// 相当于把窗口从亚毫秒级撑开到 400 毫秒，再在场景首帧 rAF 回调里延时 20 毫秒补一次点击，
-// 稳定落在通知已发出、状态尚未冲刷的空档里。
-const READY_RACE_INJECTION = VIEW_TRACKER + `
-  (function() {
-    const OriginalMessageChannel = window.MessageChannel;
-    window.MessageChannel = function() {
-      const channel = new OriginalMessageChannel();
-      const originalPostMessage = channel.port2.postMessage.bind(channel.port2);
-      channel.port2.postMessage = function(...args) {
-        setTimeout(() => originalPostMessage(...args), 400);
-      };
-      return channel;
-    };
-    let clicked = false;
-    const originalRAF = window.requestAnimationFrame;
-    window.requestAnimationFrame = function(cb) {
-      if (!clicked) {
-        clicked = true;
-        setTimeout(() => {
-          const btn = document.querySelector('.loading-shell-button');
-          if (btn) btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-        }, 20);
-      }
-      return originalRAF(cb);
-    };
   })();
 `;
 
@@ -1095,11 +1076,9 @@ describe('资料视角滚轮与触摸过滤', () => {
     const result = await runBrowser<{ view: string | null; scrollAfterUp: number; scrollAfterDown: number }>(`
       ${HELPERS}
       await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-      await holdScene();
       await navigate(${JSON.stringify(BASE_URL)});
-      while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
-      await click('.loading-shell-button');
-      await releaseScene();
+      await waitSceneReady();
+      await enterStoryByKeyboard();
       await settle();
       await wait(0.6);
       await cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 195, y: 600 }] });
@@ -1123,11 +1102,9 @@ describe('资料视角滚轮与触摸过滤', () => {
     const result = await runBrowser<{ view: string | null; scrollY: number; activeIndex: number | null }>(`
       ${HELPERS}
       await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-      await holdScene();
       await navigate(${JSON.stringify(BASE_URL)});
-      while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
-      await click('.loading-shell-button');
-      await releaseScene();
+      await waitSceneReady();
+      await enterStoryByKeyboard();
       await settle();
       await wait(0.6);
       await cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 195, y: 500 }, { x: 195, y: 600 }] });
@@ -1482,11 +1459,9 @@ describe('资料段链接按钮换行不重叠', () => {
     const result = await runBrowser<{ view: string | null; displays: string[]; overlaps: boolean }>(`
       ${HELPERS}
       await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: false });
-      await holdScene();
       await navigate(${JSON.stringify(BASE_URL)});
-      while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
-      await click('.loading-shell-button');
-      await releaseScene();
+      await waitSceneReady();
+      await enterStoryByKeyboard();
       await js('window.scrollTo(0, ${sectionStart2})');
       await wait(1.2);
       const data = await js(\`(() => {
@@ -1610,97 +1585,51 @@ describe('加载页', () => {
   }, 90_000);
 });
 
-describe('先看资料', () => {
-  test('点击「先看资料」后加载页立即移除，data-view 变为 story，第 1 段可见', async () => {
-    const result = await runBrowser<{ view: string | null; firstSectionVisible: boolean }>(`
+describe('先看资料链接', () => {
+  test('三维代码请求一直挂起时点「先看资料」，浏览器跳到 /profile/', async () => {
+    const result = await runBrowser<{ pathname: string }>(`
       ${HELPERS}
       await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
-      const ua = await js('navigator.userAgent');
-      await cdp('Emulation.setUserAgentOverride', { userAgent: ua, acceptLanguage: 'en-US' });
       await holdScene();
       await navigate(${JSON.stringify(BASE_URL)});
-      while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
-      await click('.loading-shell-button');
-      await releaseScene();
-      const view = await js('document.documentElement.dataset.view ?? null');
-      const shellGone = await js("!document.querySelector('.loading-shell')");
-      const firstSectionVisible = await js(\`(() => {
-        const s = document.querySelectorAll('.story-section')[0];
-        if (!s) return false;
-        const r = s.getBoundingClientRect();
-        return r.width > 0 && r.height > 0;
+      try { await click('a.loading-shell-button'); } catch (error) { if (!/context|destroyed|Cannot find/i.test(String(error))) throw error; }
+      let pathname = '';
+      const deadline = Date.now() + 15000;
+      while (Date.now() < deadline) {
+        try { pathname = await js('location.pathname'); } catch (error) { pathname = ''; }
+        if (pathname === '/profile/') break;
+        await wait(0.1);
+      }
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ pathname }));
+    `);
+    expect(result.pathname).toBe('/profile/');
+  }, 90_000);
+
+  test('禁用 JavaScript 时名字、状态文字与「先看资料」链接都可见，链接指向 ./profile/', async () => {
+    const result = await runBrowser<{ nameVisible: boolean; statusVisible: boolean; linkVisible: boolean; href: string | null; textDecoration: string }>(`
+      ${HELPERS}
+      await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+      await cdp('Emulation.setScriptExecutionDisabled', { value: true });
+      await navigate(${JSON.stringify(BASE_URL)});
+      const data = await js(\`(() => {
+        const visible = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
+        const link = document.querySelector('a.loading-shell-button');
+        return {
+          nameVisible: visible(document.querySelector('.loading-shell-name')),
+          statusVisible: visible(document.querySelector('.loading-shell-status')),
+          linkVisible: visible(link),
+          href: link ? link.getAttribute('href') : null,
+          textDecoration: link ? getComputedStyle(link).textDecorationLine : '',
+        };
       })()\`);
-      await wait(0.2);
-      const scrollY = await js('window.scrollY');
-      const background = await js("getComputedStyle(document.body).backgroundImage + ' ' + getComputedStyle(document.getElementById('root')).backgroundImage");
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ view, shellGone, firstSectionVisible, scrollY, background }));
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify(data));
     `);
-    expect(result.view).toBe('story');
-    expect((result as any).shellGone).toBe(true);
-    expect(result.firstSectionVisible).toBe(true);
-    expect((result as any).scrollY).toBe(storyLayout(900).sectionStarts[0]);
-    expect((result as any).background).toContain('radial-gradient');
+    expect(result.nameVisible).toBe(true);
+    expect(result.statusVisible).toBe(true);
+    expect(result.linkVisible).toBe(true);
+    expect(result.href).toBe('./profile/');
+    expect(result.textDecoration).toBe('none');
   }, 90_000);
-
-  test('先看资料后场景就绪，canvas 在 450 毫秒内淡入到不透明，随后按 Esc 回到 diorama', async () => {
-    const result = await runBrowser<{ opacityReached: boolean; view: string | null }>(`
-      ${HELPERS}
-      await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
-      await cdp('Page.addScriptToEvaluateOnNewDocument', { source: ${JSON.stringify(VIEW_TRACKER)} });
-      await holdScene();
-      await navigate(${JSON.stringify(BASE_URL)});
-      while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
-      await click('.loading-shell-button');
-      await releaseScene();
-      const readyDeadline = Date.now() + 20000;
-      while (Date.now() < readyDeadline) {
-        if (await js("document.querySelector('#scene')?.getAttribute('aria-busy') === 'false'")) break;
-        await wait(0.05);
-      }
-      const readyAt = Date.now();
-      let opacityReached = false;
-      while (Date.now() - readyAt < 700) {
-        const opacity = await js("(() => { const c = document.querySelector('#scene canvas'); return c ? Number(getComputedStyle(c).opacity) : 0; })()");
-        if (opacity >= 0.99) { opacityReached = Date.now() - readyAt <= 500; break; }
-        await wait(0.02);
-      }
-      await pressKey('Escape', 'Escape', 27);
-      const dioramaDeadline = Date.now() + 5000;
-      while (Date.now() < dioramaDeadline) {
-        if (await js("(() => { const v = window.__views; const e = v.lastIndexOf('exiting'); return e >= 0 && v.indexOf('diorama', e + 1) > e; })()")) break;
-        await wait(0.05);
-      }
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ opacityReached, view: await js('document.documentElement.dataset.view ?? null') }));
-    `);
-    expect(result.opacityReached).toBe(true);
-    expect(result.view).toBe('diorama');
-  }, 90_000);
-
-  test('场景就绪通知与点击「先看资料」时序撞在一起时，返回全景按钮仍可见且 Esc 仍能退出', async () => {
-    const result = await runBrowser<{ backVisible: boolean; views: string[]; recovered: boolean }>(`
-      ${HELPERS}
-      await cdp('Page.addScriptToEvaluateOnNewDocument', { source: ${JSON.stringify(READY_RACE_INJECTION)} });
-      await navigate(${JSON.stringify(BASE_URL)});
-      const readyDeadline = Date.now() + 1500;
-      let backVisible = false;
-      while (Date.now() < readyDeadline) {
-        backVisible = await js("(() => { const b = document.querySelector('.story-back-button'); if (!b) return false; const r = b.getBoundingClientRect(); return r.width > 0 && r.height > 0; })()");
-        if (backVisible) break;
-        await wait(0.05);
-      }
-      await pressKey('Escape', 'Escape', 27);
-      const exitDeadline = Date.now() + 3000;
-      let recovered = false;
-      while (Date.now() < exitDeadline) {
-        recovered = await js("(() => { const v = window.__views; const e = v.lastIndexOf('exiting'); return e >= 0 && v.indexOf('diorama', e + 1) > e; })()");
-        if (recovered) break;
-        await wait(0.05);
-      }
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ backVisible, views: await js('window.__views'), recovered }));
-    `);
-    expect(result.backVisible).toBe(true);
-    expect(result.recovered).toBe(true);
-  }, 20_000);
 });
 
 describe('语言', () => {

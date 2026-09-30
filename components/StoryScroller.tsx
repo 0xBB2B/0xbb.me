@@ -33,10 +33,6 @@ export function StoryScroller({ language, view, failed, showBack, onScrollChange
   viewRef.current = view;
 
   useEffect(() => {
-    document.documentElement.style.overflow = 'hidden';
-  }, []);
-
-  useEffect(() => {
     if (animRef.current !== null) {
       cancelAnimationFrame(animRef.current);
       animRef.current = null;

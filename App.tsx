@@ -56,11 +56,6 @@ export default function App() {
     setViewState((prev) => transition(prev, event));
   }
 
-  function handleReadFirst() {
-    setLoadingVisible(false);
-    dispatch('readFirst');
-  }
-
   function handleSceneFailed() {
     setLoadingVisible(false);
     dispatch('sceneFailed');
@@ -102,7 +97,7 @@ export default function App() {
         onActivate={() => sceneRef.current?.enterStory()}
       />
       {loadingVisible && (
-        <LoadingShell language={language} stage={stage} onReadFirst={handleReadFirst} leaving={loadingLeaving} />
+        <LoadingShell language={language} stage={stage} leaving={loadingLeaving} />
       )}
     </>
   );

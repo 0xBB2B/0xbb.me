@@ -4,14 +4,10 @@ import { createServer, type AliasOptions, type HtmlTagDescriptor, type Plugin } 
 import { createElement } from 'react';
 import { renderToStaticMarkup, renderToString } from 'react-dom/server';
 import { LoadingShell } from '../components/LoadingShell';
-import { StaticProfile } from '../components/StaticProfile';
 
-function injectShell(html: string): string {
-  const shellMarkup =
-    renderToStaticMarkup(createElement(LoadingShell)) + renderToStaticMarkup(createElement(StaticProfile));
-  const shellStyles =
-    fs.readFileSync(path.resolve(process.cwd(), 'components/LoadingShell.css'), 'utf8') +
-    fs.readFileSync(path.resolve(process.cwd(), 'components/StorySections.css'), 'utf8');
+function injectShell(html: string, root: string): string {
+  const shellMarkup = renderToStaticMarkup(createElement(LoadingShell));
+  const shellStyles = fs.readFileSync(path.resolve(root, 'components/LoadingShell.css'), 'utf8');
   return html
     .replace('<div id="root"></div>', () => `<div id="root">${shellMarkup}</div>`)
     .replace(/<meta charset="[^"]*"\s*\/?>/i, (charset) => `${charset}<style data-shell-styles>${shellStyles}</style>`);
@@ -78,7 +74,7 @@ export const htmlPlugin = (): Plugin => {
         const tags = profileTags(root).map((tag) => ({ ...tag, injectTo: 'head' as const }));
         return injectProfile(html, root, alias).then((profileHtml) => ({ html: profileHtml, tags }));
       }
-      const shelledHtml = injectShell(html);
+      const shelledHtml = injectShell(html, root);
       try {
         const metadata = JSON.parse(fs.readFileSync(path.resolve(root, 'metadata.json'), 'utf8'));
         const title = `${metadata.name} — Engineering, AI Workflows & Exploration`;

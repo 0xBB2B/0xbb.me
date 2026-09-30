@@ -6,10 +6,9 @@ export interface ViewState {
   failed: boolean;
 }
 
-export type ViewEvent = 'clickPlaque' | 'enterDone' | 'exit' | 'exitDone' | 'readFirst' | 'sceneReady' | 'sceneFailed';
+export type ViewEvent = 'clickPlaque' | 'enterDone' | 'exit' | 'exitDone' | 'sceneReady' | 'sceneFailed';
 
 export function transition(state: ViewState, event: ViewEvent): ViewState {
-  if (event === 'readFirst') return { view: 'story', ready: state.ready, failed: state.failed };
   if (event === 'sceneFailed') return { view: 'story', ready: state.ready, failed: true };
   if (event === 'sceneReady') return { view: state.view, ready: true, failed: state.failed };
 
