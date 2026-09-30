@@ -56,7 +56,7 @@ test('the bundled character ranges cover bilingual content and interface symbols
   }
 });
 
-test('all UI font declarations use the shared sans and display families', () => {
+test('all UI font declarations use the shared sans, display and mono families', () => {
   const root = path.resolve(import.meta.dir, '..');
   const files = ['index.css'];
   const visit = (directory: string) => {
@@ -69,9 +69,9 @@ test('all UI font declarations use the shared sans and display families', () => 
   if (existsSync(path.join(root, 'components'))) visit('components');
   for (const file of files) {
     const css = read(file);
-    expect(css, file).not.toMatch(/Georgia|Songti|PingFang|Segoe|YaHei|Consolas|IBM Plex|system-ui|monospace|--font-mono/);
+    expect(css, file).not.toMatch(/Georgia|Songti|PingFang|Segoe|YaHei|Consolas|IBM Plex|system-ui|monospace|SF Mono|Menlo/);
     for (const match of css.matchAll(/(?:font|font-family):\s*([^;]+);/g)) {
-      expect(match[1], file).toMatch(/var\(--font-(?:sans|display)\)|inherit/);
+      expect(match[1], file).toMatch(/var\(--font-(?:sans|display|mono)\)|inherit/);
     }
   }
 });
@@ -81,5 +81,27 @@ test('the canvas signage fonts are bundled, pinned and credited in the notices',
   for (const family of ['dela-gothic-one', 'm-plus-rounded-1c']) {
     expect(dependencies[`@fontsource/${family}`]).toMatch(/^\d+\.\d+\.\d+$/);
     expect(read('public/THIRD_PARTY_NOTICES.txt')).toContain(read(`node_modules/@fontsource/${family}/LICENSE`).trim());
+  }
+});
+
+test('the receipt monospace font is bundled and falls back to the shared sans', () => {
+  expect(typography).toContain('@import "@fontsource-variable/jetbrains-mono/wght.css"');
+  expect(typography).toMatch(/--font-mono:\s*"JetBrains Mono Variable",\s*var\(--font-sans\)/);
+});
+
+test('the JetBrains Mono package is pinned and credited in the notices', () => {
+  const dependencies = JSON.parse(read('package.json')).dependencies;
+  expect(dependencies['@fontsource-variable/jetbrains-mono']).toBe('5.3.0');
+  const notices = read('public/THIRD_PARTY_NOTICES.txt');
+  expect(notices).toContain('JetBrains Mono');
+  expect(notices).toContain('@fontsource-variable/jetbrains-mono 5.3.0');
+  expect(notices).toContain('SIL Open Font License');
+});
+
+test('receipt and photo print styles take monospace from the shared variable only', () => {
+  for (const file of ['components/Receipt.css', 'components/PhotoPrint.css']) {
+    const css = read(file);
+    expect(css, file).toContain('var(--font-mono)');
+    expect(css, file).not.toMatch(/SF Mono|Consolas|Menlo|monospace/);
   }
 });

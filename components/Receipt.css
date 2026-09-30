@@ -12,7 +12,7 @@
   height: max-content;
   background: var(--paper);
   color: var(--paper-ink);
-  font-family: "SF Mono", Consolas, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.65;
   padding: 30px 20px 26px;
