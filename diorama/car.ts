@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { toon, glow, ctex, roundRect, noOutline, toonGradientMap } from './materials';
 import { add, box } from './primitives';
+import { drawLicensePlate } from './textures';
 import { CAR_CENTER, CAR_SCALE } from './layout';
 
 export interface CarBuild {
@@ -8,6 +9,7 @@ export interface CarBuild {
   ground: THREE.Group;
   hazardMaterial: THREE.MeshBasicMaterial;
   hazardLights: THREE.PointLight[];
+  plateTexture: THREE.CanvasTexture;
 }
 
 export function buildCar(): CarBuild {
@@ -174,6 +176,17 @@ export function buildCar(): CarBuild {
     const rim = add(wg, rimGeo, toon('#3d434f'), 0, 0, sz * 0.14); rim.rotation.x = Math.PI / 2;
   }
 
+  const plateGeo = new THREE.PlaneGeometry(0.33, 0.165);
+  const plateTexture = ctex(512, 256, drawLicensePlate);
+  const plateMat = toon('#d9dbd6', { map: plateTexture });
+  const plateFront = add(car, plateGeo, plateMat, 2.275, 0.51, 0);
+  plateFront.name = 'license-plate-front';
+  plateFront.rotation.order = 'ZYX';
+  plateFront.rotation.set(0, Math.PI / 2, 15 * Math.PI / 180);
+  const plateRear = add(car, plateGeo, plateMat, -2.345, 0.52, 0);
+  plateRear.name = 'license-plate-rear';
+  plateRear.rotation.y = -Math.PI / 2;
+
   const hazardLights: THREE.PointLight[] = [];
   for (const lx of [2.5, -2.5]) {
     for (const lz of [0.85, -0.85]) {
@@ -261,5 +274,5 @@ export function buildCar(): CarBuild {
     obj.scale.setScalar(CAR_SCALE);
   }
 
-  return { group: car, ground, hazardMaterial, hazardLights };
+  return { group: car, ground, hazardMaterial, hazardLights, plateTexture };
 }

@@ -1,8 +1,9 @@
 import { expect, test, describe } from 'bun:test';
 import * as THREE from 'three';
 import { setCanvasFactory } from '../diorama/materials';
-import { createFakeCanvasFactory } from './fake-canvas';
+import { createFakeCanvas, createFakeCanvasFactory } from './fake-canvas';
 import { CAR_CENTER } from '../diorama/layout';
+import { drawLicensePlate } from '../diorama/textures';
 
 setCanvasFactory(createFakeCanvasFactory());
 
@@ -237,7 +238,7 @@ function worldBox(mesh: THREE.Mesh): THREE.Box3 {
 describe('the car faces the main road with its tail toward the store', () => {
   test('each headlight lens keeps a large oval footprint (not a slit)', () => {
     const { car } = buildScene();
-    const lenses = meshesWhere(car, (_, m) => m instanceof THREE.MeshToonMaterial && m.color.r > 0.6 && m.color.g > 0.6 && m.color.b > 0.6);
+    const lenses = meshesWhere(car, (mesh, m) => !mesh.name.startsWith('license-plate-') && m instanceof THREE.MeshToonMaterial && m.color.r > 0.6 && m.color.g > 0.6 && m.color.b > 0.6);
     expect(lenses.length).toBe(2);
     for (const lens of lenses) {
       const size = worldBox(lens).getSize(new THREE.Vector3());
@@ -249,7 +250,7 @@ describe('the car faces the main road with its tail toward the store', () => {
   test('pale headlight lenses sit on the +z side of the car center', () => {
     const { scene, car } = buildScene();
     const centerZ = carBox(scene).getCenter(new THREE.Vector3()).z;
-    const lenses = meshesWhere(car, (_, m) => m instanceof THREE.MeshToonMaterial && m.color.r > 0.6 && m.color.g > 0.6 && m.color.b > 0.6);
+    const lenses = meshesWhere(car, (mesh, m) => !mesh.name.startsWith('license-plate-') && m instanceof THREE.MeshToonMaterial && m.color.r > 0.6 && m.color.g > 0.6 && m.color.b > 0.6);
     expect(lenses.length).toBeGreaterThanOrEqual(2);
     for (const lens of lenses) expect(worldBox(lens).getCenter(new THREE.Vector3()).z).toBeGreaterThan(centerZ + 1);
   });
@@ -358,7 +359,7 @@ function wheelGroups(car: Car): THREE.Group[] {
 }
 
 function paleLensMeshes(car: Car): THREE.Mesh[] {
-  return meshesWhere(car, (_, m) => m instanceof THREE.MeshToonMaterial && m.color.r > 0.6 && m.color.g > 0.6 && m.color.b > 0.6);
+  return meshesWhere(car, (mesh, m) => !mesh.name.startsWith('license-plate-') && m instanceof THREE.MeshToonMaterial && m.color.r > 0.6 && m.color.g > 0.6 && m.color.b > 0.6);
 }
 
 function allLightMeshes(car: Car): THREE.Mesh[] {
@@ -621,7 +622,7 @@ function wheelSpecs(car: Car) {
 }
 
 describe('wheel arch hugs the tire and does not cut through the body top edge', () => {
-  test('on the side view, paint 5cm outside the tire between 30 and 60 degrees from straight up is within 2cm of the outer face', () => {
+  test('on the side view, paint 4cm outside the tire between 30 and 60 degrees from straight up is within 0.3cm of the outer face', () => {
     const { car } = buildScene();
     const specs = wheelSpecs(car);
     expect(specs.length).toBe(4);
@@ -629,7 +630,7 @@ describe('wheel arch hugs the tire and does not cut through the body top edge', 
       for (const direction of [-1, 1]) {
         for (const degrees of [30, 45, 60]) {
           const angle = (degrees * Math.PI) / 180;
-          const r = spec.radius + 0.05;
+          const r = spec.radius + 0.04;
           const origin = new THREE.Vector3(
             spec.outerX + spec.side,
             spec.centerY + r * Math.cos(angle),
@@ -637,7 +638,7 @@ describe('wheel arch hugs the tire and does not cut through the body top edge', 
           );
           const hit = raycastFirst(origin, new THREE.Vector3(-spec.side, 0, 0), allCarMeshes(car));
           expect(hit !== undefined && bodyPaintMeshes(car).includes(hit.object as THREE.Mesh)).toBe(true);
-          expect(Math.abs(spec.outerX - hit!.point.x)).toBeLessThanOrEqual(0.02);
+          expect(Math.abs(spec.outerX - hit!.point.x)).toBeLessThanOrEqual(0.003);
         }
       }
     }
@@ -659,6 +660,195 @@ describe('wheel arch hugs the tire and does not cut through the body top edge', 
       const origin = new THREE.Vector3(spec.outerX + spec.side, spec.top + 0.025, spec.centerZ);
       const hit = raycastFirst(origin, new THREE.Vector3(-spec.side, 0, 0), bodyPaintMeshes(car));
       expect(hit).toBeDefined();
+      expect(Math.abs(spec.outerX - hit!.point.x)).toBeLessThanOrEqual(0.003);
     }
+  });
+});
+
+type PlateSide = 'front' | 'rear';
+
+function platesOf(car: Car): THREE.Mesh[] {
+  return allCarMeshes(car).filter((mesh) => mesh.name.startsWith('license-plate-'));
+}
+
+function plate(car: Car, side: PlateSide): THREE.Mesh {
+  const mesh = car.group.getObjectByName(`license-plate-${side}`) as THREE.Mesh | undefined;
+  expect(mesh).toBeDefined();
+  return mesh!;
+}
+
+function plateMaterial(mesh: THREE.Mesh): any {
+  return Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+}
+
+function luminanceOf(c: THREE.Color): number {
+  return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+}
+
+function colorNear(a: THREE.Color, hex: string): boolean {
+  const b = new THREE.Color(hex);
+  return Math.abs(a.r - b.r) < 0.02 && Math.abs(a.g - b.g) < 0.02 && Math.abs(a.b - b.b) < 0.02;
+}
+
+function nonPlateMeshes(car: Car): THREE.Mesh[] {
+  return allCarMeshes(car).filter((mesh) => !mesh.name.startsWith('license-plate-'));
+}
+
+function raycastBothSides(origin: THREE.Vector3, direction: THREE.Vector3, targets: THREE.Mesh[], keepSingleSided: THREE.Mesh[] = []): THREE.Intersection | undefined {
+  const doubled = targets.filter((mesh) => !keepSingleSided.includes(mesh));
+  const originalSides = doubled.map((mesh) => plateMaterialSides(mesh));
+  for (const mesh of doubled) setSides(mesh, THREE.DoubleSide);
+  const hit = raycastFirst(origin, direction, targets);
+  doubled.forEach((mesh, i) => restoreSides(mesh, originalSides[i]));
+  return hit;
+}
+
+function plateMaterialSides(mesh: THREE.Mesh): THREE.Side[] {
+  const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  return materials.map((m) => m.side);
+}
+
+function setSides(mesh: THREE.Mesh, side: THREE.Side): void {
+  const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  for (const m of materials) m.side = side;
+}
+
+function restoreSides(mesh: THREE.Mesh, sides: THREE.Side[]): void {
+  const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  materials.forEach((m, i) => { m.side = sides[i]; });
+}
+
+describe('the porsche carries two Japanese license plates, one on the nose and one on the tail', () => {
+  test('exactly 2 meshes are named license-plate-*', () => {
+    const { car } = buildScene();
+    expect(platesOf(car).length).toBe(2);
+  });
+
+  test('the front plate sits on the +z side of the body center and the rear plate on the -z side', () => {
+    const { scene, car } = buildScene();
+    const centerZ = carBox(scene).getCenter(new THREE.Vector3()).z;
+    expect(worldBox(plate(car, 'front')).getCenter(new THREE.Vector3()).z).toBeGreaterThan(centerZ);
+    expect(worldBox(plate(car, 'rear')).getCenter(new THREE.Vector3()).z).toBeLessThan(centerZ);
+  });
+
+  test.each(['front', 'rear'] as PlateSide[])('the %s plate is 0.297m wide and 0.149m tall in the world, within 1cm', (side) => {
+    const { car } = buildScene();
+    const size = worldBox(plate(car, side)).getSize(new THREE.Vector3());
+    expect(Math.abs(size.x - 0.297)).toBeLessThanOrEqual(0.01);
+    expect(Math.abs(size.y - 0.149)).toBeLessThanOrEqual(0.01);
+  });
+
+  test.each(['front', 'rear'] as PlateSide[])('the %s plate is centered on the body center line within 1cm', (side) => {
+    const { scene, car } = buildScene();
+    const bodyX = carBox(scene).getCenter(new THREE.Vector3()).x;
+    expect(Math.abs(worldBox(plate(car, side)).getCenter(new THREE.Vector3()).x - bodyX)).toBeLessThanOrEqual(0.01);
+  });
+
+  test.each(['front', 'rear'] as PlateSide[])('the %s plate center is 0.40 to 0.50m above the parking lot ground', (side) => {
+    const { car } = buildScene();
+    const height = worldBox(plate(car, side)).getCenter(new THREE.Vector3()).y - CAR_CENTER[1];
+    expect(height).toBeGreaterThanOrEqual(0.4);
+    expect(height).toBeLessThanOrEqual(0.5);
+  });
+
+  test('the rear plate is entirely below the full-width tail light bar and above the exhaust pipes', () => {
+    const { car } = buildScene();
+    const bars = tailLightMeshes(car).filter((mesh) => worldBox(mesh).getSize(new THREE.Vector3()).x >= 1.2);
+    const exhausts = meshesWhere(car, (_, m) => m instanceof THREE.MeshToonMaterial && colorNear(m.color, '#a3aab5'));
+    expect(bars.length).toBeGreaterThan(0);
+    expect(exhausts.length).toBeGreaterThan(0);
+    const box = worldBox(plate(car, 'rear'));
+    expect(box.max.y).toBeLessThan(Math.min(...bars.map((mesh) => worldBox(mesh).min.y)));
+    expect(box.min.y).toBeGreaterThan(Math.max(...exhausts.map((mesh) => worldBox(mesh).max.y)));
+  });
+
+  test('the front plate is entirely above the air intakes and its top is not higher than the headlight lenses bottom', () => {
+    const { scene, car } = buildScene();
+    const centerZ = carBox(scene).getCenter(new THREE.Vector3()).z;
+    const intakes = meshesWhere(
+      car,
+      (mesh, m) =>
+        m instanceof THREE.MeshToonMaterial &&
+        colorNear(m.color, '#16171d') &&
+        worldBox(mesh).getCenter(new THREE.Vector3()).z > centerZ + 1.5,
+    );
+    const lenses = paleLensMeshes(car);
+    expect(intakes.length).toBeGreaterThan(0);
+    expect(lenses.length).toBeGreaterThan(0);
+    const box = worldBox(plate(car, 'front'));
+    expect(box.min.y).toBeGreaterThan(Math.max(...intakes.map((mesh) => worldBox(mesh).max.y)));
+    expect(box.max.y).toBeLessThanOrEqual(Math.min(...lenses.map((mesh) => worldBox(mesh).min.y)));
+  });
+
+  test.each([['front', -1], ['rear', 1]] as [PlateSide, number][])('the %s plate back is within 3cm of the car part right behind it', (side, inward) => {
+    const { car } = buildScene();
+    const mesh = plate(car, side);
+    const center = worldBox(mesh).getCenter(new THREE.Vector3());
+    const hit = raycastBothSides(center, new THREE.Vector3(0, 0, inward), nonPlateMeshes(car));
+    expect(hit).toBeDefined();
+    expect(hit!.distance).toBeLessThanOrEqual(0.03);
+  });
+
+  test.each([['front', 1], ['rear', -1]] as [PlateSide, number][])('looking at the %s plate from 1m in front, the center and the four corners hit the plate first', (side, outward) => {
+    const { car } = buildScene();
+    const mesh = plate(car, side);
+    const box = worldBox(mesh);
+    const center = box.getCenter(new THREE.Vector3());
+    const targets = [mesh, ...nonPlateMeshes(car)];
+    const points = [
+      center,
+      new THREE.Vector3(box.min.x + 0.01, box.min.y + 0.01, center.z),
+      new THREE.Vector3(box.max.x - 0.01, box.min.y + 0.01, center.z),
+      new THREE.Vector3(box.min.x + 0.01, box.max.y - 0.01, center.z),
+      new THREE.Vector3(box.max.x - 0.01, box.max.y - 0.01, center.z),
+    ];
+    for (const point of points) {
+      const origin = point.clone().add(new THREE.Vector3(0, 0, outward));
+      const hit = raycastBothSides(origin, new THREE.Vector3(0, 0, -outward), targets, [mesh]);
+      expect(hit?.object).toBe(mesh);
+    }
+  });
+
+  test.each(['front', 'rear'] as PlateSide[])('the %s plate does not glow: not a basic material, black emissive, color luminance under 0.97', (side) => {
+    const { car } = buildScene();
+    const material = plateMaterial(plate(car, side));
+    expect(material instanceof THREE.MeshBasicMaterial).toBe(false);
+    if (material.emissive) expect(Math.max(material.emissive.r, material.emissive.g, material.emissive.b) * material.emissiveIntensity).toBe(0);
+    expect(luminanceOf(material.color)).toBeLessThan(0.97);
+  });
+
+  test('the plates add no lights: the car group still has exactly 4 point lights', () => {
+    const { car } = buildScene();
+    expect(platesOf(car).length).toBe(2);
+    let lights = 0;
+    car.group.traverse((obj) => {
+      if ((obj as THREE.PointLight).isPointLight) lights++;
+    });
+    expect(lights).toBe(4);
+  });
+
+  test.each(['front', 'rear'] as PlateSide[])('the %s plate is a thin slab with its characters on a texture map', (side) => {
+    const { car } = buildScene();
+    const mesh = plate(car, side);
+    expect(worldBox(mesh).getSize(new THREE.Vector3()).z).toBeLessThanOrEqual(0.05);
+    expect(plateMaterial(mesh).map).toBeTruthy();
+  });
+});
+
+describe('drawLicensePlate paints the Japanese plate text and colors', () => {
+  function drawPlate() {
+    const canvas = createFakeCanvas();
+    drawLicensePlate(canvas.getContext('2d') as CanvasRenderingContext2D, 330, 165);
+    return canvas;
+  }
+
+  test('the four text pieces are the place name, class number, hiragana and the serial number', () => {
+    expect([...drawPlate().fillTextCalls].sort()).toEqual(['310', '・9 92', 'み', '秋葉原'].sort());
+  });
+
+  test('a pale background and a green text color are used', () => {
+    const colors = drawPlate().fillStyleCalls.filter((v): v is string => typeof v === 'string').map((v) => new THREE.Color(v));
+    expect(colors.some((c) => c.r > 0.85 && c.g > 0.85 && c.b > 0.85)).toBe(true);
+    expect(colors.some((c) => c.g > c.r && c.g > c.b)).toBe(true);
   });
 });

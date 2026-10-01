@@ -134,7 +134,7 @@ describe('the porsche sits centred in the bay next to the door', () => {
     car.group.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       const m = mesh.material as THREE.MeshToonMaterial;
-      if (mesh.isMesh && m instanceof THREE.MeshToonMaterial && m.color.r > 0.6 && m.color.g > 0.6 && m.color.b > 0.6) {
+      if (mesh.isMesh && !mesh.name.startsWith('license-plate-') && m instanceof THREE.MeshToonMaterial && m.color.r > 0.6 && m.color.g > 0.6 && m.color.b > 0.6) {
         lensZ.push(new THREE.Box3().setFromObject(mesh, true).getCenter(new THREE.Vector3()).z);
       }
     });

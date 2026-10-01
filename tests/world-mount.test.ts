@@ -384,9 +384,9 @@ describe('竖屏下的视场角与整体默认镜头', () => {
   }, 60_000);
 });
 
-describe('铭牌贴图随网页字体到达重画', () => {
-  test('挂起字体请求时场景仍就绪；放行后铭牌材质贴图 version 增加', async () => {
-    const result = await runBrowser<{ ready: boolean; versionBefore: number; versionAfter: number }>(`
+describe('铭牌和车牌贴图随网页字体到达重画', () => {
+  test('挂起字体请求时场景仍就绪；放行后铭牌和车牌材质贴图 version 增加', async () => {
+    const result = await runBrowser<{ ready: boolean; versionBefore: number; versionAfter: number; plateBefore: number; plateAfter: number }>(`
       await cdp('Fetch.enable', { patterns: [{ urlPattern: '*.woff2*' }, { urlPattern: '*.woff*' }] });
       let release = false;
       let __stop = false;
@@ -412,20 +412,24 @@ describe('铭牌贴图随网页字体到达重画', () => {
         await wait(0.2);
       }
       const versionBefore = await js("window.handle.scene.getObjectByName('plaque-face').material.map.version");
+      const plateBefore = await js("window.handle.scene.getObjectByName('license-plate-front').material.map.version");
       release = true;
       for (const id of pending.splice(0)) await cdp('Fetch.continueRequest', { requestId: id });
       const redrawDeadline = Date.now() + 8000;
       let versionAfter = versionBefore;
+      let plateAfter = plateBefore;
       while (Date.now() < redrawDeadline) {
         versionAfter = await js("window.handle.scene.getObjectByName('plaque-face').material.map.version");
-        if (versionAfter > versionBefore) break;
+        plateAfter = await js("window.handle.scene.getObjectByName('license-plate-front').material.map.version");
+        if (versionAfter > versionBefore && plateAfter > plateBefore) break;
         await wait(0.1);
       }
       __stop = true;
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, versionBefore, versionAfter }));
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, versionBefore, versionAfter, plateBefore, plateAfter }));
     `);
     expect(result.ready).toBe(true);
     expect(result.versionAfter).toBeGreaterThan(result.versionBefore);
+    expect(result.plateAfter).toBeGreaterThan(result.plateBefore);
   }, 60_000);
 });
 
