@@ -578,6 +578,37 @@ describe('资料视角', () => {
     expect(result.dragChanged).toBe(true);
     expect(result.wheelChanged).toBe(true);
   }, 90_000);
+
+  test('1440×900 小票逆时针歪约 0.6°，名字用 Noto Serif SC Variable', async () => {
+    const p = plaquePoint(1440, 900);
+    const result = await runBrowser<{ angle: number; h1Font: string }>(`
+      ${HELPERS}
+      ${boot(1440, 900)}
+      await click([${p.x}, ${p.y}]);
+      await waitStory();
+      await wait(1.6);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({
+        angle: await js(\`(() => { const m = getComputedStyle(document.querySelector('.receipt')).transform; const v = m === 'none' ? [1, 0] : m.slice(7, -1).split(',').map(Number); return Math.atan2(v[1], v[0]) * 180 / Math.PI; })()\`),
+        h1Font: await js("getComputedStyle(document.querySelector('.receipt h1')).fontFamily"),
+      }));
+    `);
+    expect(result.angle).toBeGreaterThan(-0.7);
+    expect(result.angle).toBeLessThan(-0.5);
+    expect(result.h1Font.startsWith('"Noto Serif SC Variable"')).toBe(true);
+  }, 90_000);
+
+  test('390×844 竖屏小票不歪', async () => {
+    const result = await runBrowser<{ angle: number }>(`
+      ${HELPERS}
+      ${boot(390, 844)}
+      await enterStoryByKeyboard();
+      await wait(1.6);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({
+        angle: await js(\`(() => { const m = getComputedStyle(document.querySelector('.receipt')).transform; const v = m === 'none' ? [1, 0] : m.slice(7, -1).split(',').map(Number); return Math.atan2(v[1], v[0]) * 180 / Math.PI; })()\`),
+      }));
+    `);
+    expect(Math.abs(result.angle)).toBeLessThan(0.01);
+  }, 90_000);
 });
 
 describe('退出时小票淡出', () => {
