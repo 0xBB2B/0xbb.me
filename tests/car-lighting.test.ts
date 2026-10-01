@@ -252,19 +252,19 @@ describe('the ground decals hold no tail glow', () => {
 });
 
 describe('lighting effects add no scene lights', () => {
-  test('the car and its ground group hold exactly 4 spot lights and 2 point lights and no other light', () => {
+  test('the car and its ground group hold exactly 4 spot lights and 1 area light and no other light', () => {
     const car = buildScene();
-    const counts = { spot: 0, point: 0, other: 0 };
+    const counts = { spot: 0, area: 0, other: 0 };
     for (const root of [car.group, car.ground]) {
       root.traverse((obj) => {
         const light = obj as THREE.Light;
         if (!light.isLight) return;
         if ((light as THREE.SpotLight).isSpotLight) counts.spot++;
-        else if ((light as THREE.PointLight).isPointLight) counts.point++;
+        else if ((light as THREE.RectAreaLight).isRectAreaLight) counts.area++;
         else counts.other++;
       });
     }
-    expect(counts).toEqual({ spot: 4, point: 2, other: 0 });
+    expect(counts).toEqual({ spot: 4, area: 1, other: 0 });
   });
 });
 
@@ -285,22 +285,20 @@ function ambientStubs() {
   return { store, street };
 }
 
-describe('the tail point lights do not follow the hazard blink', () => {
-  test('their intensity is the same and above zero with the hazards on and off', () => {
+describe('the tail area light does not follow the hazard blink', () => {
+  test('its intensity is the same and above zero with the hazards on and off', () => {
     const car = buildScene();
-    const tails: THREE.PointLight[] = [];
+    const tails: THREE.RectAreaLight[] = [];
     car.group.traverse((obj) => {
-      const light = obj as THREE.Light;
-      if (light.isLight && (light as THREE.PointLight).isPointLight) tails.push(light as THREE.PointLight);
+      if ((obj as THREE.RectAreaLight).isRectAreaLight) tails.push(obj as THREE.RectAreaLight);
     });
-    expect(tails.length).toBe(2);
+    expect(tails.length).toBe(1);
     const { store, street } = ambientStubs();
     const ambient = createAmbient({ store, street, hazard: { material: car.hazardMaterial, lights: car.hazardLights as any } });
     ambient.tick(0.1, 0.016);
-    const lit = tails.map((l) => l.intensity);
+    const lit = tails[0].intensity;
     ambient.tick(0.6, 0.016);
-    const dark = tails.map((l) => l.intensity);
-    expect(lit).toEqual(dark);
-    for (const i of lit) expect(i).toBeGreaterThan(0);
+    expect(tails[0].intensity).toBe(lit);
+    expect(lit).toBeGreaterThan(0);
   });
 });

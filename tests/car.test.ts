@@ -2047,66 +2047,70 @@ describe('the porsche frunk lid: seams, channels and vents on the hood', () => {
   });
 });
 
-function tailPointLights(car: Car): THREE.PointLight[] {
-  const found: THREE.PointLight[] = [];
+function tailAreaLights(car: Car): THREE.RectAreaLight[] {
+  const found: THREE.RectAreaLight[] = [];
   car.group.traverse((obj) => {
-    const light = obj as THREE.Light;
-    if (light.isLight && (light as THREE.PointLight).isPointLight) found.push(light as THREE.PointLight);
+    if ((obj as THREE.RectAreaLight).isRectAreaLight) found.push(obj as THREE.RectAreaLight);
   });
   return found;
 }
 
-describe('the car lights: 4 spot lights and 2 tail point lights and nothing else', () => {
-  test('the car group holds exactly 4 spot lights, 2 point lights and no other light', () => {
+function fullWidthTailBar(car: Car): THREE.Mesh {
+  const bars = tailLightMeshes(car).filter((m) => worldBox(m).getSize(new THREE.Vector3()).x >= 1.2);
+  expect(bars.length).toBeGreaterThan(0);
+  return bars[0];
+}
+
+describe('the car lights: 4 spot lights and 1 tail area light and nothing else', () => {
+  test('the car group holds exactly 4 spot lights, 1 area light and no other light', () => {
     const { car } = buildScene();
-    const counts = { spot: 0, point: 0, other: 0 };
+    const counts = { spot: 0, area: 0, other: 0 };
     car.group.traverse((obj) => {
       const light = obj as THREE.Light;
       if (!light.isLight) return;
       if ((light as THREE.SpotLight).isSpotLight) counts.spot++;
-      else if ((light as THREE.PointLight).isPointLight) counts.point++;
+      else if ((light as THREE.RectAreaLight).isRectAreaLight) counts.area++;
       else counts.other++;
     });
-    expect(counts).toEqual({ spot: 4, point: 2, other: 0 });
+    expect(counts).toEqual({ spot: 4, area: 1, other: 0 });
   });
 });
 
-describe('the tail carries two red point lights right behind the light bar', () => {
-  test('exactly 2 point lights in the car group, red, with positive intensity and a falloff distance of 2 to 2.6m', () => {
+describe('the tail carries one red strip area light right behind the light bar', () => {
+  test('one area light, red, with positive intensity', () => {
     const { car } = buildScene();
-    const lights = tailPointLights(car);
-    expect(lights.length).toBe(2);
-    for (const light of lights) {
-      expect(light.color.r).toBeGreaterThan(2 * light.color.g);
-      expect(light.color.r).toBeGreaterThan(2 * light.color.b);
-      expect(light.intensity).toBeGreaterThan(0);
-      expect(light.distance).toBeGreaterThanOrEqual(2);
-      expect(light.distance).toBeLessThanOrEqual(2.6);
-    }
+    const lights = tailAreaLights(car);
+    expect(lights.length).toBe(1);
+    expect(lights[0].color.r).toBeGreaterThan(2 * lights[0].color.g);
+    expect(lights[0].color.r).toBeGreaterThan(2 * lights[0].color.b);
+    expect(lights[0].intensity).toBeGreaterThan(0);
   });
 
-  test('they mirror each other about the body center within 1cm', () => {
+  test('its width is within 5cm of the light bar world length and its height is at most 0.10', () => {
+    const { car } = buildScene();
+    const lights = tailAreaLights(car);
+    expect(lights.length).toBe(1);
+    const barLength = worldBox(fullWidthTailBar(car)).getSize(new THREE.Vector3()).x;
+    expect(Math.abs(lights[0].width - barLength)).toBeLessThanOrEqual(0.05);
+    expect(lights[0].height).toBeLessThanOrEqual(0.1);
+  });
+
+  test('it is centered on the body within 1cm and within 10cm of the light bar', () => {
     const { scene, car } = buildScene();
-    const lights = tailPointLights(car);
-    expect(lights.length).toBe(2);
-    const bodyX = carBox(scene).getCenter(new THREE.Vector3()).x;
-    const [a, b] = lights.map(worldPosition).sort((p, q) => p.x - q.x);
-    expect(Math.abs(a.x + b.x - 2 * bodyX)).toBeLessThanOrEqual(0.01);
-    expect(a.x).toBeLessThan(bodyX);
+    const lights = tailAreaLights(car);
+    expect(lights.length).toBe(1);
+    const position = worldPosition(lights[0]);
+    expect(Math.abs(position.x - carBox(scene).getCenter(new THREE.Vector3()).x)).toBeLessThanOrEqual(0.01);
+    expect(worldBox(fullWidthTailBar(car)).distanceToPoint(position)).toBeLessThanOrEqual(0.1);
   });
 
-  test('each is within 20cm of the full-width tail light bar and farther toward the tail than the bar', () => {
+  test('it emits toward the tail and downward', () => {
     const { car } = buildScene();
-    const lights = tailPointLights(car);
-    expect(lights.length).toBe(2);
-    const bars = tailLightMeshes(car).filter((m) => worldBox(m).getSize(new THREE.Vector3()).x >= 1.2);
-    expect(bars.length).toBeGreaterThan(0);
-    const bar = worldBox(bars[0]);
-    for (const light of lights) {
-      const p = worldPosition(light);
-      expect(bar.distanceToPoint(p)).toBeLessThanOrEqual(0.2);
-      expect(p.z).toBeLessThan(bar.min.z);
-    }
+    const lights = tailAreaLights(car);
+    expect(lights.length).toBe(1);
+    const direction = lights[0].getWorldDirection(new THREE.Vector3()).negate();
+    expect(direction.z).toBeLessThan(0);
+    expect(direction.y).toBeLessThan(0);
   });
 });
 

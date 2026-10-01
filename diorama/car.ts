@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { toon, glow, ctex, roundRect, noOutline, toonGradientMap } from './materials';
 import { add, box } from './primitives';
 import { drawLicensePlate, drawRearWordmark } from './textures';
@@ -282,11 +283,12 @@ export function buildCar(): CarBuild {
       hazardLights.push(light);
     }
   }
-  for (const sz of [-1, 1]) {
-    const tailLight = new THREE.PointLight('#ff2a3d', 8, 2.4, 2);
-    tailLight.position.set(-2.42, 0.6, sz * 0.4);
-    car.add(tailLight);
-  }
+  RectAreaLightUniformsLib.init();
+  const tailLight = new THREE.RectAreaLight('#ff2a3d', 900, 1.28, 0.06);
+  tailLight.position.set(-2.3, 0.69, 0);
+  tailLight.rotation.order = 'YXZ';
+  tailLight.rotation.set(-0.45, Math.PI / 2, 0);
+  car.add(tailLight);
 
   const bounds = new THREE.Box3().setFromObject(car);
   const center = bounds.getCenter(new THREE.Vector3());
