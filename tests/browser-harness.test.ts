@@ -53,7 +53,13 @@ test('a blank page keeps a full-speed refresh cadence', async () => {
   } finally { await browser.close(); }
 }, 30_000);
 
-const chromeAlive = (profile: string) => Bun.spawnSync(['pgrep', '-f', profile]).exitCode === 0;
+const chromePids = async (profile: string) => {
+  const proc = Bun.spawn(['ps', '-axo', 'pid=,command='], { stdout: 'pipe' });
+  const output = await new Response(proc.stdout).text();
+  await proc.exited;
+  return output.split('\n').filter(line => line.includes(`--user-data-dir=${profile}`)).map(line => Number(line.trim().split(/\s+/)[0]));
+};
+const chromeAlive = async (profile: string) => (await chromePids(profile)).length > 0;
 
 test('starting a browser removes leftovers whose launching process is gone', async () => {
   const scriptDir = mkdtempSync(path.join(tmpdir(), 'harness-orphan-'));
@@ -83,16 +89,21 @@ await new Promise(() => {});
     child.kill('SIGKILL');
     await child.exited;
     expect(existsSync(leftover)).toBe(true);
-    expect(chromeAlive(leftover)).toBe(true);
+    expect(await chromeAlive(leftover)).toBe(true);
 
     const fresh = await startHeadlessBrowser();
     try {
       expect(existsSync(leftover)).toBe(false);
-      expect(chromeAlive(leftover)).toBe(false);
+      expect(await chromeAlive(leftover)).toBe(false);
     } finally { await fresh.close(); }
   } finally {
     child.kill('SIGKILL');
-    if (leftover) { Bun.spawnSync(['pkill', '-f', leftover]); rmSync(leftover, { recursive: true, force: true }); }
+    if (leftover) {
+      for (const pid of await chromePids(leftover)) {
+        try { process.kill(pid, 'SIGKILL'); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error; }
+      }
+      rmSync(leftover, { recursive: true, force: true });
+    }
     rmSync(scriptDir, { recursive: true, force: true });
   }
 }, 60_000);
