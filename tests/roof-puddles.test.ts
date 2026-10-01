@@ -222,3 +222,107 @@ describe('splashes landing on the roofs', () => {
     for (const diff of samples[key]) expect(diff).toBeLessThanOrEqual(0.03);
   });
 });
+
+function hash(ix: number, iy: number): number {
+  const a = (ix + 4104) >>> 0;
+  const b = (iy + 4152) >>> 0;
+  const n = Math.imul((Math.imul(a, 1597334673) ^ Math.imul(b, 3812015801)) >>> 0, 1597334673) >>> 0;
+  return n / 4294967296;
+}
+
+function vnoise(x: number, y: number): number {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  const fx = x - ix;
+  const fy = y - iy;
+  const ux = fx * fx * (3 - 2 * fx);
+  const uy = fy * fy * (3 - 2 * fy);
+  const bottom = hash(ix, iy) * (1 - ux) + hash(ix + 1, iy) * ux;
+  const top = hash(ix, iy + 1) * (1 - ux) + hash(ix + 1, iy + 1) * ux;
+  return bottom * (1 - uy) + top * uy;
+}
+
+function shrink(x: number, z: number): number {
+  return 1 - 0.42 * (vnoise(x * 2.3, z * 2.3) * 0.65 + vnoise(x * 5.7, z * 5.7) * 0.35);
+}
+
+function contourRatio(p: RoofPuddle, angle: number): number {
+  const steps = 1000;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const x = p.x + Math.cos(angle) * t * p.rx;
+    const z = p.z + Math.sin(angle) * t * p.rz;
+    if (t >= shrink(x, z)) return t;
+  }
+  return 1;
+}
+
+function fragmentOf(name: string): string {
+  const s = assembleScene();
+  const wet = createWetGround(s, 800, 600, 1);
+  const text = ((s.getObjectByName(name) as THREE.Mesh).material as THREE.ShaderMaterial).fragmentShader;
+  wet.dispose();
+  return text;
+}
+
+function vnoiseArguments(source: string): string[] {
+  const args: string[] = [];
+  const re = /\bvnoise\s*\(/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(source))) {
+    let depth = 1;
+    let i = re.lastIndex;
+    while (i < source.length && depth > 0) {
+      if (source[i] === '(') depth++;
+      if (source[i] === ')') depth--;
+      i++;
+    }
+    args.push(source.slice(re.lastIndex, i - 1));
+  }
+  return args;
+}
+
+describe('irregular puddle outline: shader', () => {
+  test.each(PUDDLE_CASES)('$name: the fragment shader has no sin() and still carries the integer hash', ({ name }) => {
+    const text = fragmentOf(name);
+    expect(text).not.toMatch(/\bsin\s*\(/);
+    expect(text).toContain('1597334673u');
+    expect(text).toContain('3812015801u');
+    expect(text).toMatch(/4104/);
+  });
+
+  test.each(PUDDLE_CASES)('$name: the outline samples vnoise at 2.3x and 5.7x of the position, never with time', ({ name }) => {
+    const text = fragmentOf(name);
+    const args = vnoiseArguments(text.slice(text.indexOf('void main')));
+    expect(args.some((a) => /(?<![\d.])2\.3(?!\d)/.test(a))).toBe(true);
+    expect(args.some((a) => /(?<![\d.])5\.7(?!\d)/.test(a))).toBe(true);
+    for (const a of args) expect(a).not.toMatch(/uTime/);
+  });
+
+  test.each(PUDDLE_CASES)('$name: the shrink factor uses the 0.42, 0.65 and 0.35 weights', ({ name }) => {
+    const text = fragmentOf(name);
+    const main = text.slice(text.indexOf('void main'));
+    for (const weight of ['42', '65', '35']) expect(main).toMatch(new RegExp(`(?<![\\d])0?\\.${weight}(?!\\d)`));
+  });
+
+  test.each(PUDDLE_CASES)('$name: the outline test compares length against the vnoise shrink factor, not a plain ellipse', ({ name }) => {
+    const text = fragmentOf(name);
+    const main = text.slice(text.indexOf('void main')).replace(/\s+/g, '');
+    const shrinkVar = main.match(/(?:float)?([A-Za-z_]\w*)=[^;]*vnoise\(/)?.[1];
+    expect(shrinkVar).toBeDefined();
+    const smoothstepCalls = main.match(/smoothstep\(.*/g) ?? [];
+    expect(smoothstepCalls.some((call) => call.includes(`(${shrinkVar}-length(`))).toBe(true);
+    expect(main).not.toContain('(1.-length(');
+  });
+});
+
+describe('irregular puddle outline: shape per puddle', () => {
+  const cases = PUDDLE_CASES.flatMap(({ name, zone }) => zone.puddles.map((puddle, i) => ({ name, i, puddle })));
+
+  test.each(cases)('$name puddle $i: 72 contour ratios stay within 0.5 to 1 and vary by at least 0.15', ({ puddle }) => {
+    const ratios = Array.from({ length: 72 }, (_, k) => contourRatio(puddle, (k / 72) * Math.PI * 2));
+    expect(Math.min(...ratios)).toBeGreaterThanOrEqual(0.5);
+    expect(Math.max(...ratios)).toBeLessThanOrEqual(1);
+    expect(Math.max(...ratios) - Math.min(...ratios)).toBeGreaterThanOrEqual(0.15);
+  });
+});

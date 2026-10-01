@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toon, glow, ctex, roundRect, noOutline, toonGradientMap } from './materials';
 import { add, box } from './primitives';
-import { CAR_CENTER } from './layout';
+import { CAR_CENTER, CAR_SCALE } from './layout';
 
 export interface CarBuild {
   group: THREE.Group;
@@ -256,6 +256,7 @@ export function buildCar(): CarBuild {
   for (const obj of [car, ground]) {
     obj.position.set(...CAR_CENTER);
     obj.rotation.y = -Math.PI / 2;
+    obj.scale.setScalar(CAR_SCALE);
   }
 
   return { group: car, ground, hazardMaterial, hazardLights };

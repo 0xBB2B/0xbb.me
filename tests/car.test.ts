@@ -61,6 +61,27 @@ describe('the porsche group is findable and positioned in its parking space', ()
     expect(box.min.y).toBeLessThanOrEqual(0.25);
   });
 
+  test('the body world bounding box bottom is within 0.01m of CAR_CENTER y', () => {
+    const { scene } = buildScene();
+    expect(Math.abs(carBox(scene).min.y - CAR_CENTER[1])).toBeLessThanOrEqual(0.01);
+  });
+
+  test('the body footprint is 1.98m wide and 4.19m long, within 5cm', () => {
+    const { scene } = buildScene();
+    const size = carBox(scene).getSize(new THREE.Vector3());
+    expect(Math.abs(size.x - 1.98)).toBeLessThanOrEqual(0.05);
+    expect(Math.abs(size.z - 4.19)).toBeLessThanOrEqual(0.05);
+  });
+
+  test('the ground shadow and tail glow are scaled down with the body (at most 2.45m wide, 5.25m long)', () => {
+    const { scene, car } = buildScene();
+    scene.add(car.ground);
+    scene.updateMatrixWorld(true);
+    const size = new THREE.Box3().setFromObject(car.ground, true).getSize(new THREE.Vector3());
+    expect(size.x).toBeLessThanOrEqual(2.45);
+    expect(size.z).toBeLessThanOrEqual(5.25);
+  });
+
   test('the body is longer along z than wide along x (nose faces the main road)', () => {
     const { scene } = buildScene();
     const box = carBox(scene);
@@ -220,8 +241,8 @@ describe('the car faces the main road with its tail toward the store', () => {
     expect(lenses.length).toBe(2);
     for (const lens of lenses) {
       const size = worldBox(lens).getSize(new THREE.Vector3());
-      expect(size.x).toBeGreaterThanOrEqual(0.24);
-      expect(Math.max(size.y, size.z)).toBeGreaterThanOrEqual(0.2);
+      expect(size.x).toBeGreaterThanOrEqual(0.21);
+      expect(Math.max(size.y, size.z)).toBeGreaterThanOrEqual(0.18);
     }
   });
 
@@ -239,7 +260,7 @@ describe('the car faces the main road with its tail toward the store', () => {
     const bars = meshesWhere(car, (mesh, m) => {
       if (!(m instanceof THREE.MeshBasicMaterial) || !(m.color.r > 0.5 && m.color.g < 0.3 && m.color.b < 0.3)) return false;
       const size = worldBox(mesh).getSize(new THREE.Vector3());
-      return size.x >= 1.4;
+      return size.x >= 1.2;
     });
     expect(bars.length).toBeGreaterThanOrEqual(1);
     for (const bar of bars) expect(worldBox(bar).getCenter(new THREE.Vector3()).z).toBeLessThan(centerZ - 1);
@@ -513,9 +534,9 @@ function localX(car: Car, worldPoint: THREE.Vector3): number {
   return car.group.worldToLocal(worldPoint.clone()).x;
 }
 
-function localZSpan(car: Car, mesh: THREE.Mesh): number {
-  const zs = worldVertices(mesh).map((v) => car.group.worldToLocal(v.clone()).z);
-  return Math.max(...zs) - Math.min(...zs);
+function worldXSpan(mesh: THREE.Mesh): number {
+  const xs = worldVertices(mesh).map((v) => v.x);
+  return Math.max(...xs) - Math.min(...xs);
 }
 
 describe('windows hug the body: windshield, rear window and side glass sit within 1 cm of the body surface', () => {
@@ -554,12 +575,12 @@ describe('windows hug the body: windshield, rear window and side glass sit withi
     }
   });
 
-  test('the windshield spans at least 0.9m across the body width (local z)', () => {
+  test('the windshield spans at least 0.8m across the body width (world x)', () => {
     const { car } = buildScene();
-    const nonSideWindows = glassMeshes(car).filter((mesh) => localZSpan(car, mesh) > 0.05);
+    const nonSideWindows = glassMeshes(car).filter((mesh) => worldXSpan(mesh) > 0.05);
     const windshield = nonSideWindows.reduce((nose, mesh) =>
       localX(car, worldBox(mesh).getCenter(new THREE.Vector3())) > localX(car, worldBox(nose).getCenter(new THREE.Vector3())) ? mesh : nose,
     );
-    expect(localZSpan(car, windshield)).toBeGreaterThanOrEqual(0.9);
+    expect(worldXSpan(windshield)).toBeGreaterThanOrEqual(0.8);
   });
 });

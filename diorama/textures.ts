@@ -12,7 +12,7 @@ const SIGNAGE_TEXT = [
   '0xBB MART',
   'ヨルノミセ',
   '24H',
-  '駐車場 3台',
+  '駐車場 2台',
   'OPEN 24H',
   'つめた〜い',
   '¥130',
@@ -211,7 +211,7 @@ export function createTextures(): Textures {
     g.fillText('P', 98, 528);
     g.fillStyle = '#fff';
     g.font = `800 52px ${FONT_R}`;
-    g.fillText('駐車場 3台', 330, 500);
+    g.fillText('駐車場 2台', 330, 500);
     g.fillStyle = '#ffd23f';
     g.font = `44px ${FONT_D}`;
     g.fillText('OPEN 24H', 330, 568);

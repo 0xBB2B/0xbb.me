@@ -61,9 +61,9 @@ const RIPPLE_LAYER_FRAGMENT = `uniform float uTime; uniform float uMask; varying
 
 const ROOF_PUDDLE_FRAGMENT = `uniform float uTime; uniform vec4 uPuddles[4]; uniform int uCount; uniform vec3 uSheen; varying vec3 vW; ${GLSL_HASH} ${RIPPLES_GLSL}
   void main(){ vec2 p=vW.xz;
-    float m=0.;
+    float m=0.; float k=1.-.42*(vnoise(p*2.3)*.65+vnoise(p*5.7)*.35);
     for(int i=0;i<4;i++){ if(i>=uCount) break; vec4 e=uPuddles[i];
-      m=max(m,smoothstep(0.,.03,(1.-length((p-e.xy)/e.zw))*min(e.z,e.w))); }
+      m=max(m,smoothstep(0.,.03,(k-length((p-e.xy)/e.zw))*min(e.z,e.w))); }
     vec3 col=(uSheen+vec3(.6,.72,1.)*ripples(p).x*.3)*m;
     gl_FragColor=vec4(col,m); }`;
 
