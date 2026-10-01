@@ -7,7 +7,7 @@ type Lamp = Street['vehicleSignals'][number][number];
 
 export interface HazardSignal {
   material: THREE.MeshBasicMaterial;
-  lights: THREE.PointLight[];
+  lights: THREE.SpotLight[];
 }
 
 export interface AmbientDeps {
@@ -51,7 +51,7 @@ export function createAmbient({ store, street, hazard }: AmbientDeps): Ambient {
     const hazardLit = hazardOn(t);
     hazard.material.color.set(hazardLit ? '#ffa21a' : '#3a2408');
     if (hazardLit) hazard.material.color.multiplyScalar(2.6);
-    hazard.lights.forEach((light) => (light.intensity = hazardLit ? 2.5 : 0));
+    hazard.lights.forEach((light) => (light.intensity = hazardLit ? 5 : 0));
 
     const signal = signalPhase(t);
     const activeIndex = signal === 'green' ? 0 : signal === 'yellow' ? 1 : 2;

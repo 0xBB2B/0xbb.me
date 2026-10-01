@@ -8,7 +8,7 @@ export interface CarBuild {
   group: THREE.Group;
   ground: THREE.Group;
   hazardMaterial: THREE.MeshBasicMaterial;
-  hazardLights: THREE.PointLight[];
+  hazardLights: THREE.SpotLight[];
   plateTexture: THREE.CanvasTexture;
   wordmarkTexture: THREE.CanvasTexture;
 }
@@ -272,14 +272,20 @@ export function buildCar(): CarBuild {
   wordmark.rotation.order = 'ZYX';
   wordmark.rotation.set(0, -Math.PI / 2, TAIL_TILT);
 
-  const hazardLights: THREE.PointLight[] = [];
-  for (const lx of [2.65, -2.65]) {
-    for (const lz of [1.0, -1.0]) {
-      const light = new THREE.PointLight('#ffa025', 0, 0.6, 1.5);
-      light.position.set(lx, 0.12, lz);
-      car.add(light);
+  const hazardLights: THREE.SpotLight[] = [];
+  for (const sz of [-1, 1]) {
+    for (const [x, y, tx, tz] of [[2.32, 0.4, 3.7, 0.8], [-2.3, 0.69, -3.6, 1.02]]) {
+      const light = new THREE.SpotLight('#ffa025', 0, 1.5, 0.95, 0.9, 2);
+      light.position.set(x, y, sz * (x > 0 ? 0.55 : 0.77));
+      light.target.position.set(tx, 0, sz * tz);
+      car.add(light, light.target);
       hazardLights.push(light);
     }
+  }
+  for (const sz of [-1, 1]) {
+    const tailLight = new THREE.PointLight('#ff2a3d', 1, 2.4, 2);
+    tailLight.position.set(-2.42, 0.6, sz * 0.4);
+    car.add(tailLight);
   }
 
   const bounds = new THREE.Box3().setFromObject(car);
@@ -335,23 +341,6 @@ export function buildCar(): CarBuild {
   const tireShadowGeo = new THREE.PlaneGeometry(0.5, 0.3);
   const tireShadowMat = shadowMaterial(0.9, ellipseAlpha());
   for (const [wx, sz] of wheelPositions) decal('car-tire-shadow', tireShadowGeo, tireShadowMat, wx, sz * 0.8, 4);
-
-  const tailAlpha = maskTex(ctex(128, 128, (g, w, h) => {
-    g.fillStyle = '#000';
-    g.fillRect(0, 0, w, h);
-    g.translate(w, h / 2);
-    g.scale(w, h / 2);
-    const grad = g.createRadialGradient(0, 0, 0, 0, 0, 1);
-    grad.addColorStop(0, '#fff');
-    grad.addColorStop(1, '#000');
-    g.fillStyle = grad;
-    g.fillRect(-1, -1, 2, 2);
-  }));
-  const tailGlowMat = noOutline(new THREE.MeshBasicMaterial({
-    color: new THREE.Color(1.0, 0.14, 0.18), alphaMap: tailAlpha, transparent: true, opacity: 0.8,
-    blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, side: THREE.FrontSide,
-  }));
-  decal('car-tail-glow', new THREE.PlaneGeometry(0.9, 1.4), tailGlowMat, bounds.min.x - 0.45, 0, 3);
 
   for (const obj of [car, ground]) {
     obj.position.set(...CAR_CENTER);

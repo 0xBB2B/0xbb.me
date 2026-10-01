@@ -111,9 +111,10 @@ describe('hazard lights: shared amber material on all four corner markers', () =
 });
 
 describe('hazard lights: four corner markers start off', () => {
-  test('exactly 4 hazard point lights are returned', () => {
+  test('exactly 4 hazard spot lights are returned', () => {
     const { car } = buildScene();
     expect(car.hazardLights.length).toBe(4);
+    for (const light of car.hazardLights) expect((light as THREE.Light as THREE.SpotLight).isSpotLight).toBe(true);
   });
 
   test('all four start at zero intensity', () => {
@@ -143,16 +144,6 @@ describe('hazard lights: four corner markers start off', () => {
     expect(zs.filter((z) => z < centerZ).length).toBe(2);
   });
 
-  test('every light sits at least 0.7m from the car center along the width axis (world x)', () => {
-    const { scene, car } = buildScene();
-    const centerX = carBox(scene).getCenter(new THREE.Vector3()).x;
-    for (const light of car.hazardLights) {
-      const position = new THREE.Vector3();
-      light.getWorldPosition(position);
-      expect(Math.abs(position.x - centerX)).toBeGreaterThanOrEqual(0.7);
-    }
-  });
-
   test('every light sits low on the body, below the roofline (local y)', () => {
     const { scene, car } = buildScene();
     const box = carBox(scene);
@@ -163,55 +154,96 @@ describe('hazard lights: four corner markers start off', () => {
   });
 });
 
-const GROUND_TOP_Y = 0.15;
 const CURB_INNER_Z = 4.79;
-const CURB_INNER_X = 4.79;
 
-function groundRadius(light: THREE.PointLight, worldY: number): number {
-  const h = worldY - GROUND_TOP_Y;
-  if (light.distance <= h) return 0;
-  return Math.sqrt(light.distance * light.distance - h * h);
+function spotLights(car: Car): THREE.SpotLight[] {
+  for (const light of car.hazardLights) expect((light as THREE.Light as THREE.SpotLight).isSpotLight).toBe(true);
+  return car.hazardLights as unknown as THREE.SpotLight[];
 }
 
-describe('hazard lights: ground illumination stays within 0.75m and clear of the lot curb', () => {
-  test('every hazard light has a finite falloff distance (0 means unlimited, not allowed)', () => {
-    const { car } = buildScene();
-    for (const light of car.hazardLights) {
+function worldPosition(object: THREE.Object3D): THREE.Vector3 {
+  return object.getWorldPosition(new THREE.Vector3());
+}
+
+function rearHazardMeshes(scene: THREE.Scene, car: Car): THREE.Mesh[] {
+  const centerZ = carBox(scene).getCenter(new THREE.Vector3()).z;
+  return hazardMeshes(car).filter((m) => m.name !== 'front-indicator' && meshWorldZ(m) < centerZ - 1);
+}
+
+describe('hazard lights: four directional spot lights at the turn signals, clear of the lot curb and the headlight lenses', () => {
+  test('two spot lights are in front of the car center and two behind, each pair split left and right', () => {
+    const { scene, car } = buildScene();
+    const center = carBox(scene).getCenter(new THREE.Vector3());
+    const positions = spotLights(car).map(worldPosition);
+    const front = positions.filter((p) => p.z > center.z);
+    const rear = positions.filter((p) => p.z < center.z);
+    expect(front.length).toBe(2);
+    expect(rear.length).toBe(2);
+    for (const pair of [front, rear]) expect((pair[0].x - center.x) * (pair[1].x - center.x)).toBeLessThan(0);
+  });
+
+  test('each front light is within 10cm of a front indicator and each front indicator has one', () => {
+    const { scene, car } = buildScene();
+    const centerZ = carBox(scene).getCenter(new THREE.Vector3()).z;
+    const indicators = namedMeshes(car, 'front-indicator');
+    expect(indicators.length).toBe(2);
+    const front = spotLights(car).map(worldPosition).filter((p) => p.z > centerZ);
+    expect(front.length).toBe(2);
+    for (const p of front) expect(Math.min(...indicators.map((m) => worldBox(m).distanceToPoint(p)))).toBeLessThanOrEqual(0.1);
+    for (const m of indicators) expect(Math.min(...front.map((p) => worldBox(m).distanceToPoint(p)))).toBeLessThanOrEqual(0.1);
+  });
+
+  test('each rear light is within 10cm of a rear hazard lamp and each rear hazard lamp has one', () => {
+    const { scene, car } = buildScene();
+    const centerZ = carBox(scene).getCenter(new THREE.Vector3()).z;
+    const lamps = rearHazardMeshes(scene, car);
+    expect(lamps.length).toBe(2);
+    const rear = spotLights(car).map(worldPosition).filter((p) => p.z < centerZ);
+    expect(rear.length).toBe(2);
+    for (const p of rear) expect(Math.min(...lamps.map((m) => worldBox(m).distanceToPoint(p)))).toBeLessThanOrEqual(0.1);
+    for (const m of lamps) expect(Math.min(...rear.map((p) => worldBox(m).distanceToPoint(p)))).toBeLessThanOrEqual(0.1);
+  });
+
+  test('every target is lower than its light; front targets are farther toward the nose, rear targets farther toward the tail', () => {
+    const { scene, car } = buildScene();
+    const centerZ = carBox(scene).getCenter(new THREE.Vector3()).z;
+    expect(car.hazardLights.length).toBe(4);
+    for (const light of spotLights(car)) {
+      const from = worldPosition(light);
+      const to = worldPosition(light.target);
+      expect(to.y).toBeLessThan(from.y);
+      if (from.z > centerZ) expect(to.z).toBeGreaterThan(from.z);
+      else expect(to.z).toBeLessThan(from.z);
+    }
+  });
+
+  test('every light has a falloff distance above 0 and at most 1.5m, and the front lights are farther from the front curb than that', () => {
+    const { scene, car } = buildScene();
+    const centerZ = carBox(scene).getCenter(new THREE.Vector3()).z;
+    expect(car.hazardLights.length).toBe(4);
+    for (const light of spotLights(car)) {
       expect(light.distance).toBeGreaterThan(0);
+      expect(light.distance).toBeLessThanOrEqual(1.5);
+      const position = worldPosition(light);
+      if (position.z > centerZ) expect(CURB_INNER_Z - position.z).toBeGreaterThan(light.distance);
     }
   });
 
-  test('every hazard light ground radius does not exceed 0.75 meter', () => {
-    const { car } = buildScene();
-    for (const light of car.hazardLights) {
-      const position = new THREE.Vector3();
-      light.getWorldPosition(position);
-      const radius = groundRadius(light, position.y);
-      expect(radius).toBeLessThanOrEqual(0.75);
-    }
-  });
-
-  test('every hazard light is farther from every headlight lens vertex than its own falloff distance', () => {
+  test('every headlight lens vertex is outside every hazard light beam cone or beyond its distance', () => {
     const { car } = buildScene();
     const lenses = namedMeshes(car, 'headlight-lens');
     expect(lenses.length).toBe(2);
-    for (const light of car.hazardLights) {
-      const position = new THREE.Vector3();
-      light.getWorldPosition(position);
+    expect(car.hazardLights.length).toBe(4);
+    for (const light of spotLights(car)) {
+      const from = worldPosition(light);
+      const axis = worldPosition(light.target).sub(from).normalize();
       for (const lens of lenses) {
-        for (const v of worldVertices(lens)) expect(v.distanceTo(position)).toBeGreaterThan(light.distance);
+        for (const v of worldVertices(lens)) {
+          const toVertex = v.clone().sub(from);
+          const angle = toVertex.clone().normalize().angleTo(axis);
+          expect(angle > light.angle || toVertex.length() > light.distance).toBe(true);
+        }
       }
-    }
-  });
-
-  test('every hazard light ground radius stays short of the nearest curb inside face (+z and +x sides)', () => {
-    const { car } = buildScene();
-    for (const light of car.hazardLights) {
-      const position = new THREE.Vector3();
-      light.getWorldPosition(position);
-      const radius = groundRadius(light, position.y);
-      const distanceToCurb = Math.min(CURB_INNER_Z - position.z, CURB_INNER_X - position.x);
-      expect(radius).toBeLessThan(distanceToCurb);
     }
   });
 });
@@ -1287,14 +1319,12 @@ describe('the porsche carries two Japanese license plates, one on the nose and o
     expect(luminanceOf(material.color)).toBeLessThan(0.97);
   });
 
-  test('the plates add no lights: the car group still has exactly 4 point lights', () => {
+  test('there is no light under either plate mesh', () => {
     const { car } = buildScene();
     expect(platesOf(car).length).toBe(2);
-    let lights = 0;
-    car.group.traverse((obj) => {
-      if ((obj as THREE.PointLight).isPointLight) lights++;
-    });
-    expect(lights).toBe(4);
+    for (const mesh of platesOf(car)) {
+      mesh.traverse((obj) => expect((obj as THREE.Light).isLight).toBeFalsy());
+    }
   });
 
   test.each(['front', 'rear'] as PlateSide[])('the %s plate is a thin slab with its characters on a texture map', (side) => {
@@ -2013,6 +2043,69 @@ describe('the porsche frunk lid: seams, channels and vents on the hood', () => {
     for (const vent of vents) {
       const c = worldBox(vent).getCenter(new THREE.Vector3());
       expect(raycastFirst(new THREE.Vector3(c.x, c.y + 2, c.z), new THREE.Vector3(0, -1, 0), allCarMeshes(car))?.object).toBe(vent);
+    }
+  });
+});
+
+function tailPointLights(car: Car): THREE.PointLight[] {
+  const found: THREE.PointLight[] = [];
+  car.group.traverse((obj) => {
+    const light = obj as THREE.Light;
+    if (light.isLight && (light as THREE.PointLight).isPointLight) found.push(light as THREE.PointLight);
+  });
+  return found;
+}
+
+describe('the car lights: 4 spot lights and 2 tail point lights and nothing else', () => {
+  test('the car group holds exactly 4 spot lights, 2 point lights and no other light', () => {
+    const { car } = buildScene();
+    const counts = { spot: 0, point: 0, other: 0 };
+    car.group.traverse((obj) => {
+      const light = obj as THREE.Light;
+      if (!light.isLight) return;
+      if ((light as THREE.SpotLight).isSpotLight) counts.spot++;
+      else if ((light as THREE.PointLight).isPointLight) counts.point++;
+      else counts.other++;
+    });
+    expect(counts).toEqual({ spot: 4, point: 2, other: 0 });
+  });
+});
+
+describe('the tail carries two red point lights right behind the light bar', () => {
+  test('exactly 2 point lights in the car group, red, with positive intensity and a falloff distance of 2 to 2.6m', () => {
+    const { car } = buildScene();
+    const lights = tailPointLights(car);
+    expect(lights.length).toBe(2);
+    for (const light of lights) {
+      expect(light.color.r).toBeGreaterThan(2 * light.color.g);
+      expect(light.color.r).toBeGreaterThan(2 * light.color.b);
+      expect(light.intensity).toBeGreaterThan(0);
+      expect(light.distance).toBeGreaterThanOrEqual(2);
+      expect(light.distance).toBeLessThanOrEqual(2.6);
+    }
+  });
+
+  test('they mirror each other about the body center within 1cm', () => {
+    const { scene, car } = buildScene();
+    const lights = tailPointLights(car);
+    expect(lights.length).toBe(2);
+    const bodyX = carBox(scene).getCenter(new THREE.Vector3()).x;
+    const [a, b] = lights.map(worldPosition).sort((p, q) => p.x - q.x);
+    expect(Math.abs(a.x + b.x - 2 * bodyX)).toBeLessThanOrEqual(0.01);
+    expect(a.x).toBeLessThan(bodyX);
+  });
+
+  test('each is within 20cm of the full-width tail light bar and farther toward the tail than the bar', () => {
+    const { car } = buildScene();
+    const lights = tailPointLights(car);
+    expect(lights.length).toBe(2);
+    const bars = tailLightMeshes(car).filter((m) => worldBox(m).getSize(new THREE.Vector3()).x >= 1.2);
+    expect(bars.length).toBeGreaterThan(0);
+    const bar = worldBox(bars[0]);
+    for (const light of lights) {
+      const p = worldPosition(light);
+      expect(bar.distanceToPoint(p)).toBeLessThanOrEqual(0.2);
+      expect(p.z).toBeLessThan(bar.min.z);
     }
   });
 });
