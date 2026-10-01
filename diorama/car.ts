@@ -284,7 +284,7 @@ export function buildCar(): CarBuild {
     }
   }
   RectAreaLightUniformsLib.init();
-  const tailLight = new THREE.RectAreaLight('#ff2a3d', 900, 1.28, 0.06);
+  const tailLight = new THREE.RectAreaLight('#ff2a3d', 450, 1.28, 0.06);
   tailLight.position.set(-2.3, 0.69, 0);
   tailLight.rotation.order = 'YXZ';
   tailLight.rotation.set(-0.45, Math.PI / 2, 0);
