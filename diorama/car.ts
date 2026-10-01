@@ -130,42 +130,23 @@ export function buildCar(): CarBuild {
   add(car, glassBand(0.02, 0.95, 0.5, 0.006), darkGlass);
   add(car, glassBand(-1.66, -0.75, 0.5, 0.006), darkGlass);
 
-  const bezelGeo = new THREE.SphereGeometry(1, 20, 14);
-  const bezelMat = toon('#1b2048');
   const lensGeo = new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2);
   const lensMat = toon('#dfe8f5');
-  const dotGeo = new THREE.SphereGeometry(0.012, 8, 6);
-  const dotMat = toon('#9aa0aa');
   for (const sz of [-1, 1]) {
-    const hl = new THREE.Group();
-    hl.position.set(2.085, 0.65, sz * 0.6);
-    hl.rotation.z = -0.4;
-    car.add(hl);
-    const bezel = add(hl, bezelGeo, bezelMat, 0, 0.01, 0);
-    bezel.name = 'headlight-bezel';
-    bezel.scale.set(0.14, 0.012, 0.15);
-    const lens = add(hl, lensGeo, lensMat);
+    const lens = add(car, lensGeo, lensMat, 2.085, 0.65, sz * 0.6);
     lens.name = 'headlight-lens';
+    lens.rotation.z = -0.4;
     lens.scale.set(0.12, 0.068, 0.13);
-    for (const dx of [-0.04, 0.04]) {
-      for (const dz of [-0.045, 0.045]) {
-        const dot = add(hl, dotGeo, dotMat, dx, 0.06, dz);
-        dot.name = 'headlight-dot';
-        dot.scale.y = 0.5;
-      }
-    }
-    add(car, new THREE.SphereGeometry(0.018, 8, 6), hazardMaterial, 1.9, 0.71, sz * 0.8);
     add(car, new THREE.BoxGeometry(0.06, 0.035, 0.02), hazardMaterial, 1.5, 0.64, sz * 0.915);
   }
 
   const slat = toon('#3d434f');
-  const drl = toon('#c4cad4');
   box(car, 0.08, 0.1, 0.5, black, 2.25, 0.3, 0).name = 'intake-center';
   for (const y of [0.325, 0.365]) box(car, 0.01, 0.012, 0.44, slat, 2.293, y, 0).name = 'intake-slat';
   for (const sz of [-1, 1]) {
     box(car, 0.08, 0.16, 0.56, black, 2.25, 0.26, sz * 0.55).name = 'intake-side';
     for (const y of [0.29, 0.33, 0.37]) box(car, 0.01, 0.012, 0.5, slat, 2.293, y, sz * 0.55).name = 'intake-slat';
-    box(car, 0.012, 0.016, 0.42, drl, 2.294, 0.4, sz * 0.55).name = 'drl-strip';
+    box(car, 0.012, 0.016, 0.42, hazardMaterial, 2.294, 0.4, sz * 0.55).name = 'front-indicator';
   }
 
   const badge = add(car, new THREE.SphereGeometry(1, 12, 8), toon('#d8b25a'), 2.152, 0.627, 0);
@@ -229,6 +210,25 @@ export function buildCar(): CarBuild {
     pillar.rotation.z = 0.36;
   }
 
+  const hoodSlab = (name: string, mat: THREE.Material, a: THREE.Vector3, b: THREE.Vector3, h: number, w: number, lift = 0): void => {
+    const dir = b.clone().sub(a);
+    const mesh = add(car, new THREE.BoxGeometry(dir.length(), h, w), mat);
+    mesh.name = name;
+    mesh.position.copy(a).add(b).multiplyScalar(0.5).y += lift + h / 2;
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), dir.normalize());
+  };
+  const chordY = (x: number) => 0.8199 + (x - 1.0) * (0.7218 - 0.8199) / 0.82;
+  const frunkChannelMat = toon('#9c0d21');
+  const frunkVentMat = toon('#32333a');
+  for (const sz of [-1, 1]) {
+    hoodSlab('frunk-seam', line, new THREE.Vector3(0.95, 0.8251, sz * 0.6), new THREE.Vector3(1.93, 0.7057, sz * 0.43), 0.008, 0.012);
+    hoodSlab('frunk-channel', frunkChannelMat, new THREE.Vector3(1.0, chordY(1.0), sz * 0.2), new THREE.Vector3(1.82, chordY(1.82), sz * 0.2), 0.012, 0.18);
+    hoodSlab('frunk-vent', frunkVentMat, new THREE.Vector3(1.74, chordY(1.74), sz * 0.2), new THREE.Vector3(1.79, chordY(1.79), sz * 0.2), 0.012, 0.14, 0.013);
+  }
+  const frontSeam = box(car, 0.012, 0.008, 0.86, line, 1.94, 0.7038, 0);
+  frontSeam.name = 'frunk-seam';
+  frontSeam.rotation.z = -0.15;
+
   const tireGeo = new THREE.CylinderGeometry(0.34, 0.34, 0.27, 28);
   const rimGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.02, 28);
   const silver = toon('#aab2c0');
@@ -273,10 +273,10 @@ export function buildCar(): CarBuild {
   wordmark.rotation.set(0, -Math.PI / 2, TAIL_TILT);
 
   const hazardLights: THREE.PointLight[] = [];
-  for (const lx of [2.5, -2.5]) {
-    for (const lz of [0.85, -0.85]) {
-      const light = new THREE.PointLight('#ffa025', 0, 1.05, 1.5);
-      light.position.set(lx, 0.45, lz);
+  for (const lx of [2.65, -2.65]) {
+    for (const lz of [1.0, -1.0]) {
+      const light = new THREE.PointLight('#ffa025', 0, 0.6, 1.5);
+      light.position.set(lx, 0.12, lz);
       car.add(light);
       hazardLights.push(light);
     }

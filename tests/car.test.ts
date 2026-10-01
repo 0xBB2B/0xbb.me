@@ -173,7 +173,7 @@ function groundRadius(light: THREE.PointLight, worldY: number): number {
   return Math.sqrt(light.distance * light.distance - h * h);
 }
 
-describe('hazard lights: ground illumination stays within 1m and clear of the lot curb', () => {
+describe('hazard lights: ground illumination stays within 0.75m and clear of the lot curb', () => {
   test('every hazard light has a finite falloff distance (0 means unlimited, not allowed)', () => {
     const { car } = buildScene();
     for (const light of car.hazardLights) {
@@ -181,13 +181,26 @@ describe('hazard lights: ground illumination stays within 1m and clear of the lo
     }
   });
 
-  test('every hazard light ground radius does not exceed 1 meter', () => {
+  test('every hazard light ground radius does not exceed 0.75 meter', () => {
     const { car } = buildScene();
     for (const light of car.hazardLights) {
       const position = new THREE.Vector3();
       light.getWorldPosition(position);
       const radius = groundRadius(light, position.y);
-      expect(radius).toBeLessThanOrEqual(1.0);
+      expect(radius).toBeLessThanOrEqual(0.75);
+    }
+  });
+
+  test('every hazard light is farther from every headlight lens vertex than its own falloff distance', () => {
+    const { car } = buildScene();
+    const lenses = namedMeshes(car, 'headlight-lens');
+    expect(lenses.length).toBe(2);
+    for (const light of car.hazardLights) {
+      const position = new THREE.Vector3();
+      light.getWorldPosition(position);
+      for (const lens of lenses) {
+        for (const v of worldVertices(lens)) expect(v.distanceTo(position)).toBeGreaterThan(light.distance);
+      }
     }
   });
 
@@ -367,7 +380,7 @@ function paleLensMeshes(car: Car): THREE.Mesh[] {
 }
 
 function allLightMeshes(car: Car): THREE.Mesh[] {
-  return [...hazardMeshes(car), ...tailLightMeshes(car), ...paleLensMeshes(car)];
+  return [...hazardMeshes(car).filter((mesh) => mesh.name !== 'front-indicator'), ...tailLightMeshes(car), ...paleLensMeshes(car)];
 }
 
 function worldTriangles(meshes: THREE.Mesh[]): THREE.Triangle[] {
@@ -1581,7 +1594,7 @@ describe('the porsche tail carries a wordmark, a plate recess, a diffuser, exhau
   });
 });
 
-const FRONT_PART_NAMES = ['intake-side', 'intake-center', 'intake-slat', 'drl-strip', 'headlight-lens', 'headlight-bezel', 'headlight-dot', 'hood-badge', 'front-lip'];
+const FRONT_PART_NAMES = ['intake-side', 'intake-center', 'intake-slat', 'headlight-lens', 'hood-badge', 'front-lip', 'frunk-seam', 'frunk-channel', 'frunk-vent'];
 
 function intakes(car: Car): THREE.Mesh[] {
   return [...namedMeshes(car, 'intake-side'), ...namedMeshes(car, 'intake-center')];
@@ -1618,8 +1631,8 @@ function nearestByXZ(mesh: THREE.Mesh, candidates: THREE.Mesh[]): THREE.Mesh {
   });
 }
 
-describe('the porsche front carries intakes, slats, daytime strips, headlight lenses, badge and lip', () => {
-  test.each([['intake-side', 2], ['intake-center', 1], ['drl-strip', 2], ['headlight-lens', 2], ['headlight-bezel', 2], ['headlight-dot', 8], ['hood-badge', 1], ['front-lip', 1]] as [string, number][])('the car has the expected number of meshes named %s (%i)', (name, count) => {
+describe('the porsche front carries intakes, slats, front indicators, headlight lenses, frunk lid, badge and lip', () => {
+  test.each([['intake-side', 2], ['intake-center', 1], ['front-indicator', 2], ['headlight-lens', 2], ['hood-badge', 1], ['front-lip', 1], ['frunk-seam', 3], ['frunk-channel', 2], ['frunk-vent', 2], ['drl-strip', 0], ['headlight-bezel', 0], ['headlight-dot', 0]] as [string, number][])('the car has the expected number of meshes named %s (%i)', (name, count) => {
     const { car } = buildScene();
     expect(namedMeshes(car, name).length).toBe(count);
   });
@@ -1650,7 +1663,7 @@ describe('the porsche front carries intakes, slats, daytime strips, headlight le
   test('looking at each intake center from 1m in front, the first thing hit is the intake or a slat, not the paint', () => {
     const { car } = buildScene();
     expect(intakes(car).length).toBe(3);
-    const slatsAndIntakes = [...intakes(car), ...namedMeshes(car, 'intake-slat'), ...namedMeshes(car, 'drl-strip')];
+    const slatsAndIntakes = [...intakes(car), ...namedMeshes(car, 'intake-slat'), ...namedMeshes(car, 'front-indicator')];
     for (const mesh of intakes(car)) {
       const box = worldBox(mesh);
       const center = box.getCenter(new THREE.Vector3());
@@ -1690,9 +1703,9 @@ describe('the porsche front carries intakes, slats, daytime strips, headlight le
     }
   });
 
-  test('2 daytime strips, each at least 30cm long, in the upper half of the side intake height range', () => {
+  test('2 front indicators, each at least 30cm long, in the upper half of the side intake height range, at most 1.5cm past the intake front, using the hazard material', () => {
     const { car } = buildScene();
-    const strips = namedMeshes(car, 'drl-strip');
+    const strips = namedMeshes(car, 'front-indicator');
     expect(strips.length).toBe(2);
     const sides = sideIntakes(car);
     expect(sides.length).toBe(2);
@@ -1705,6 +1718,34 @@ describe('the porsche front carries intakes, slats, daytime strips, headlight le
       const y = box.getCenter(new THREE.Vector3()).y;
       expect(y).toBeGreaterThanOrEqual((low + high) / 2);
       expect(y).toBeLessThanOrEqual(high);
+      expect(box.max.z - worldBox(nearestByXZ(strip, sides)).max.z).toBeLessThanOrEqual(0.015);
+      for (const m of materialsOf(strip)) expect(m).toBe(car.hazardMaterial);
+    }
+  });
+
+  test('looking at each front indicator from 1m in front, 5 points along its length hit it first', () => {
+    const { car } = buildScene();
+    const strips = namedMeshes(car, 'front-indicator');
+    expect(strips.length).toBe(2);
+    for (const strip of strips) {
+      const box = worldBox(strip);
+      const y = box.getCenter(new THREE.Vector3()).y;
+      for (let i = 0; i < 5; i++) {
+        const x = box.min.x + 0.02 + ((box.max.x - box.min.x - 0.04) * i) / 4;
+        const hit = raycastFirst(new THREE.Vector3(x, y, box.max.z + 1), new THREE.Vector3(0, 0, -1), allCarMeshes(car));
+        expect(hit?.object).toBe(strip);
+      }
+    }
+  });
+
+  test('besides the front indicators, no hazard-material mesh ahead of the car center sits off the outermost body side (none on the hood)', () => {
+    const { scene, car } = buildScene();
+    const centerZ = carBox(scene).getCenter(new THREE.Vector3()).z;
+    expect(namedMeshes(car, 'front-indicator').length).toBe(2);
+    const others = hazardMeshes(car).filter((m) => m.name !== 'front-indicator' && centerOf(m).z > centerZ);
+    for (const mesh of others) {
+      const side = sideOfMesh(car, mesh);
+      expect(Math.abs(outwardX(worldBox(mesh), side) - bodySurfaceX(car, side))).toBeLessThanOrEqual(0.02);
     }
   });
 
@@ -1720,98 +1761,19 @@ describe('the porsche front carries intakes, slats, daytime strips, headlight le
     }
   });
 
-  test('each headlight lens and its dots reach at most 7cm past the body surface, and the lens rim is within 2cm of it', () => {
+  test('each headlight lens reaches at most 7cm past the body surface, and its rim is within 2cm of it', () => {
     const { car } = buildScene();
     const body = bodyPaintMeshes(car);
     const bodyTriangles = worldTriangles(body);
     const lenses = namedMeshes(car, 'headlight-lens');
     expect(lenses.length).toBe(2);
-    expect(namedMeshes(car, 'headlight-dot').length).toBe(8);
-    for (const mesh of [...lenses, ...namedMeshes(car, 'headlight-dot')]) {
-      expect(distanceToBody(topmostVertex(mesh), body, bodyTriangles)).toBeLessThanOrEqual(0.07);
+    for (const lens of lenses) {
+      expect(distanceToBody(topmostVertex(lens), body, bodyTriangles)).toBeLessThanOrEqual(0.07);
     }
     for (const lens of lenses) {
       for (const point of lensRimVertices(lens, body, bodyTriangles)) {
         expect(distanceToBody(point, body, bodyTriangles)).toBeLessThanOrEqual(0.02);
       }
-    }
-  });
-
-  test('each lens has one dark bezel ring 1 to 3cm wider than the lens on every side seen from above', () => {
-    const { car } = buildScene();
-    const lenses = namedMeshes(car, 'headlight-lens');
-    const bezels = namedMeshes(car, 'headlight-bezel');
-    expect(lenses.length).toBe(2);
-    expect(bezels.length).toBe(2);
-    for (const lens of lenses) {
-      const bezel = nearestByXZ(lens, bezels);
-      const l = worldBox(lens).getSize(new THREE.Vector3());
-      const b = worldBox(bezel).getSize(new THREE.Vector3());
-      for (const [bigger, smaller] of [[b.x, l.x], [b.z, l.z]]) {
-        expect((bigger - smaller) / 2).toBeGreaterThanOrEqual(0.01);
-        expect((bigger - smaller) / 2).toBeLessThanOrEqual(0.03);
-      }
-    }
-    for (const bezel of bezels) {
-      for (const m of materialsOf(bezel)) expect(luminanceOf(m.color)).toBeLessThan(0.25);
-    }
-  });
-
-  test('each lens holds 4 gray dots inside its top-view outline', () => {
-    const { car } = buildScene();
-    const lenses = namedMeshes(car, 'headlight-lens');
-    const dots = namedMeshes(car, 'headlight-dot');
-    expect(lenses.length).toBe(2);
-    expect(dots.length).toBe(8);
-    for (const lens of lenses) {
-      const lensBox = worldBox(lens);
-      expect(dots.filter((d) => insideTopViewOutline(worldBox(d), lensBox)).length).toBe(4);
-    }
-    for (const dot of dots) {
-      for (const m of materialsOf(dot)) {
-        const spread = Math.max(m.color.r, m.color.g, m.color.b) - Math.min(m.color.r, m.color.g, m.color.b);
-        expect(spread).toBeLessThanOrEqual(0.08);
-        expect(luminanceOf(m.color)).toBeGreaterThanOrEqual(0.2);
-        expect(luminanceOf(m.color)).toBeLessThanOrEqual(0.8);
-      }
-    }
-  });
-
-  test('each headlight dot is seen first from 0.5m outside along the lens bulge direction, not covered by the lens', () => {
-    const { car } = buildScene();
-    const bezels = namedMeshes(car, 'headlight-bezel');
-    const dots = namedMeshes(car, 'headlight-dot');
-    expect(dots.length).toBe(8);
-    for (const dot of dots) {
-      const c = worldBox(dot).getCenter(new THREE.Vector3());
-      const base = worldBox(nearestByXZ(dot, bezels)).getCenter(new THREE.Vector3());
-      const outward = c.clone().sub(base).normalize();
-      const hit = raycastFirst(c.clone().addScaledVector(outward, 0.5), outward.clone().negate(), allCarMeshes(car));
-      expect(hit?.object).toBe(dot);
-    }
-  });
-
-  test('looking straight down, at least 22 of 24 points on the ring between lens and bezel outlines hit the bezel first', () => {
-    const { car } = buildScene();
-    const lenses = namedMeshes(car, 'headlight-lens');
-    const bezels = namedMeshes(car, 'headlight-bezel');
-    expect(lenses.length).toBe(2);
-    expect(bezels.length).toBe(2);
-    for (const lens of lenses) {
-      const bezel = nearestByXZ(lens, bezels);
-      const bezelBox = worldBox(bezel);
-      const lensSize = worldBox(lens).getSize(new THREE.Vector3());
-      const bezelSize = bezelBox.getSize(new THREE.Vector3());
-      const center = bezelBox.getCenter(new THREE.Vector3());
-      const rx = (lensSize.x + bezelSize.x) / 4;
-      const rz = (lensSize.z + bezelSize.z) / 4;
-      let onBezel = 0;
-      for (let k = 0; k < 24; k++) {
-        const angle = (k * 15 * Math.PI) / 180;
-        const origin = new THREE.Vector3(center.x + rx * Math.cos(angle), 5, center.z + rz * Math.sin(angle));
-        if (raycastFirst(origin, new THREE.Vector3(0, -1, 0), allCarMeshes(car))?.object === bezel) onBezel++;
-      }
-      expect(onBezel).toBeGreaterThanOrEqual(22);
     }
   });
 
@@ -1861,6 +1823,198 @@ describe('the porsche front carries intakes, slats, daytime strips, headlight le
     }
   });
 
+});
+
+function endsAlong(mesh: THREE.Mesh, axis: 'x' | 'z'): { low: THREE.Vector3; high: THREE.Vector3 } {
+  const sorted = worldVertices(mesh).sort((a, b) => a[axis] - b[axis]);
+  const quarter = Math.max(1, Math.floor(sorted.length / 4));
+  const mean = (vs: THREE.Vector3[]) => vs.reduce((sum, v) => sum.add(v), new THREE.Vector3()).multiplyScalar(1 / vs.length);
+  return { low: mean(sorted.slice(0, quarter)), high: mean(sorted.slice(-quarter)) };
+}
+
+function frunkSeams(car: Car): { left: THREE.Mesh; right: THREE.Mesh; cross: THREE.Mesh } {
+  const seams = namedMeshes(car, 'frunk-seam');
+  expect(seams.length).toBe(3);
+  const cross = seams.reduce((best, m) => (sizeOf(m).x - sizeOf(m).z > sizeOf(best).x - sizeOf(best).z ? m : best));
+  const sides = seams.filter((m) => m !== cross).sort((a, b) => centerOf(a).x - centerOf(b).x);
+  return { left: sides[0], right: sides[1], cross };
+}
+
+function frontEnd(mesh: THREE.Mesh): THREE.Vector3 {
+  return worldVertices(mesh).reduce((best, v) => (v.z > best.z ? v : best));
+}
+
+function rearEnd(mesh: THREE.Mesh): THREE.Vector3 {
+  return worldVertices(mesh).reduce((best, v) => (v.z < best.z ? v : best));
+}
+
+function seamXAtZ(seam: THREE.Mesh, z: number): number {
+  const a = rearEnd(seam);
+  const b = frontEnd(seam);
+  return a.x + ((b.x - a.x) * (z - a.z)) / (b.z - a.z);
+}
+
+function maxDistanceToHood(car: Car, mesh: THREE.Mesh): number {
+  const body = bodyPaintMeshes(car);
+  const triangles = worldTriangles(body);
+  return Math.max(...worldVertices(mesh).map((v) => distanceToBody(v, body, triangles)));
+}
+
+function visibleFromAbove(car: Car, mesh: THREE.Mesh, point: THREE.Vector3): boolean {
+  return raycastFirst(new THREE.Vector3(point.x, point.y + 1, point.z), new THREE.Vector3(0, -1, 0), allCarMeshes(car))?.object === mesh;
+}
+
+function mainPaintLuminance(car: Car): number {
+  const volume = (m: THREE.Mesh) => {
+    const size = sizeOf(m);
+    return size.x * size.y * size.z;
+  };
+  const main = bodyPaintMeshes(car).reduce((best, m) => (volume(m) > volume(best) ? m : best));
+  return luminanceOf(colorOf(main));
+}
+
+describe('the porsche frunk lid: seams, channels and vents on the hood', () => {
+  test('the two side seams are deep red, and the rear ends are at least 20cm farther apart than the front ends', () => {
+    const { car } = buildScene();
+    const { left, right, cross } = frunkSeams(car);
+    for (const seam of [left, right, cross]) {
+      expect(isDeepRed(colorOf(seam))).toBe(true);
+      expect(bodyPaintMeshes(car)).not.toContain(seam);
+    }
+    const rearGap = rearEnd(right).x - rearEnd(left).x;
+    const frontGap = frontEnd(right).x - frontEnd(left).x;
+    expect(rearGap - frontGap).toBeGreaterThanOrEqual(0.2);
+  });
+
+  test('the front ends of the side seams are between the two lenses and the seams do not touch the lens outlines', () => {
+    const { car } = buildScene();
+    const { left, right } = frunkSeams(car);
+    const lenses = namedMeshes(car, 'headlight-lens').sort((a, b) => centerOf(a).x - centerOf(b).x);
+    expect(lenses.length).toBe(2);
+    const leftLens = worldBox(lenses[0]);
+    const rightLens = worldBox(lenses[1]);
+    for (const seam of [left, right]) {
+      const x = frontEnd(seam).x;
+      expect(x).toBeGreaterThan(leftLens.max.x);
+      expect(x).toBeLessThan(rightLens.min.x);
+      for (const v of worldVertices(seam)) {
+        for (const lens of [leftLens, rightLens]) {
+          const touching = v.x >= lens.min.x && v.x <= lens.max.x && v.z >= lens.min.z && v.z <= lens.max.z;
+          expect(touching).toBe(false);
+        }
+      }
+    }
+  });
+
+  test('the front cross seam joins both side seam front ends within 3cm and sits behind the hood badge', () => {
+    const { car } = buildScene();
+    const { left, right, cross } = frunkSeams(car);
+    const badges = namedMeshes(car, 'hood-badge');
+    expect(badges.length).toBe(1);
+    for (const seam of [left, right]) {
+      const end = frontEnd(seam);
+      const nearest = Math.min(...worldVertices(cross).map((v) => Math.hypot(v.x - end.x, v.z - end.z)));
+      expect(nearest).toBeLessThanOrEqual(0.03);
+    }
+    expect(centerOf(cross).z).toBeLessThan(centerOf(badges[0]).z);
+  });
+
+  test('all three seams stay within 1cm of the hood surface', () => {
+    const { car } = buildScene();
+    const { left, right, cross } = frunkSeams(car);
+    for (const seam of [left, right, cross]) expect(maxDistanceToHood(car, seam)).toBeLessThanOrEqual(0.01);
+  });
+
+  test('2 channels: mirrored, at least 60cm long, 12 to 25cm wide, at least 10cm apart, within 1.5cm of the hood, a dark red below the paint brightness', () => {
+    const { scene, car } = buildScene();
+    const channels = namedMeshes(car, 'frunk-channel').sort((a, b) => centerOf(a).x - centerOf(b).x);
+    expect(channels.length).toBe(2);
+    const bodyX = carBox(scene).getCenter(new THREE.Vector3()).x;
+    const [l, r] = channels.map(worldBox);
+    expect(Math.abs(centerOf(channels[0]).x + centerOf(channels[1]).x - 2 * bodyX)).toBeLessThanOrEqual(0.01);
+    expect(Math.abs(centerOf(channels[0]).z - centerOf(channels[1]).z)).toBeLessThanOrEqual(0.01);
+    for (const channel of channels) {
+      const size = sizeOf(channel);
+      expect(size.z).toBeGreaterThanOrEqual(0.6);
+      expect(size.x).toBeGreaterThanOrEqual(0.12);
+      expect(size.x).toBeLessThanOrEqual(0.25);
+      expect(maxDistanceToHood(car, channel)).toBeLessThanOrEqual(0.015);
+      const c = colorOf(channel);
+      expect(c.r).toBeGreaterThan(2 * c.g);
+      expect(c.r).toBeGreaterThan(2 * c.b);
+      expect(luminanceOf(c)).toBeLessThan(mainPaintLuminance(car));
+    }
+    expect(r.min.x - l.max.x).toBeGreaterThanOrEqual(0.1);
+  });
+
+  test('every channel corner lies inside the area enclosed by the seams', () => {
+    const { car } = buildScene();
+    const { left, right, cross } = frunkSeams(car);
+    const channels = namedMeshes(car, 'frunk-channel');
+    expect(channels.length).toBe(2);
+    const zMin = Math.max(rearEnd(left).z, rearEnd(right).z);
+    const zMax = centerOf(cross).z;
+    for (const channel of channels) {
+      const box = worldBox(channel);
+      for (const x of [box.min.x, box.max.x]) {
+        for (const z of [box.min.z, box.max.z]) {
+          expect(z).toBeGreaterThanOrEqual(zMin);
+          expect(z).toBeLessThanOrEqual(zMax);
+          expect(x).toBeGreaterThanOrEqual(seamXAtZ(left, z));
+          expect(x).toBeLessThanOrEqual(seamXAtZ(right, z));
+        }
+      }
+    }
+  });
+
+  test('2 vents: black, each inside one channel top-view outline and in its front third', () => {
+    const { car } = buildScene();
+    const vents = namedMeshes(car, 'frunk-vent');
+    const channels = namedMeshes(car, 'frunk-channel');
+    expect(vents.length).toBe(2);
+    expect(channels.length).toBe(2);
+    for (const vent of vents) {
+      expect(isBlack(colorOf(vent))).toBe(true);
+      const host = channels.find((c) => insideTopViewOutline(worldBox(vent), worldBox(c)));
+      expect(host).toBeDefined();
+      const hostBox = worldBox(host!);
+      expect(worldBox(vent).min.z).toBeGreaterThanOrEqual(hostBox.max.z - (hostBox.max.z - hostBox.min.z) / 3);
+    }
+    expect(new Set(vents.map((v) => channels.find((c) => insideTopViewOutline(worldBox(v), worldBox(c))))).size).toBe(2);
+  });
+
+  test('looking straight down, 5 points along each seam are seen first', () => {
+    const { car } = buildScene();
+    const { left, right, cross } = frunkSeams(car);
+    for (const [seam, axis] of [[left, 'z'], [right, 'z'], [cross, 'x']] as [THREE.Mesh, 'x' | 'z'][]) {
+      const { low, high } = endsAlong(seam, axis);
+      for (const t of [0.1, 0.3, 0.5, 0.7, 0.9]) {
+        expect(visibleFromAbove(car, seam, low.clone().lerp(high, t))).toBe(true);
+      }
+    }
+  });
+
+  test('looking straight down, each channel center and its four corners inset 3cm are seen first, and so is each vent center', () => {
+    const { car } = buildScene();
+    const channels = namedMeshes(car, 'frunk-channel');
+    const vents = namedMeshes(car, 'frunk-vent');
+    expect(channels.length).toBe(2);
+    expect(vents.length).toBe(2);
+    for (const channel of channels) {
+      const box = worldBox(channel);
+      const c = box.getCenter(new THREE.Vector3());
+      const inset = 0.03;
+      const points = [c, ...[box.min.x + inset, box.max.x - inset].flatMap((x) => [box.min.z + inset, box.max.z - inset].map((z) => new THREE.Vector3(x, c.y, z)))];
+      for (const point of points) {
+        const hit = raycastFirst(new THREE.Vector3(point.x, box.max.y + 2, point.z), new THREE.Vector3(0, -1, 0), allCarMeshes(car));
+        expect([channel, ...vents]).toContain(hit?.object as THREE.Mesh);
+      }
+    }
+    for (const vent of vents) {
+      const c = worldBox(vent).getCenter(new THREE.Vector3());
+      expect(raycastFirst(new THREE.Vector3(c.x, c.y + 2, c.z), new THREE.Vector3(0, -1, 0), allCarMeshes(car))?.object).toBe(vent);
+    }
+  });
 });
 
 describe('drawLicensePlate paints the Japanese plate text and colors', () => {
