@@ -16,7 +16,7 @@
 ## scene
 
 - [ambient-motion](scene/ambient-motion.md) — 微缩模型里一直循环播放的环境动效及其节奏参数
-- [car-front-details](scene/car-front-details.md) — 保时捷车头的进气口、格栅条、日行灯条、大灯鼓包与灯圈灯芯、盾徽和下唇
+- [car-front-details](scene/car-front-details.md) — 保时捷车头的进气口、格栅条、前转向灯条、大灯鼓包、前备箱盖、盾徽和下唇
 - [car-license-plate](scene/car-license-plate.md) — 保时捷前后各一块日本车牌的文字、样式、尺寸和安装位置
 - [car-rear-details](scene/car-rear-details.md) — 保时捷车尾的 PORSCHE 字样、车牌凹槽底板、扩散器、反光条、排气管内圈和发动机盖格栅
 - [car-side-details](scene/car-side-details.md) — 保时捷侧面的门缝线、门把手、侧裙、侧窗分隔柱，以及车轮的轮辐、轮毂盖和红色卡钳
