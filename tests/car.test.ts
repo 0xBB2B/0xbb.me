@@ -502,16 +502,358 @@ describe('every car light sits on the body surface, neither floating nor buried'
   });
 });
 
-describe('each wheel is only a tire and a single-color rim', () => {
+const SIDES = [-1, 1] as const;
+
+function sideOfMesh(car: Car, mesh: THREE.Mesh): number {
+  return centerOf(mesh).x > bodyCenterX(car) ? 1 : -1;
+}
+
+function outwardX(box: THREE.Box3, side: number): number {
+  return side > 0 ? box.max.x : box.min.x;
+}
+
+function bodySurfaceX(car: Car, side: number): number {
+  return outwardX(bodyMainBox(car), side);
+}
+
+function meshesOnSide(car: Car, name: string, side: number): THREE.Mesh[] {
+  return namedMeshes(car, name).filter((mesh) => sideOfMesh(car, mesh) === side);
+}
+
+function tiresOnSide(car: Car, side: number): THREE.Mesh[] {
+  return wheelGroups(car)
+    .map(tireMesh)
+    .filter((tire) => sideOfMesh(car, tire) === side)
+    .sort((a, b) => centerOf(a).z - centerOf(b).z);
+}
+
+function tireGap(car: Car, side: number): { rearEdge: number; frontEdge: number } {
+  const [rear, front] = tiresOnSide(car, side);
+  return { rearEdge: worldBox(rear).max.z, frontEdge: worldBox(front).min.z };
+}
+
+function isVisibleFromSide(car: Car, mesh: THREE.Mesh, side: number): boolean {
+  const c = centerOf(mesh);
+  const origin = new THREE.Vector3(bodySurfaceX(car, side) + side, c.y, c.z);
+  const hit = raycastFirst(origin, new THREE.Vector3(-side, 0, 0), allCarMeshes(car));
+  return hit !== undefined && hit.object === mesh;
+}
+
+function isDeepRed(c: THREE.Color): boolean {
+  return c.r > 0.04 && c.r <= 0.5 && c.r >= 2 * c.g && c.r >= 2 * c.b;
+}
+
+function isBlack(c: THREE.Color): boolean {
+  return c.r <= 0.08 && c.g <= 0.08 && c.b <= 0.08;
+}
+
+function colorOf(mesh: THREE.Mesh): THREE.Color {
+  return materialsOf(mesh)[0].color;
+}
+
+function sideWindowBox(car: Car, side: number): THREE.Box3 {
+  const panes = glassMeshes(car).filter((mesh) => worldXSpan(mesh) < 0.3 && sideOfMesh(car, mesh) === side);
+  expect(panes.length).toBeGreaterThan(0);
+  return panes.map(worldBox).reduce((all, box) => all.union(box));
+}
+
+function wheelCenterOf(wheel: THREE.Group): THREE.Vector3 {
+  return centerOf(tireMesh(wheel));
+}
+
+function wheelSide(car: Car, wheel: THREE.Group): number {
+  return sideOfMesh(car, tireMesh(wheel));
+}
+
+function wheelPartsNamed(wheel: THREE.Group, name: string): THREE.Mesh[] {
+  return wheel.children.filter((c) => c.name === name) as THREE.Mesh[];
+}
+
+function rimMesh(wheel: THREE.Group): THREE.Mesh {
+  return wheel.children.find((c) => c.name === '' && c !== tireMesh(wheel)) as THREE.Mesh;
+}
+
+function radialDistance(point: THREE.Vector3, center: THREE.Vector3): number {
+  return Math.hypot(point.y - center.y, point.z - center.z);
+}
+
+function rimRadius(wheel: THREE.Group): number {
+  return sizeOf(rimMesh(wheel)).y / 2;
+}
+
+function isUnlit(mesh: THREE.Mesh): boolean {
+  return materialsOf(mesh).every((m) => (!m.emissive || m.emissive.getHex() === 0) && luminanceOf(m.color) < 0.97);
+}
+
+function wheelOutwardOffset(car: Car, wheel: THREE.Group, part: THREE.Mesh): number {
+  const side = wheelSide(car, wheel);
+  return (outwardX(worldBox(part), side) - outwardX(worldBox(tireMesh(wheel)), side)) * side;
+}
+
+const SIDE_PART_COUNTS: [string, number][] = [['door-line', 6], ['door-handle', 2], ['side-skirt', 2], ['window-pillar', 2]];
+
+describe('the porsche side carries door seams, door handles, side skirts and window pillars', () => {
+  test.each(SIDE_PART_COUNTS)('the car has the expected number of meshes named %s (%i)', (name, count) => {
+    const { car } = buildScene();
+    expect(namedMeshes(car, name).length).toBe(count);
+  });
+
+  test('each side has 3 door seams: 2 vertical and 1 horizontal', () => {
+    const { car } = buildScene();
+    for (const side of SIDES) {
+      const lines = meshesOnSide(car, 'door-line', side);
+      expect(lines.length).toBe(3);
+      expect(lines.filter((l) => sizeOf(l).y > sizeOf(l).z).length).toBe(2);
+      expect(lines.filter((l) => sizeOf(l).z > sizeOf(l).y).length).toBe(1);
+    }
+  });
+
+  test('door seams are deep red, not the body paint red', () => {
+    const { car } = buildScene();
+    const lines = namedMeshes(car, 'door-line');
+    expect(lines.length).toBe(6);
+    for (const line of lines) {
+      expect(isDeepRed(colorOf(line))).toBe(true);
+      expect(bodyPaintMeshes(car)).not.toContain(line);
+    }
+  });
+
+  test('door seams lie between the front and rear tires and stand at most 1cm proud of the body side', () => {
+    const { car } = buildScene();
+    for (const side of SIDES) {
+      const { rearEdge, frontEdge } = tireGap(car, side);
+      const lines = meshesOnSide(car, 'door-line', side);
+      expect(lines.length).toBe(3);
+      for (const line of lines) {
+        const box = worldBox(line);
+        expect(box.min.z).toBeGreaterThanOrEqual(rearEdge);
+        expect(box.max.z).toBeLessThanOrEqual(frontEdge);
+        expect((outwardX(box, side) - bodySurfaceX(car, side)) * side).toBeLessThanOrEqual(0.01);
+      }
+    }
+  });
+
+  test('door seams are visible from straight outside the side', () => {
+    const { car } = buildScene();
+    const lines = namedMeshes(car, 'door-line');
+    expect(lines.length).toBe(6);
+    for (const line of lines) {
+      expect(isVisibleFromSide(car, line, sideOfMesh(car, line))).toBe(true);
+    }
+  });
+
+  test('each door handle is 10 to 16cm long, between the two vertical seams and above the horizontal seam', () => {
+    const { car } = buildScene();
+    for (const side of SIDES) {
+      const handles = meshesOnSide(car, 'door-handle', side);
+      expect(handles.length).toBe(1);
+      const lines = meshesOnSide(car, 'door-line', side);
+      const vertical = lines.filter((l) => sizeOf(l).y > sizeOf(l).z).map((l) => centerOf(l).z).sort((a, b) => a - b);
+      const horizontal = lines.filter((l) => sizeOf(l).z > sizeOf(l).y)[0];
+      expect(vertical.length).toBe(2);
+      expect(horizontal).toBeDefined();
+      const box = worldBox(handles[0]);
+      const length = Math.max(...box.getSize(new THREE.Vector3()).toArray());
+      expect(length).toBeGreaterThanOrEqual(0.1);
+      expect(length).toBeLessThanOrEqual(0.16);
+      expect(box.min.z).toBeGreaterThanOrEqual(vertical[0]);
+      expect(box.max.z).toBeLessThanOrEqual(vertical[1]);
+      expect(box.min.y).toBeGreaterThanOrEqual(centerOf(horizontal).y);
+    }
+  });
+
+  test('door handles are visible from straight outside the side', () => {
+    const { car } = buildScene();
+    const handles = namedMeshes(car, 'door-handle');
+    expect(handles.length).toBe(2);
+    for (const handle of handles) {
+      expect(isVisibleFromSide(car, handle, sideOfMesh(car, handle))).toBe(true);
+    }
+  });
+
+  test('each side skirt is black, at least 1.3m long, at most 6cm tall, between the tires and no further out than the tire outer face', () => {
+    const { car } = buildScene();
+    for (const side of SIDES) {
+      const skirts = meshesOnSide(car, 'side-skirt', side);
+      expect(skirts.length).toBe(1);
+      const box = worldBox(skirts[0]);
+      const { rearEdge, frontEdge } = tireGap(car, side);
+      const tireOuter = Math.max(...tiresOnSide(car, side).map((t) => (outwardX(worldBox(t), side)) * side));
+      expect(isBlack(colorOf(skirts[0]))).toBe(true);
+      expect(box.max.z - box.min.z).toBeGreaterThanOrEqual(1.3);
+      expect(box.max.y - box.min.y).toBeLessThanOrEqual(0.06);
+      expect(box.min.z).toBeGreaterThanOrEqual(rearEdge);
+      expect(box.max.z).toBeLessThanOrEqual(frontEdge);
+      expect(outwardX(box, side) * side).toBeLessThanOrEqual(tireOuter);
+    }
+  });
+
+  test('side skirts are visible from straight outside the side', () => {
+    const { car } = buildScene();
+    const skirts = namedMeshes(car, 'side-skirt');
+    expect(skirts.length).toBe(2);
+    for (const skirt of skirts) {
+      expect(isVisibleFromSide(car, skirt, sideOfMesh(car, skirt))).toBe(true);
+    }
+  });
+
+  test('each window pillar is black, inside the side window front-back and height range, within 1cm of the window surface', () => {
+    const { car } = buildScene();
+    for (const side of SIDES) {
+      const pillars = meshesOnSide(car, 'window-pillar', side);
+      expect(pillars.length).toBe(1);
+      const box = worldBox(pillars[0]);
+      const window = sideWindowBox(car, side);
+      expect(isBlack(colorOf(pillars[0]))).toBe(true);
+      expect(box.min.z).toBeGreaterThanOrEqual(window.min.z);
+      expect(box.max.z).toBeLessThanOrEqual(window.max.z);
+      expect(box.min.y).toBeGreaterThanOrEqual(window.min.y);
+      expect(box.max.y).toBeLessThanOrEqual(window.max.y);
+      const gapX = Math.max(0, box.min.x - window.max.x, window.min.x - box.max.x);
+      expect(gapX).toBeLessThanOrEqual(0.01);
+    }
+  });
+
+  test('window pillars are visible from straight outside the side', () => {
+    const { car } = buildScene();
+    const pillars = namedMeshes(car, 'window-pillar');
+    expect(pillars.length).toBe(2);
+    for (const pillar of pillars) {
+      expect(isVisibleFromSide(car, pillar, sideOfMesh(car, pillar))).toBe(true);
+    }
+  });
+
+  test('side parts are not emissive and their color luminance is below 0.97', () => {
+    const { car } = buildScene();
+    const parts = SIDE_PART_COUNTS.flatMap(([name]) => namedMeshes(car, name));
+    expect(parts.length).toBe(12);
+    for (const part of parts) expect(isUnlit(part)).toBe(true);
+  });
+});
+
+describe('each wheel has a tire, a rim, 5 spokes, a hub cap and a caliper', () => {
   test('there are exactly 4 wheel groups (one per corner)', () => {
     const { car } = buildScene();
     expect(wheelGroups(car).length).toBe(4);
   });
 
-  test('each wheel group has exactly 2 meshes: tire and rim, no spokes/cap/caliper', () => {
+  test('each wheel group has exactly 9 meshes: 1 tire, 1 rim, 5 spokes, 1 hub cap, 1 caliper', () => {
     const { car } = buildScene();
     for (const wheel of wheelGroups(car)) {
-      expect(wheel.children.length).toBe(2);
+      expect(wheel.children.length).toBe(9);
+      expect(wheel.children.filter((c) => c === tireMesh(wheel)).length).toBe(1);
+      expect(wheel.children.filter((c) => c.name === '' && c !== tireMesh(wheel)).length).toBe(1);
+      expect(wheelPartsNamed(wheel, 'wheel-spoke').length).toBe(5);
+      expect(wheelPartsNamed(wheel, 'wheel-hub').length).toBe(1);
+      expect(wheelPartsNamed(wheel, 'wheel-caliper').length).toBe(1);
+    }
+  });
+
+  test.each([['wheel-spoke', 20], ['wheel-hub', 4], ['wheel-caliper', 4]] as [string, number][])('the car has the expected number of meshes named %s (%i)', (name, count) => {
+    const { car } = buildScene();
+    expect(namedMeshes(car, name).length).toBe(count);
+  });
+
+  test('the 5 spokes are 72 degrees apart around the wheel center, within 2 degrees', () => {
+    const { car } = buildScene();
+    expect(wheelGroups(car).length).toBe(4);
+    for (const wheel of wheelGroups(car)) {
+      const center = wheelCenterOf(wheel);
+      const spokes = wheelPartsNamed(wheel, 'wheel-spoke');
+      expect(spokes.length).toBe(5);
+      const angles = spokes
+        .map((s) => {
+          const c = centerOf(s);
+          return (Math.atan2(c.y - center.y, c.z - center.z) * 180) / Math.PI;
+        })
+        .sort((a, b) => a - b);
+      for (let i = 0; i < 5; i++) {
+        const next = i === 4 ? angles[0] + 360 : angles[i + 1];
+        expect(Math.abs(next - angles[i] - 72)).toBeLessThanOrEqual(2);
+      }
+    }
+  });
+
+  test('every spoke vertex stays within the rim radius of the wheel center', () => {
+    const { car } = buildScene();
+    expect(wheelGroups(car).length).toBe(4);
+    for (const wheel of wheelGroups(car)) {
+      const center = wheelCenterOf(wheel);
+      const radius = rimRadius(wheel);
+      const spokes = wheelPartsNamed(wheel, 'wheel-spoke');
+      expect(spokes.length).toBe(5);
+      for (const spoke of spokes) {
+        for (const v of worldVertices(spoke)) expect(radialDistance(v, center)).toBeLessThanOrEqual(radius + 0.002);
+      }
+    }
+  });
+
+  test('looking straight at each wheel from outside, every spoke is the first thing hit at its center', () => {
+    const { car } = buildScene();
+    expect(wheelGroups(car).length).toBe(4);
+    for (const wheel of wheelGroups(car)) {
+      const side = wheelSide(car, wheel);
+      const spokes = wheelPartsNamed(wheel, 'wheel-spoke');
+      expect(spokes.length).toBe(5);
+      for (const spoke of spokes) {
+        expect(isVisibleFromSide(car, spoke, side)).toBe(true);
+      }
+    }
+  });
+
+  test('each caliper is reddish, centered above the wheel center and within the rim radius', () => {
+    const { car } = buildScene();
+    expect(wheelGroups(car).length).toBe(4);
+    for (const wheel of wheelGroups(car)) {
+      const calipers = wheelPartsNamed(wheel, 'wheel-caliper');
+      expect(calipers.length).toBe(1);
+      const color = colorOf(calipers[0]);
+      const c = centerOf(calipers[0]);
+      const center = wheelCenterOf(wheel);
+      expect(color.r).toBeGreaterThan(color.g);
+      expect(color.r).toBeGreaterThan(color.b);
+      expect(c.y).toBeGreaterThan(center.y);
+      expect(radialDistance(c, center)).toBeLessThanOrEqual(rimRadius(wheel));
+    }
+  });
+
+  test('looking straight at each wheel from outside, part of the caliper is not hidden by spokes or the hub cap', () => {
+    const { car } = buildScene();
+    expect(wheelGroups(car).length).toBe(4);
+    for (const wheel of wheelGroups(car)) {
+      const side = wheelSide(car, wheel);
+      const calipers = wheelPartsNamed(wheel, 'wheel-caliper');
+      expect(calipers.length).toBe(1);
+      const box = worldBox(calipers[0]);
+      const targets = allCarMeshes(car);
+      let seen = false;
+      for (let i = 0; i <= 6 && !seen; i++) {
+        for (let j = 0; j <= 6 && !seen; j++) {
+          const origin = new THREE.Vector3(bodySurfaceX(car, side) + side, box.min.y + ((box.max.y - box.min.y) * i) / 6, box.min.z + ((box.max.z - box.min.z) * j) / 6);
+          const hit = raycastFirst(origin, new THREE.Vector3(-side, 0, 0), targets);
+          seen = hit !== undefined && hit.object === calipers[0];
+        }
+      }
+      expect(seen).toBe(true);
+    }
+  });
+
+  test('spokes, hub cap and caliper stay within 2cm past the tire outer face', () => {
+    const { car } = buildScene();
+    expect(wheelGroups(car).length).toBe(4);
+    for (const wheel of wheelGroups(car)) {
+      const parts = [...wheelPartsNamed(wheel, 'wheel-spoke'), ...wheelPartsNamed(wheel, 'wheel-hub'), ...wheelPartsNamed(wheel, 'wheel-caliper')];
+      expect(parts.length).toBe(7);
+      for (const part of parts) expect(wheelOutwardOffset(car, wheel, part)).toBeLessThanOrEqual(0.02);
+    }
+  });
+
+  test('every wheel part is not emissive and its color luminance is below 0.97', () => {
+    const { car } = buildScene();
+    expect(wheelGroups(car).length).toBe(4);
+    for (const wheel of wheelGroups(car)) {
+      expect(wheel.children.length).toBe(9);
+      for (const part of wheel.children) expect(isUnlit(part as THREE.Mesh)).toBe(true);
     }
   });
 });

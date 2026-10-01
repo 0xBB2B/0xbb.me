@@ -34,7 +34,7 @@ box(car, 0.14, 0.02, 0.012, line, -0.36, 0.7, sz * 0.924)
 // 侧裙 name 'side-skirt'
 box(car, 1.67, 0.045, 0.02, black, -0.025, 0.26, sz * 0.925)
 // 侧窗分隔柱 name 'window-pillar'
-add(car, new THREE.BoxGeometry(0.05, 0.34, 0.006), toon('#0c0d12'), -0.53, 1.0, sz * 0.68).rotation.z = 0.36
+add(car, new THREE.BoxGeometry(0.05, 0.32, 0.006), toon('#0c0d12'), -0.53, 1.0, sz * 0.68).rotation.z = 0.36
 
 // 车轮：在每个车轮组 wg 里追加（wg 局部坐标，轮心在原点；sz 是该轮所在侧）
 const silver = toon('#aab2c0');

@@ -215,13 +215,45 @@ export function buildCar(): CarBuild {
     box(car, 0.12, 0.1, 0.16, red, 0.58, 0.88, sz * 1.02);
   }
 
+  const line = toon('#7d1217');
+  const pillarGeo = new THREE.BoxGeometry(0.05, 0.32, 0.006);
+  const pillarMat = toon('#0c0d12');
+  for (const sz of [-1, 1]) {
+    box(car, 0.012, 0.42, 0.008, line, 0.64, 0.33, sz * 0.922).name = 'door-line';
+    box(car, 0.012, 0.44, 0.008, line, -0.55, 0.33, sz * 0.922).name = 'door-line';
+    box(car, 1.2, 0.012, 0.008, line, 0.045, 0.33, sz * 0.922).name = 'door-line';
+    box(car, 0.14, 0.02, 0.012, line, -0.36, 0.7, sz * 0.924).name = 'door-handle';
+    box(car, 1.67, 0.045, 0.02, black, -0.025, 0.26, sz * 0.925).name = 'side-skirt';
+    const pillar = add(car, pillarGeo, pillarMat, -0.53, 1.0, sz * 0.68);
+    pillar.name = 'window-pillar';
+    pillar.rotation.z = 0.36;
+  }
+
   const tireGeo = new THREE.CylinderGeometry(0.34, 0.34, 0.27, 28);
   const rimGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.02, 28);
+  const silver = toon('#aab2c0');
+  const rimMat = toon('#3d434f');
+  const caliperGeo = new THREE.BoxGeometry(0.16, 0.055, 0.003);
+  const caliperMat = toon('#d8232f');
+  const spokeGeo = new THREE.BoxGeometry(0.035, 0.23, 0.003);
+  const hubGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.003, 14);
   const wheelPositions: [number, number][] = [[wf, 1], [wf, -1], [wr, 1], [wr, -1]];
   for (const [wx, sz] of wheelPositions) {
     const wg = new THREE.Group(); wg.position.set(wx, 0.34, sz * 0.8); car.add(wg);
     add(wg, tireGeo, black).rotation.x = Math.PI / 2;
-    const rim = add(wg, rimGeo, toon('#3d434f'), 0, 0, sz * 0.14); rim.rotation.x = Math.PI / 2;
+    const rim = add(wg, rimGeo, rimMat, 0, 0, sz * 0.14); rim.rotation.x = Math.PI / 2;
+    const caliper = add(wg, caliperGeo, caliperMat, -0.113, 0.113, sz * 0.1515);
+    caliper.name = 'wheel-caliper';
+    caliper.rotation.z = Math.PI / 4;
+    for (let i = 0; i < 5; i++) {
+      const a = i * 2 * Math.PI / 5;
+      const spoke = add(wg, spokeGeo, silver, -Math.sin(a) * 0.115, Math.cos(a) * 0.115, sz * 0.1545);
+      spoke.name = 'wheel-spoke';
+      spoke.rotation.z = a;
+    }
+    const hub = add(wg, hubGeo, silver, 0, 0, sz * 0.1555);
+    hub.name = 'wheel-hub';
+    hub.rotation.x = Math.PI / 2;
   }
 
   const plateGeo = new THREE.PlaneGeometry(0.33, 0.165);
