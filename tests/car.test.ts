@@ -584,3 +584,81 @@ describe('windows hug the body: windshield, rear window and side glass sit withi
     expect(worldXSpan(windshield)).toBeGreaterThanOrEqual(0.8);
   });
 });
+
+function tireMesh(wheel: THREE.Group): THREE.Mesh {
+  return wheel.children.find((c) => {
+    const geo = (c as THREE.Mesh).geometry as THREE.CylinderGeometry | undefined;
+    return geo?.type === 'CylinderGeometry' && Math.abs(geo.parameters.radiusTop - 0.34) < 0.01;
+  }) as THREE.Mesh;
+}
+
+function bodyMainBox(car: Car): THREE.Box3 {
+  const volume = (box: THREE.Box3) => {
+    const size = box.getSize(new THREE.Vector3());
+    return size.x * size.y * size.z;
+  };
+  return bodyPaintMeshes(car)
+    .map(worldBox)
+    .reduce((largest, box) => (volume(box) > volume(largest) ? box : largest));
+}
+
+function wheelSpecs(car: Car) {
+  const mainBox = bodyMainBox(car);
+  const bodyCenterX = mainBox.getCenter(new THREE.Vector3()).x;
+  return wheelGroups(car).map((wheel) => {
+    const box = worldBox(tireMesh(wheel));
+    const center = box.getCenter(new THREE.Vector3());
+    const side = center.x > bodyCenterX ? 1 : -1;
+    return {
+      radius: (box.max.y - box.min.y) / 2,
+      centerY: center.y,
+      centerZ: center.z,
+      top: box.max.y,
+      side,
+      outerX: side > 0 ? mainBox.max.x : mainBox.min.x,
+    };
+  });
+}
+
+describe('wheel arch hugs the tire and does not cut through the body top edge', () => {
+  test('on the side view, paint 5cm outside the tire between 30 and 60 degrees from straight up is within 2cm of the outer face', () => {
+    const { car } = buildScene();
+    const specs = wheelSpecs(car);
+    expect(specs.length).toBe(4);
+    for (const spec of specs) {
+      for (const direction of [-1, 1]) {
+        for (const degrees of [30, 45, 60]) {
+          const angle = (degrees * Math.PI) / 180;
+          const r = spec.radius + 0.05;
+          const origin = new THREE.Vector3(
+            spec.outerX + spec.side,
+            spec.centerY + r * Math.cos(angle),
+            spec.centerZ + direction * r * Math.sin(angle),
+          );
+          const hit = raycastFirst(origin, new THREE.Vector3(-spec.side, 0, 0), allCarMeshes(car));
+          expect(hit !== undefined && bodyPaintMeshes(car).includes(hit.object as THREE.Mesh)).toBe(true);
+          expect(Math.abs(spec.outerX - hit!.point.x)).toBeLessThanOrEqual(0.02);
+        }
+      }
+    }
+  });
+
+  test('the paint top above each tire is at least 3cm higher than the tire top', () => {
+    const { car } = buildScene();
+    for (const spec of wheelSpecs(car)) {
+      const origin = new THREE.Vector3(spec.outerX - spec.side * 0.03, spec.top + 3, spec.centerZ);
+      const hit = raycastFirst(origin, new THREE.Vector3(0, -1, 0), bodyPaintMeshes(car));
+      expect(hit).toBeDefined();
+      expect(hit!.point.y).toBeGreaterThanOrEqual(spec.top + 0.03);
+    }
+  });
+
+  test('2.5cm above each tire top, a ray along world x from outside hits the paint', () => {
+    const { car } = buildScene();
+    for (const spec of wheelSpecs(car)) {
+      const origin = new THREE.Vector3(spec.outerX + spec.side, spec.top + 0.025, spec.centerZ);
+      const hit = raycastFirst(origin, new THREE.Vector3(-spec.side, 0, 0), bodyPaintMeshes(car));
+      expect(hit).toBeDefined();
+    }
+  });
+});

@@ -36,12 +36,14 @@ export function buildCar(): CarBuild {
   const darkGlass = toon('#1b2436', { glow: 0.05 });
   const wf = 1.2;
   const wr = -1.25;
-  const arch = 0.44;
+  const arch = 0.36;
+  const archA = Math.asin((0.34 - 0.26) / arch);
+  const archDx = arch * Math.cos(archA);
 
   const s = new THREE.Shape();
   s.moveTo(-2.12, 0.26);
-  s.lineTo(wr - arch, 0.26); s.lineTo(wr - arch, 0.36); s.absarc(wr, 0.36, arch, Math.PI, 0, true); s.lineTo(wr + arch, 0.26);
-  s.lineTo(wf - arch, 0.26); s.lineTo(wf - arch, 0.36); s.absarc(wf, 0.36, arch, Math.PI, 0, true); s.lineTo(wf + arch, 0.26);
+  s.lineTo(wr - archDx, 0.26); s.absarc(wr, 0.34, arch, Math.PI + archA, -archA, true);
+  s.lineTo(wf - archDx, 0.26); s.absarc(wf, 0.34, arch, Math.PI + archA, -archA, true);
   s.lineTo(2.05, 0.26);
   s.quadraticCurveTo(2.2, 0.28, 2.2, 0.42);
   s.quadraticCurveTo(2.18, 0.58, 1.9, 0.63);
