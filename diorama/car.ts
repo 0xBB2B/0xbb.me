@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toon, glow, ctex, roundRect, noOutline, toonGradientMap } from './materials';
 import { add, box } from './primitives';
-import { drawLicensePlate } from './textures';
+import { drawLicensePlate, drawRearWordmark } from './textures';
 import { CAR_CENTER, CAR_SCALE } from './layout';
 
 export interface CarBuild {
@@ -10,6 +10,7 @@ export interface CarBuild {
   hazardMaterial: THREE.MeshBasicMaterial;
   hazardLights: THREE.PointLight[];
   plateTexture: THREE.CanvasTexture;
+  wordmarkTexture: THREE.CanvasTexture;
 }
 
 export function buildCar(): CarBuild {
@@ -140,7 +141,7 @@ export function buildCar(): CarBuild {
     hl.position.set(2.085, 0.65, sz * 0.6);
     hl.rotation.z = -0.4;
     car.add(hl);
-    const bezel = add(hl, bezelGeo, bezelMat);
+    const bezel = add(hl, bezelGeo, bezelMat, 0, 0.01, 0);
     bezel.name = 'headlight-bezel';
     bezel.scale.set(0.14, 0.012, 0.15);
     const lens = add(hl, lensGeo, lensMat);
@@ -148,7 +149,7 @@ export function buildCar(): CarBuild {
     lens.scale.set(0.12, 0.068, 0.13);
     for (const dx of [-0.04, 0.04]) {
       for (const dz of [-0.045, 0.045]) {
-        const dot = add(hl, dotGeo, dotMat, dx, 0.052, dz);
+        const dot = add(hl, dotGeo, dotMat, dx, 0.06, dz);
         dot.name = 'headlight-dot';
         dot.scale.y = 0.5;
       }
@@ -178,7 +179,7 @@ export function buildCar(): CarBuild {
   for (const sz of [-1, 1]) {
     add(car, new THREE.BoxGeometry(0.02, 0.05, 0.1), hazardMaterial, -2.24, 0.69, sz * 0.77).rotation.z = TAIL_TILT;
   }
-  box(car, 0.06, 0.08, 0.6, black, -2.3, 0.5, 0);
+  box(car, 0.03, 0.21, 0.48, toon('#9c0d21'), -2.3, 0.415, 0).name = 'plate-recess';
 
   box(car, 0.34, 0.02, 0.8, black, -1.96, 0.9, 0);
   box(car, 0.04, 0.02, 0.4, glow('#ff1f35', 1.3), -1.8, 0.915, 0);
@@ -188,10 +189,25 @@ export function buildCar(): CarBuild {
   box(car, 0.38, 0.02, 1.6, black, -2.05, 1.06, 0).rotation.z = -0.08;
   for (const sz of [-1, 1]) box(car, 0.42, 0.14, 0.02, black, -2.05, 1.01, sz * 0.83);
 
-  box(car, 0.3, 0.14, 1.5, black, -2.12, 0.18, 0);
+  box(car, 0.3, 0.2, 1.56, black, -2.15, 0.18, 0).name = 'rear-diffuser';
+  const exhaustTipGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.12, 14);
+  const exhaustTipMat = toon('#a3aab5');
+  const exhaustInnerGeo = new THREE.CylinderGeometry(0.042, 0.042, 0.01, 14);
+  const exhaustInnerMat = toon('#101116');
+  const reflectorMat = toon('#ff4a5a');
   for (const sz of [-1, 1]) {
-    const ex = add(car, new THREE.CylinderGeometry(0.06, 0.06, 0.12, 14), toon('#a3aab5'), -2.3, 0.3, sz * 0.42);
+    const ex = add(car, exhaustTipGeo, exhaustTipMat, -2.3, 0.28, sz * 0.42);
+    ex.name = 'exhaust-tip';
     ex.rotation.z = Math.PI / 2; ex.scale.set(1, 1, 1.5);
+    const inner = add(car, exhaustInnerGeo, exhaustInnerMat, -2.361, 0.28, sz * 0.42);
+    inner.name = 'exhaust-inner';
+    inner.rotation.z = Math.PI / 2; inner.scale.set(1, 1, 1.5);
+    box(car, 0.012, 0.022, 0.1, reflectorMat, -2.288, 0.39, sz * 0.72).name = 'rear-reflector';
+  }
+  for (let i = 0; i < 9; i++) {
+    const slat = box(car, 0.09, 0.01, 0.03, black, -1.72, 0.948, -0.32 + i * 0.08);
+    slat.name = 'engine-grille-slat';
+    slat.rotation.z = 0.38;
   }
 
   for (const sz of [-1, 1]) {
@@ -215,9 +231,15 @@ export function buildCar(): CarBuild {
   plateFront.name = 'license-plate-front';
   plateFront.rotation.order = 'ZYX';
   plateFront.rotation.set(0, Math.PI / 2, 15 * Math.PI / 180);
-  const plateRear = add(car, plateGeo, plateMat, -2.345, 0.52, 0);
+  const plateRear = add(car, plateGeo, plateMat, -2.33, 0.52, 0);
   plateRear.name = 'license-plate-rear';
   plateRear.rotation.y = -Math.PI / 2;
+
+  const wordmarkTexture = ctex(512, 64, drawRearWordmark);
+  const wordmark = add(car, new THREE.PlaneGeometry(0.5, 0.04), toon('#8f9bb3', { map: wordmarkTexture }), -2.278, 0.698, 0);
+  wordmark.name = 'rear-wordmark';
+  wordmark.rotation.order = 'ZYX';
+  wordmark.rotation.set(0, -Math.PI / 2, TAIL_TILT);
 
   const hazardLights: THREE.PointLight[] = [];
   for (const lx of [2.5, -2.5]) {
@@ -306,5 +328,5 @@ export function buildCar(): CarBuild {
     obj.scale.setScalar(CAR_SCALE);
   }
 
-  return { group: car, ground, hazardMaterial, hazardLights, plateTexture };
+  return { group: car, ground, hazardMaterial, hazardLights, plateTexture, wordmarkTexture };
 }

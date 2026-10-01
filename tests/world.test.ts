@@ -1,7 +1,7 @@
 import { expect, test, describe } from 'bun:test';
 import * as THREE from 'three';
 import { setCanvasFactory } from '../diorama/materials';
-import { createTextures, drawPlaque, drawLicensePlate, PLAQUE_LAYOUT, CANVAS_TEXT } from '../diorama/textures';
+import { createTextures, drawPlaque, drawLicensePlate, drawRearWordmark, PLAQUE_LAYOUT, CANVAS_TEXT } from '../diorama/textures';
 import { buildPedestal, buildGround, buildRoadMarkings } from '../diorama/ground';
 import { buildStore } from '../diorama/store';
 import { buildStreet } from '../diorama/street';
@@ -388,6 +388,12 @@ function licensePlateCanvas(): FakeCanvas {
   return canvas;
 }
 
+function rearWordmarkCanvas(): FakeCanvas {
+  const canvas = createFakeCanvas();
+  drawRearWordmark(canvas.getContext('2d') as CanvasRenderingContext2D, 512, 64);
+  return canvas;
+}
+
 test('every character drawn on canvas textures is part of the font preload text', () => {
   const canvases: FakeCanvas[] = [];
   setCanvasFactory(() => { const canvas = createFakeCanvas(); canvases.push(canvas); return canvas; });
@@ -397,7 +403,7 @@ test('every character drawn on canvas textures is part of the font preload text'
   drawPlaque(ctx, 'zh');
   drawPlaque(ctx, 'en');
   const plateCanvas = licensePlateCanvas();
-  const drawn = [...canvases, plaqueCanvas, plateCanvas].flatMap((canvas) => canvas.fillTextCalls).join('');
+  const drawn = [...canvases, plaqueCanvas, plateCanvas, rearWordmarkCanvas()].flatMap((canvas) => canvas.fillTextCalls).join('');
   const missing = [...new Set(drawn)].filter((char) => char.trim() && !CANVAS_TEXT.includes(char));
   expect(missing).toEqual([]);
   setCanvasFactory(createFakeCanvasFactory());
@@ -409,6 +415,10 @@ test('every character of the license plate text is part of the font preload text
   expect([...new Set(chars)].filter((char) => char.trim() && !CANVAS_TEXT.includes(char))).toEqual([]);
 });
 
+test('every letter of PORSCHE is part of the font preload text', () => {
+  expect([...new Set('PORSCHE')].filter((char) => !CANVAS_TEXT.includes(char))).toEqual([]);
+});
+
 test('the font preload text contains no character beyond what canvas textures actually draw', () => {
   const canvases: FakeCanvas[] = [];
   setCanvasFactory(() => { const canvas = createFakeCanvas(); canvases.push(canvas); return canvas; });
@@ -418,7 +428,7 @@ test('the font preload text contains no character beyond what canvas textures ac
   drawPlaque(ctx, 'zh');
   drawPlaque(ctx, 'en');
   const plateCanvas = licensePlateCanvas();
-  const drawn = new Set([...canvases, plaqueCanvas, plateCanvas].flatMap((canvas) => canvas.fillTextCalls).join(''));
+  const drawn = new Set([...canvases, plaqueCanvas, plateCanvas, rearWordmarkCanvas()].flatMap((canvas) => canvas.fillTextCalls).join(''));
   const extra = [...new Set(CANVAS_TEXT)].filter((char) => char.trim() && !drawn.has(char));
   expect(extra).toEqual([]);
   setCanvasFactory(createFakeCanvasFactory());

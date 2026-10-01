@@ -39,9 +39,9 @@ box(car, 0.012, 0.016, 0.42, toon('#c4cad4'), 2.294, 0.4, sz * 0.55)
 
 // 大灯：原来的扁球 hl（scale 0.12/0.02/0.13）换成一个组，每侧一个
 // group.position = (2.085, 0.65, sz * 0.6); group.rotation.z = -0.4
-//   'headlight-bezel'：SphereGeometry(1, 20, 14)，scale (0.14, 0.012, 0.15)，toon('#1b2048')
+//   'headlight-bezel'：SphereGeometry(1, 20, 14)，scale (0.14, 0.012, 0.15)，toon('#1b2048')，组内 y = 0.01
 //   'headlight-lens' ：SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2)，scale (0.12, 0.068, 0.13)，toon('#dfe8f5')
-//   'headlight-dot' ×4：SphereGeometry(0.012, 8, 6)，scale.y = 0.5，toon('#9aa0aa')，组内位置 (±0.04, 0.052, ±0.045)
+//   'headlight-dot' ×4：SphereGeometry(0.012, 8, 6)，scale.y = 0.5，toon('#9aa0aa')，组内位置 (±0.04, 0.06, ±0.045)
 
 // 盾徽 name 'hood-badge'
 // SphereGeometry(1, 12, 8)，scale (0.022, 0.006, 0.018)，toon('#d8b25a')，位置 (2.152, 0.627, 0)，rotation.z = -0.63

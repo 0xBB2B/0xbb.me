@@ -46,7 +46,7 @@ box(car, 0.3, 0.2, 1.56, black, -2.15, 0.18, 0)
 //   位置 (-2.361, 0.28, sz * 0.42)，rotation.z = Math.PI / 2，scale (1, 1, 1.5)
 
 // 反光条 name 'rear-reflector'
-box(car, 0.012, 0.022, 0.1, toon('#b01225'), -2.288, 0.39, sz * 0.72)
+box(car, 0.012, 0.022, 0.1, toon('#ff4a5a'), -2.288, 0.39, sz * 0.72)
 
 // 发动机盖格栅 name 'engine-grille-slat' ×9：z = -0.32 + i * 0.08（i = 0..8）
 box(car, 0.09, 0.01, 0.03, black, -1.72, 0.948, z).rotation.z = 0.38

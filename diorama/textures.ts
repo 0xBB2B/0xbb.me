@@ -9,6 +9,7 @@ export const FONT_R = '"M PLUS Rounded 1c", "Noto Sans SC Variable", sans-serif'
 
 const SIGNAGE_TEXT = [
   'BB',
+  'PORSCHE',
   '0xBB MART',
   'ヨルノミセ',
   '24H',
@@ -656,13 +657,20 @@ export function drawPlaque(ctx: CanvasRenderingContext2D, language: Language): v
   ctx.fillText(locationLine(), width / 2, lines[2].y, maxWidth);
 }
 
+export function drawRearWordmark(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  ctx.fillStyle = '#101116';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#e6ebf2';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  ctx.letterSpacing = `${h * 0.2}px`;
+  ctx.font = `${h * 0.6}px ${FONT_D}`;
+  ctx.fillText('PORSCHE', w / 2, h / 2);
+}
+
 export function drawLicensePlate(ctx: CanvasRenderingContext2D, w: number, h: number): void {
   ctx.fillStyle = '#f2f3ee';
   ctx.fillRect(0, 0, w, h);
-  ctx.strokeStyle = '#1f5d3a';
-  ctx.lineWidth = h * 0.03;
-  roundRect(ctx, h * 0.04, h * 0.04, w - h * 0.08, h * 0.92, h * 0.1);
-  ctx.stroke();
   ctx.fillStyle = '#1f5d3a';
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'right';

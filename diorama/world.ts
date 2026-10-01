@@ -107,6 +107,7 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
       if (!loaded || disposed) return;
       textures.redraw();
       redrawCtex(car.plateTexture);
+      redrawCtex(car.wordmarkTexture);
       setPlaqueLanguage(plaque, currentLanguage);
       if (paused) render();
     });
