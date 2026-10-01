@@ -6,9 +6,15 @@ const profilePrefix = 'mc2d-headless-chrome-';
 const profileName = /^mc2d-headless-chrome-[A-Za-z0-9]{6}$/;
 
 // Literal matching: a profile path must never be interpreted as a pattern that reaches unrelated processes.
-const processesFor = (directory: string) => Bun.spawnSync(['ps', '-axo', 'pid=,command=']).stdout.toString().split('\n')
-  .filter(line => line.includes(`--user-data-dir=${directory}`)).map(line => Number(line.trim().split(/\s+/)[0]))
-  .filter(pid => pid !== process.pid);
+// Must stay async: a blocking spawnSync stalls the event loop and leaves the dev server unable to process disconnects.
+async function processesFor(directory: string) {
+  const proc = Bun.spawn(['ps', '-axo', 'pid=,command='], { stdout: 'pipe' });
+  const output = await new Response(proc.stdout).text();
+  await proc.exited;
+  return output.split('\n')
+    .filter(line => line.includes(`--user-data-dir=${directory}`)).map(line => Number(line.trim().split(/\s+/)[0]))
+    .filter(pid => pid !== process.pid);
+}
 
 const signalAll = (pids: number[], signal: NodeJS.Signals) => {
   for (const pid of pids) {
@@ -17,10 +23,10 @@ const signalAll = (pids: number[], signal: NodeJS.Signals) => {
 };
 
 async function killProcessesFor(directory: string) {
-  signalAll(processesFor(directory), 'SIGTERM');
-  for (let i = 0; i < 50 && processesFor(directory).length; i++) await Bun.sleep(100);
-  signalAll(processesFor(directory), 'SIGKILL');
-  for (let i = 0; i < 20 && processesFor(directory).length; i++) await Bun.sleep(100);
+  signalAll(await processesFor(directory), 'SIGTERM');
+  for (let i = 0; i < 50 && (await processesFor(directory)).length; i++) await Bun.sleep(100);
+  signalAll(await processesFor(directory), 'SIGKILL');
+  for (let i = 0; i < 20 && (await processesFor(directory)).length; i++) await Bun.sleep(100);
 }
 
 const isAlive = (pid: number) => {
