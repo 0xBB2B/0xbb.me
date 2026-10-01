@@ -13,7 +13,7 @@ export default defineConfig({
   plugins: [react(), htmlPlugin(), {
     name: 'portfolio-public-assets',
     generateBundle() {
-      for (const fileName of ['profile.jpg', 'profile.png', 'profile-full.png', 'robots.txt', 'sitemap.xml', 'THIRD_PARTY_NOTICES.txt']) {
+      for (const fileName of ['profile.jpg', 'profile.png', 'profile-full.png', 'profile-full-print.jpg', 'robots.txt', 'sitemap.xml', 'THIRD_PARTY_NOTICES.txt']) {
         this.emitFile({ type: 'asset', fileName, source: readFileSync(path.resolve(__dirname, 'public', fileName)) });
       }
     },
@@ -21,7 +21,10 @@ export default defineConfig({
   build: {
     copyPublicDir: false,
     rollupOptions: {
-      input: path.resolve(__dirname, 'index.html'),
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        profile: path.resolve(__dirname, 'profile/index.html'),
+      },
     },
   },
   resolve: {

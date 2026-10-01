@@ -4,7 +4,7 @@ import { noOutline } from './materials';
 import { BASE_HALF, ROOF_ZONES, type RoofZone } from './layout';
 
 const GLSL_HASH = `
-float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+float hash(vec2 p){ uvec2 q=uvec2(ivec2(floor(p))+ivec2(4104,4152))*uvec2(1597334673u,3812015801u); uint n=(q.x^q.y)*1597334673u; return float(n)/4294967296.; }
 float vnoise(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.-2.*f);
   return mix(mix(hash(i),hash(i+vec2(1,0)),u.x), mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x), u.y); }`;
 

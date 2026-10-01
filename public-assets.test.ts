@@ -9,6 +9,7 @@ const userPortraits: Record<string, string> = {
   'profile.jpg': 'c28ed9a1e2296e6b667212bd3758323b496791982f25b4e663d84ebbb2422543',
   'profile.png': '3bbaa161ddf6141706341ab661ba3da59230e8a87b932e1eefdd6f2bd132e2d8',
   'profile-full.png': '93112c75b439d72949250c21da06d5a6ff86be5e7211ed1ee09eb17575747a8f',
+  'profile-full-print.jpg': '9406909291966afc6203d7f142ecd6818711a37432540bda2c0f88e81faccada',
 };
 const bitmapMagic = [
   /^\x89PNG\r\n\x1a\n/s,

@@ -11,3 +11,4 @@ button:hover { filter: brightness(1.06); }
 button:focus-visible, a:focus-visible { outline: 2px solid #366d89; outline-offset: 4px; }
 a { color: inherit; }
 ::selection { background: #2c3a68; color: #f3d9a0; }
+html { overflow: hidden; }

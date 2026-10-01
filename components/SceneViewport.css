@@ -9,7 +9,11 @@
 
 .scene-viewport canvas {
   opacity: 0;
-  transition: opacity 450ms ease;
+  transition: opacity 450ms ease, filter 0.6s ease;
+}
+
+.scene-viewport--paused canvas {
+  filter: brightness(.55) saturate(.8) blur(1.5px);
 }
 
 .scene-viewport--ready canvas {

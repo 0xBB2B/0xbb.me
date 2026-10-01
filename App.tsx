@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Language } from './data';
 import { detectLanguage, applyDocumentLanguage } from './language';
 import { transition, type ViewState, type ViewEvent } from './diorama/view-state';
 import { initialTier, type Tier } from './diorama/quality';
 import { LoadingShell } from './components/LoadingShell';
 import { SceneViewport, type SceneViewportHandle } from './components/SceneViewport';
-import { StoryScroller } from './components/StoryScroller';
+import { ReceiptView } from './components/ReceiptView';
 import { EnterStoryButton } from './components/EnterStoryButton';
 
 export default function App() {
@@ -25,7 +25,8 @@ export default function App() {
     document.documentElement.dataset.quality = quality;
   }, [quality]);
 
-  useEffect(() => {
+  // data-view 要与 DOM 在同一帧更新，用 useEffect 会晚一帧
+  useLayoutEffect(() => {
     document.documentElement.dataset.view = viewState.view;
   }, [viewState.view]);
 
@@ -56,11 +57,6 @@ export default function App() {
     setViewState((prev) => transition(prev, event));
   }
 
-  function handleReadFirst() {
-    setLoadingVisible(false);
-    dispatch('readFirst');
-  }
-
   function handleSceneFailed() {
     setLoadingVisible(false);
     dispatch('sceneFailed');
@@ -87,12 +83,11 @@ export default function App() {
         onExitDone={() => dispatch('exitDone')}
         onQualityChange={setQuality}
       />
-      <StoryScroller
+      <ReceiptView
         language={language}
         view={viewState.view}
         failed={viewState.failed}
         showBack={showBack}
-        onScrollChange={(scrollY) => sceneRef.current?.setScroll(scrollY)}
         onBack={handleExit}
         onLanguageChange={setLanguage}
       />
@@ -102,7 +97,7 @@ export default function App() {
         onActivate={() => sceneRef.current?.enterStory()}
       />
       {loadingVisible && (
-        <LoadingShell language={language} stage={stage} onReadFirst={handleReadFirst} leaving={loadingLeaving} />
+        <LoadingShell language={language} stage={stage} leaving={loadingLeaving} />
       )}
     </>
   );

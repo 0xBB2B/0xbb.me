@@ -1,0 +1,230 @@
+.receipt,
+.receipt * {
+  box-sizing: border-box;
+}
+
+.receipt {
+  --paper: #f5f1e6;
+  --paper-ink: #1d2233;
+  position: relative;
+  flex: none;
+  width: min(420px, calc(100vw - 36px));
+  height: max-content;
+  background: var(--paper);
+  color: var(--paper-ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+  padding: 30px 20px 26px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 90px rgba(243, 217, 160, 0.12);
+  animation: receipt-drop 0.6s cubic-bezier(0.2, 1.25, 0.4, 1) both;
+}
+
+.receipt::before,
+.receipt::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background: linear-gradient(-45deg, var(--paper) 5px, transparent 0) 0 0 / 10px 10px,
+    linear-gradient(45deg, var(--paper) 5px, transparent 0) 0 0 / 10px 10px;
+}
+
+.receipt::before {
+  top: -10px;
+  transform: scaleY(-1);
+}
+
+.receipt::after {
+  bottom: -10px;
+}
+
+@media (min-aspect-ratio: 1/1) {
+  .receipt {
+    padding: 34px 28px 30px;
+    font-size: 14px;
+    transform: rotate(-0.6deg);
+  }
+}
+
+@keyframes receipt-drop {
+  from {
+    transform: translateY(-110vh) rotate(-8deg);
+  }
+}
+
+.receipt-center {
+  text-align: center;
+}
+
+.receipt-store {
+  font-size: 11px;
+  letter-spacing: 0.35em;
+  color: #6b6f7d;
+  margin: 0 0 12px;
+}
+
+.receipt-avatar-btn {
+  display: block;
+  margin: 0 auto 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: zoom-in;
+  border-radius: 50%;
+  position: relative;
+}
+
+.receipt-avatar-btn:focus-visible {
+  outline: 2px solid #16a39a;
+  outline-offset: 4px;
+}
+
+.receipt-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--paper-ink);
+  display: block;
+  transition: transform 0.2s;
+}
+
+.receipt-avatar--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.receipt-avatar-btn:hover .receipt-avatar {
+  transform: scale(1.06) rotate(-3deg);
+}
+
+.receipt-cam {
+  position: absolute;
+  right: -4px;
+  bottom: -2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--paper-ink);
+  color: var(--paper);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--paper);
+}
+
+.receipt-tap-hint {
+  font-size: 11px;
+  color: #6b6f7d;
+  letter-spacing: 0.08em;
+  margin: 0 0 10px;
+}
+
+.receipt h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.9rem;
+  margin: 0 0 4px;
+  letter-spacing: 0.04em;
+}
+
+.receipt h2 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  margin: 0 0 6px;
+}
+
+.receipt-sub {
+  margin: 0;
+  font-size: 13px;
+}
+
+.receipt-cut {
+  border: 0;
+  border-top: 2px dashed #b9b4a6;
+  margin: 18px 0;
+}
+
+.receipt-sec {
+  font-size: 12px;
+  letter-spacing: 0.25em;
+  color: #0f7a73;
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+
+.receipt-bio {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.85;
+}
+
+.receipt-item {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.receipt-name,
+.receipt-val {
+  white-space: nowrap;
+}
+
+.receipt-fill {
+  flex: 1;
+  border-bottom: 2px dotted #b9b4a6;
+  transform: translateY(-4px);
+  min-width: 16px;
+}
+
+.receipt-item a {
+  color: var(--paper-ink);
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1px solid var(--paper-ink);
+}
+
+.receipt-item a:hover {
+  background: var(--paper-ink);
+  color: var(--paper);
+}
+
+.receipt-total {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.receipt-barcode {
+  height: 46px;
+  margin: 16px auto 6px;
+  width: 78%;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--paper-ink) 0 2px,
+    transparent 2px 4px,
+    var(--paper-ink) 4px 5px,
+    transparent 5px 8px,
+    var(--paper-ink) 8px 11px,
+    transparent 11px 12px
+  );
+}
+
+.receipt-thanks {
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: #6b6f7d;
+  margin: 0;
+}

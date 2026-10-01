@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 import * as THREE from 'three';
 import { DEFAULT_CAMERA, viewFov } from '../diorama/layout';
 import { PLAQUE_PANEL, PLAQUE_GLOW } from '../diorama/plaque';
-import { stopPose } from '../diorama/story-camera';
+import * as storyCamera from '../diorama/story-camera';
 import { runBrowser } from './browser';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -181,7 +181,7 @@ describe('dispose', () => {
 });
 
 describe('资料视角退出镜头位姿', () => {
-  test('规则1: exitToDiorama 后依次经过 exiting、diorama，间隔不超过 1.2 秒，1 秒后镜头回到进入前记录的位姿', async () => {
+  test('exitToDiorama 后依次经过 exiting、diorama，间隔不超过 1.2 秒，1 秒后镜头回到进入前记录的位姿', async () => {
     const px = ROAD_PIXEL.x;
     const py = ROAD_PIXEL.y;
     const result = await runBrowser<{ ready: boolean; views: string[]; times: number[]; distance: number }>(`
@@ -225,10 +225,10 @@ describe('资料视角退出镜头位姿', () => {
     expect(result.distance).toBeLessThanOrEqual(0.1);
   }, 60_000);
 
-  test('规则2: 进入动画结束的瞬间镜头已停在第 1 停靠点，不闪回进入前的位置', async () => {
+  test('进入动画结束的瞬间镜头已停在资料镜头位，不闪回进入前的位置', async () => {
     const px = PLAQUE_PIXEL.x;
     const py = PLAQUE_PIXEL.y;
-    const stop0 = stopPose(0);
+    const storyPosition = storyCamera.storyPose().position;
     const result = await runBrowser<{ ready: boolean; views: string[]; distance: number }>(`
       ${BOOT}
       await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: ${px}, y: ${py} });
@@ -242,59 +242,17 @@ describe('资料视角退出镜头位姿', () => {
         await wait(0.05);
       }
       await js('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
-      const distance = await js("(() => { const camera = window.handle && window.handle.camera; if (!camera) return 9999; return camera.position.distanceTo({ x: ${stop0.position.x}, y: ${stop0.position.y}, z: ${stop0.position.z} }); })()");
+      const distance = await js("(() => { const camera = window.handle && window.handle.camera; if (!camera) return 9999; return camera.position.distanceTo({ x: ${storyPosition.x}, y: ${storyPosition.y}, z: ${storyPosition.z} }); })()");
       cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, views, distance }));
     `);
     expect(result.ready).toBe(true);
     expect(result.views).toContain('story');
-    expect(result.distance).toBeLessThan(0.1);
-  }, 60_000);
-});
-
-describe('资料视角重复通知不覆盖退出位姿', () => {
-  test('资料视角里重复调用 startStoryWithoutEntering 不改变退出目标', async () => {
-    const px = ROAD_PIXEL.x;
-    const py = ROAD_PIXEL.y;
-    const result = await runBrowser<{ ready: boolean; views: string[]; distance: number }>(`
-      ${BOOT}
-      await js('window.handle.onViewChange((view) => { if (view === "entering" && window.handle.camera) window.__enterPos = { x: window.handle.camera.position.x, y: window.handle.camera.position.y, z: window.handle.camera.position.z }; })');
-      await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: ${px}, y: ${py} });
-      await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x: ${px}, y: ${py}, button: 'left', buttons: 1, clickCount: 1 });
-      await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: ${px + 200}, y: ${py}, buttons: 1 });
-      await cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x: ${px + 200}, y: ${py}, button: 'left', buttons: 0, clickCount: 1 });
-      const plaquePoint = await js('window.projectToScreen ? window.projectToScreen([0, -2.87, 14.245]) : null');
-      const clickX = plaquePoint ? plaquePoint.x : ${PLAQUE_PIXEL.x};
-      const clickY = plaquePoint ? plaquePoint.y : ${PLAQUE_PIXEL.y};
-      await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: clickX, y: clickY });
-      await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x: clickX, y: clickY, button: 'left', buttons: 1, clickCount: 1 });
-      await cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x: clickX, y: clickY, button: 'left', buttons: 0, clickCount: 1 });
-      const storyDeadline = Date.now() + 5000;
-      let views = [];
-      while (Date.now() < storyDeadline) {
-        views = await js('window.views ?? []');
-        if (views.includes('story')) break;
-        await wait(0.05);
-      }
-      await js('window.handle.startStoryWithoutEntering()');
-      await js('window.handle.exitToDiorama()');
-      const exitDeadline = Date.now() + 3000;
-      while (Date.now() < exitDeadline) {
-        views = await js('window.views ?? []');
-        if (views.lastIndexOf('diorama') > views.indexOf('exiting')) break;
-        await wait(0.05);
-      }
-      await wait(1);
-      const distance = await js("(() => { const enter = window.__enterPos; const camera = window.handle && window.handle.camera; if (!enter || !camera) return 9999; return Math.hypot(camera.position.x - enter.x, camera.position.y - enter.y, camera.position.z - enter.z); })()");
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, views, distance }));
-    `);
-    expect(result.ready).toBe(true);
-    expect(result.views).toContain('story');
-    expect(result.distance).toBeLessThanOrEqual(0.1);
+    expect(result.distance).toBeLessThan(0.05);
   }, 60_000);
 });
 
 describe('离开整体视角后的悬停状态', () => {
-  test('规则3: 离开整体视角后悬停不改变光标和边框亮度，边框仍随时间呼吸', async () => {
+  test('离开整体视角后悬停不改变光标和边框亮度，资料视角暂停后边框亮度不再变化', async () => {
     const px = PLAQUE_PIXEL.x;
     const py = PLAQUE_PIXEL.y;
     const result = await runBrowser<{ ready: boolean; views: string[]; hoverCursor: string; cursorAfter: string; pair: [number, number] }>(`
@@ -326,12 +284,12 @@ describe('离开整体视角后的悬停状态', () => {
     expect(result.cursorAfter).not.toBe('pointer');
     expect(result.pair[0]).toBeLessThan(PLAQUE_GLOW.hover);
     expect(result.pair[1]).toBeLessThan(PLAQUE_GLOW.hover);
-    expect(result.pair[0]).not.toBe(result.pair[1]);
+    expect(result.pair[0]).toBe(result.pair[1]);
   }, 60_000);
 });
 
 describe('铭牌右键点击', () => {
-  test('规则4: 右键点击铭牌不进入资料视角', async () => {
+  test('右键点击铭牌不进入资料视角', async () => {
     const px = PLAQUE_PIXEL.x;
     const py = PLAQUE_PIXEL.y;
     const result = await runBrowser<{ ready: boolean; views: string[] }>(`
@@ -397,17 +355,31 @@ describe('竖屏下的视场角与整体默认镜头', () => {
     expect(result.inFrame).toBe(true);
   }, 60_000);
 
-  test('竖屏下先看资料后退出，镜头回到默认位姿', async () => {
-    const result = await runBrowser<{ ready: boolean; distance: number }>(`
+  test('竖屏下点铭牌进入后退出，镜头回到进入前位姿', async () => {
+    const result = await runBrowser<{ ready: boolean; views: string[]; distance: number }>(`
       ${bootScript(390, 844)}
-      await js('window.handle.startStoryWithoutEntering()');
-      await wait(0.3);
+      await js('window.handle.onViewChange((view) => { if (view === "entering") window.__enterPos = window.handle.camera.position.clone(); })');
+      await js('window.handle.enterStory()');
+      const storyDeadline = Date.now() + 5000;
+      let views = [];
+      while (Date.now() < storyDeadline) {
+        views = await js('window.views ?? []');
+        if (views.includes('story')) break;
+        await wait(0.05);
+      }
       await js('window.handle.exitToDiorama()');
-      await wait(1);
-      const distance = await js("(() => { const camera = window.handle && window.handle.camera; return camera ? camera.position.distanceTo({ x: ${DEFAULT_CAMERA.position[0]}, y: ${DEFAULT_CAMERA.position[1]}, z: ${DEFAULT_CAMERA.position[2]} }) : 9999; })()");
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, distance }));
+      const exitDeadline = Date.now() + 3000;
+      while (Date.now() < exitDeadline) {
+        views = await js('window.views ?? []');
+        if (views.lastIndexOf('diorama') > views.indexOf('exiting')) break;
+        await wait(0.05);
+      }
+      await wait(0.3);
+      const distance = await js("window.__enterPos ? window.handle.camera.position.distanceTo(window.__enterPos) : 9999");
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, views, distance }));
     `);
     expect(result.ready).toBe(true);
+    expect(result.views).toContain('story');
     expect(result.distance).toBeLessThanOrEqual(0.1);
   }, 60_000);
 });
@@ -502,5 +474,562 @@ describe('地面倒影', () => {
       expect(result.after[i]).toBeGreaterThan(peak * 0.9);
       expect(result.after[i]).toBeLessThan(peak * 1.1);
     });
+  }, 60_000);
+});
+
+interface RefreshTick {
+  t: number;
+  drawn: boolean;
+  animTime: number;
+}
+
+function frameDriverScript(stepMs: number): string {
+  return `
+    (() => {
+      const STEP = ${stepMs};
+      let now = 0, draws = 0;
+      const queue = [];
+      for (const Context of [window.WebGL2RenderingContext, window.WebGLRenderingContext]) {
+        if (!Context) continue;
+        for (const name of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']) {
+          const original = Context.prototype[name];
+          if (original) Context.prototype[name] = function (...args) { draws++; return original.apply(this, args); };
+        }
+      }
+      window.requestAnimationFrame = (cb) => { queue.push(cb); return queue.length; };
+      window.cancelAnimationFrame = () => {};
+      performance.now = () => now;
+      const animTime = () => {
+        let value = 0;
+        window.handle.scene.traverse((o) => { if (o.material && o.material.uniforms && o.material.uniforms.uTime) value = o.material.uniforms.uTime.value; });
+        return value;
+      };
+      const pump = setInterval(() => { now += STEP; queue.splice(0).forEach((cb) => cb(now)); }, 4);
+      window.stopRefreshPump = () => clearInterval(pump);
+      window.runRefreshes = (durationMs) => {
+        window.refreshTicks = null;
+        (async () => {
+          const ticks = [];
+          for (let i = 0; i * STEP < durationMs; i++) {
+            now += STEP;
+            const before = draws;
+            queue.splice(0).forEach((cb) => cb(now));
+            ticks.push({ t: now, drawn: draws > before, animTime: animTime() });
+            await new Promise((resolve) => setTimeout(resolve, 0));
+          }
+          window.refreshTicks = ticks;
+        })();
+      };
+    })();
+  `;
+}
+
+async function simulateRefreshes(stepMs: number): Promise<{ ready: boolean; ticks: RefreshTick[] }> {
+  return runBrowser<{ ready: boolean; ticks: RefreshTick[] }>(`
+    await cdp('Page.addScriptToEvaluateOnNewDocument', { source: ${JSON.stringify(frameDriverScript(stepMs))} });
+    ${BOOT}
+    await js('window.stopRefreshPump()');
+    await js('window.runRefreshes(1000)');
+    let ticks = null;
+    const runDeadline = Date.now() + 100000;
+    while (Date.now() < runDeadline) {
+      ticks = await js('window.refreshTicks');
+      if (ticks) break;
+      await wait(0.2);
+    }
+    cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, ticks }));
+  `);
+}
+
+describe('帧率上限 60 帧', () => {
+  const cases = [
+    { hz: 60, stepMs: 1000 / 60, every: 1, frames: 60 },
+    { hz: 120, stepMs: 1000 / 120, every: 2, frames: 60 },
+    { hz: 144, stepMs: 6.94, every: 3, frames: 48 },
+    { hz: 165, stepMs: 6.06, every: 3, frames: 55 },
+  ];
+
+  for (const { hz, stepMs, every, frames } of cases) {
+    test(`${hz}Hz 刷新跑 1 秒画出约 ${frames} 帧，帧间隔均匀，跳过的刷新不推进动画时间`, async () => {
+      const { ready, ticks } = await simulateRefreshes(stepMs);
+      expect(ready).toBe(true);
+      const drawn = ticks.filter((tick) => tick.drawn);
+      expect(Math.abs(drawn.length - frames)).toBeLessThanOrEqual(1);
+      for (let i = 1; i < drawn.length; i++) {
+        expect(drawn[i].t - drawn[i - 1].t).toBeCloseTo(every * stepMs, 0);
+        expect(drawn[i].animTime - drawn[i - 1].animTime).toBeCloseTo((every * stepMs) / 1000, 3);
+      }
+      for (let i = 1; i < ticks.length; i++) {
+        if (!ticks[i].drawn) expect(ticks[i].animTime).toBe(ticks[i - 1].animTime);
+      }
+    }, 150_000);
+  }
+});
+
+describe('渲染器不开默认画布抗锯齿', () => {
+  test('舞台画布的 WebGL 上下文 antialias 为 false', async () => {
+    const result = await runBrowser<{ ready: boolean; antialias: boolean | null }>(`
+      ${BOOT}
+      const antialias = await js(\`(() => {
+        const canvas = document.querySelector('#stage canvas');
+        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+        return gl ? gl.getContextAttributes().antialias : null;
+      })()\`);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, antialias }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.antialias).toBe(false);
+  }, 60_000);
+});
+
+describe('首帧渲染出错', () => {
+  test('首帧 draw 抛错导致挂载失败后，推进刷新不再执行渲染循环', async () => {
+    const result = await runBrowser<{ mountError: string | null; ready: boolean; drawsAfter: number; callbacksRun: number }>(`
+      await cdp('Page.addScriptToEvaluateOnNewDocument', { source: \`
+        (() => {
+          const pending = new Map();
+          let nextId = 0;
+          let armed = true;
+          let boundFramebuffer = null;
+          window.__failed = false;
+          window.__drawsAfter = 0;
+          window.requestAnimationFrame = (cb) => { const id = ++nextId; pending.set(id, cb); return id; };
+          window.cancelAnimationFrame = (id) => { pending.delete(id); };
+          window.__pump = () => {
+            const callbacks = [...pending.values()];
+            pending.clear();
+            callbacks.forEach((cb) => { try { cb(performance.now()); } catch (e) {} });
+            return callbacks.length;
+          };
+          for (const Context of [window.WebGL2RenderingContext, window.WebGLRenderingContext]) {
+            if (!Context) continue;
+            const originalBind = Context.prototype.bindFramebuffer;
+            Context.prototype.bindFramebuffer = function (target, framebuffer) {
+              boundFramebuffer = framebuffer;
+              return originalBind.call(this, target, framebuffer);
+            };
+            for (const name of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']) {
+              const original = Context.prototype[name];
+              if (!original) continue;
+              Context.prototype[name] = function (...args) {
+                if (window.__failed) window.__drawsAfter++;
+                if (armed && boundFramebuffer === null) { armed = false; window.__failed = true; throw new Error('first draw failed'); }
+                return original.apply(this, args);
+              };
+            }
+          }
+        })();
+      \` });
+      ${BOOT}
+      await wait(0.3);
+      let callbacksRun = 0;
+      for (let i = 0; i < 20; i++) {
+        callbacksRun += await js('window.__pump()');
+        await wait(0.02);
+      }
+      const drawsAfter = await js('window.__drawsAfter');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, mountError, drawsAfter, callbacksRun }));
+    `);
+    expect(result.mountError).not.toBeNull();
+    expect(result.ready).toBe(false);
+    expect(result.drawsAfter).toBe(0);
+    expect(result.callbacksRun).toBe(0);
+  }, 60_000);
+
+  test('运行中首帧之后某一帧画帧出错后，推进刷新不再执行渲染循环', async () => {
+    const result = await runBrowser<{ ready: boolean; failed: boolean; drawsAfter: number; callbacksRun: number }>(`
+      await cdp('Page.addScriptToEvaluateOnNewDocument', { source: \`
+        (() => {
+          const pending = new Map();
+          let nextId = 0;
+          let loopStarted = false;
+          let frameNo = 0;
+          let frameOpen = false;
+          window.__failed = false;
+          window.__drawsAfter = 0;
+          window.requestAnimationFrame = (cb) => { const id = ++nextId; pending.set(id, cb); loopStarted = true; return id; };
+          window.cancelAnimationFrame = (id) => { pending.delete(id); };
+          window.__pump = () => {
+            const callbacks = [...pending.values()];
+            pending.clear();
+            for (const cb of callbacks) {
+              frameOpen = false;
+              try { cb(performance.now()); } catch (e) {}
+            }
+            return callbacks.length;
+          };
+          for (const Context of [window.WebGL2RenderingContext, window.WebGLRenderingContext]) {
+            if (!Context) continue;
+            for (const name of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']) {
+              const original = Context.prototype[name];
+              if (!original) continue;
+              Context.prototype[name] = function (...args) {
+                if (window.__failed) window.__drawsAfter++;
+                if (loopStarted && !window.__failed && !frameOpen) {
+                  frameOpen = true;
+                  frameNo++;
+                  if (frameNo === 3) { window.__failed = true; throw new Error('third frame draw failed'); }
+                }
+                return original.apply(this, args);
+              };
+            }
+          }
+        })();
+      \` });
+      ${BOOT}
+      await wait(0.3);
+      for (let i = 0; i < 30 && !(await js('window.__failed')); i++) {
+        await js('window.__pump()');
+        await wait(0.02);
+      }
+      const failed = await js('window.__failed');
+      let callbacksRun = 0;
+      for (let i = 0; i < 20; i++) {
+        callbacksRun += await js('window.__pump()');
+        await wait(0.02);
+      }
+      const drawsAfter = await js('window.__drawsAfter');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, failed, drawsAfter, callbacksRun }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.failed).toBe(true);
+    expect(result.drawsAfter).toBe(0);
+    expect(result.callbacksRun).toBe(0);
+  }, 60_000);
+});
+
+function pauseDriverScript(stepMs: number): string {
+  return `
+    (() => {
+      const STEP = ${stepMs};
+      let now = 0, maxPerTick = 0, draws = 0, screenDraws = 0, boundFramebuffer = null, callbacksRun = 0, mark = null, firstDrawAt = null, firstDrawTime = null;
+      const queue = [];
+      const animTime = () => {
+        let value = 0;
+        window.handle.scene.traverse((o) => { if (o.material && o.material.uniforms && o.material.uniforms.uTime) value = o.material.uniforms.uTime.value; });
+        return value;
+      };
+      for (const Context of [window.WebGL2RenderingContext, window.WebGLRenderingContext]) {
+        if (!Context) continue;
+        const originalBind = Context.prototype.bindFramebuffer;
+        Context.prototype.bindFramebuffer = function (target, framebuffer) {
+          boundFramebuffer = framebuffer;
+          return originalBind.call(this, target, framebuffer);
+        };
+        for (const name of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']) {
+          const original = Context.prototype[name];
+          if (!original) continue;
+          Context.prototype[name] = function (...args) {
+            draws++;
+            if (boundFramebuffer === null) screenDraws++;
+            if (mark !== null && firstDrawAt === null) { firstDrawAt = now; firstDrawTime = animTime(); }
+            return original.apply(this, args);
+          };
+        }
+      }
+      window.requestAnimationFrame = (cb) => { queue.push(cb); return queue.length; };
+      window.cancelAnimationFrame = () => {};
+      performance.now = () => now;
+      setInterval(() => {
+        now += STEP;
+        const callbacks = queue.splice(0);
+        callbacksRun += callbacks.length;
+        maxPerTick = Math.max(maxPerTick, callbacks.length);
+        callbacks.forEach((cb) => cb(now));
+      }, 4);
+      window.drv = {
+        now: () => now,
+        draws: () => draws,
+        callbacks: () => callbacksRun,
+        maxPerTick: () => maxPerTick,
+        resetMaxPerTick() { maxPerTick = 0; },
+        animTime,
+        screenDraws: () => screenDraws,
+        markExit() { mark = now; firstDrawAt = null; firstDrawTime = null; },
+        exitObservation: () => ({ markAt: mark, firstDrawAt, firstDrawTime }),
+      };
+    })();
+  `;
+}
+
+const PAUSE_HELPERS = `
+  async function waitView(view, limitSeconds) {
+    const deadline = Date.now() + limitSeconds * 1000;
+    while (Date.now() < deadline) {
+      if ((await js('window.views ?? []')).includes(view)) return true;
+      await wait(0.02);
+    }
+    return false;
+  }
+  async function waitFake(ms) {
+    const target = (await js('window.drv.now()')) + ms;
+    const deadline = Date.now() + 60000;
+    while (Date.now() < deadline && (await js('window.drv.now()')) < target) await wait(0.02);
+  }
+  async function enterAndSettle() {
+    await js('window.handle.enterStory()');
+    await waitView('story', 10);
+    await wait(0.3);
+  }
+  async function waitDiorama() {
+    const deadline = Date.now() + 10000;
+    while (Date.now() < deadline) {
+      const views = await js('window.views ?? []');
+      if (views.lastIndexOf('diorama') > views.indexOf('exiting') && views.indexOf('exiting') >= 0) return;
+      await wait(0.02);
+    }
+  }
+`;
+
+function pauseScript(stepMs: number, width = 1440, height = 900): string {
+  return `
+    await cdp('Page.addScriptToEvaluateOnNewDocument', { source: ${JSON.stringify(pauseDriverScript(stepMs))} });
+    ${bootScript(width, height)}
+    ${PAUSE_HELPERS}
+  `;
+}
+
+describe('资料视角镜头位与进入', () => {
+  test('进入后镜头与资料镜头位距离小于 0.05 米，entering 到 story 不超过 1.5 秒', async () => {
+    const pose = storyCamera.storyPose();
+    const result = await runBrowser<{ ready: boolean; views: string[]; times: number[]; position: number[] }>(`
+      ${pauseScript(1000 / 60)}
+      await js('window.handle.enterStory()');
+      await waitView('story', 10);
+      await wait(0.3);
+      const position = await js('window.handle.camera.position.toArray()');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, views: await js('window.views'), times: await js('window.viewTimes'), position }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(new THREE.Vector3(...result.position).distanceTo(pose.position)).toBeLessThan(0.05);
+    const enterIndex = result.views.indexOf('entering');
+    const storyIndex = result.views.indexOf('story', enterIndex + 1);
+    expect(storyIndex).toBeGreaterThan(enterIndex);
+    expect(result.times[storyIndex] - result.times[enterIndex]).toBeLessThanOrEqual(1500);
+  }, 60_000);
+});
+
+describe('资料视角暂停渲染', () => {
+  test('进入 story 后连续 1 秒 draw 调用为 0，且没有刷新回调在执行', async () => {
+    const result = await runBrowser<{ ready: boolean; drawsDelta: number; callbacksDelta: number; fakeElapsed: number }>(`
+      ${pauseScript(1000 / 60)}
+      await enterAndSettle();
+      const d0 = await js('window.drv.draws()');
+      const c0 = await js('window.drv.callbacks()');
+      const n0 = await js('window.drv.now()');
+      const limit = Date.now() + 5000;
+      while (Date.now() < limit && (await js('window.drv.now()')) - n0 < 1000) await wait(0.05);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({
+        ready,
+        drawsDelta: (await js('window.drv.draws()')) - d0,
+        callbacksDelta: (await js('window.drv.callbacks()')) - c0,
+        fakeElapsed: (await js('window.drv.now()')) - n0,
+      }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.fakeElapsed).toBeGreaterThanOrEqual(1000);
+    expect(result.drawsDelta).toBe(0);
+    expect(result.callbacksDelta).toBe(0);
+  }, 60_000);
+
+  test('暂停期间场景动画时间与铭牌边框亮度都不再变化', async () => {
+    const result = await runBrowser<{ ready: boolean; timeBefore: number; timeAfter: number; glowBefore: number; glowAfter: number }>(`
+      ${pauseScript(1000 / 60)}
+      await enterAndSettle();
+      const glow = () => js("window.handle.scene.getObjectByName('plaque-border').material.emissiveIntensity");
+      const timeBefore = await js('window.drv.animTime()');
+      const glowBefore = await glow();
+      await waitFake(2000);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, timeBefore, timeAfter: await js('window.drv.animTime()'), glowBefore, glowAfter: await glow() }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.timeAfter).toBe(result.timeBefore);
+    expect(result.glowAfter).toBe(result.glowBefore);
+  }, 60_000);
+
+  test('暂停期间窗口尺寸变化：尺寸、比例、取景偏移更新，只画一帧，动画时间不推进', async () => {
+    const offset = storyCamera.framingOffset(1000, 700);
+    const result = await runBrowser<{ ready: boolean; screenDraws: number; baseline: number; drawsDelta: number; timeBefore: number; timeAfter: number; fov: number; aspect: number; offsetX: number | null; screenDrawsLater: number }>(`
+      ${pauseScript(1000 / 60)}
+      const s0 = await js('window.drv.screenDraws()');
+      const t0 = await js('window.drv.now()');
+      await waitFake(1000);
+      const elapsedFrames = Math.round(((await js('window.drv.now()')) - t0) / ${1000 / 60});
+      const baseline = ((await js('window.drv.screenDraws()')) - s0) / elapsedFrames;
+      await enterAndSettle();
+      const f0 = await js('window.drv.screenDraws()');
+      const d0 = await js('window.drv.draws()');
+      const timeBefore = await js('window.drv.animTime()');
+      await cdp('Emulation.setDeviceMetricsOverride', { width: 1000, height: 700, deviceScaleFactor: 1, mobile: false });
+      await wait(0.6);
+      const screenDraws = (await js('window.drv.screenDraws()')) - f0;
+      const drawsDelta = (await js('window.drv.draws()')) - d0;
+      await wait(0.6);
+      const screenDrawsLater = (await js('window.drv.screenDraws()')) - f0;
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({
+        ready, screenDraws, baseline, drawsDelta, screenDrawsLater, timeBefore,
+        timeAfter: await js('window.drv.animTime()'),
+        fov: await js('window.handle.camera.fov'),
+        aspect: await js('window.handle.camera.aspect'),
+        offsetX: await js('window.handle.camera.view ? window.handle.camera.view.offsetX : null'),
+      }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(Math.round(result.baseline)).toBe(1);
+    expect(result.screenDraws).toBe(1);
+    expect(result.screenDrawsLater).toBe(1);
+    expect(result.drawsDelta).toBeGreaterThan(0);
+    expect(result.timeAfter).toBe(result.timeBefore);
+    expect(Math.abs(result.fov - viewFov(1000, 700))).toBeLessThan(0.5);
+    expect(result.aspect).toBeCloseTo(1000 / 700, 3);
+    expect(result.offsetX).toBeCloseTo(offset.x, 3);
+  }, 60_000);
+});
+
+describe('退出资料视角恢复渲染', () => {
+  test('exitToDiorama 后 0.2 秒内出现 draw；停留 5 秒后恢复，第一帧动画时间与暂停前相差不超过 0.1 秒', async () => {
+    const result = await runBrowser<{ ready: boolean; pausedTime: number; markAt: number; firstDrawAt: number | null; firstDrawTime: number | null }>(`
+      ${pauseScript(1000 / 60)}
+      await enterAndSettle();
+      const pausedTime = await js('window.drv.animTime()');
+      await waitFake(5000);
+      await js('window.drv.markExit()');
+      await js('window.handle.exitToDiorama()');
+      await wait(0.6);
+      const obs = await js('window.drv.exitObservation()');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, pausedTime, markAt: obs.markAt, firstDrawAt: obs.firstDrawAt, firstDrawTime: obs.firstDrawTime }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.firstDrawAt).not.toBeNull();
+    expect(result.firstDrawAt! - result.markAt).toBeLessThanOrEqual(200);
+    expect(Math.abs(result.firstDrawTime! - result.pausedTime)).toBeLessThanOrEqual(0.1);
+  }, 60_000);
+
+  test('退出后 view 依次 exiting、diorama，不超过 1.2 秒，镜头与进入前位置距离不超过 0.1 米', async () => {
+    const result = await runBrowser<{ ready: boolean; views: string[]; times: number[]; distance: number }>(`
+      ${pauseScript(1000 / 60)}
+      await js('window.handle.onViewChange((view) => { if (view === "entering") window.__enterPos = window.handle.camera.position.clone(); })');
+      await enterAndSettle();
+      await waitFake(3000);
+      await js('window.handle.exitToDiorama()');
+      await waitDiorama();
+      await wait(0.3);
+      const distance = await js('window.__enterPos ? window.handle.camera.position.distanceTo(window.__enterPos) : 9999');
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, views: await js('window.views'), times: await js('window.viewTimes'), distance }));
+    `);
+    expect(result.ready).toBe(true);
+    const exitingIndex = result.views.indexOf('exiting');
+    const dioramaIndex = result.views.indexOf('diorama', exitingIndex + 1);
+    expect(exitingIndex).toBeGreaterThanOrEqual(0);
+    expect(dioramaIndex).toBeGreaterThan(exitingIndex);
+    expect(result.times[dioramaIndex] - result.times[exitingIndex]).toBeLessThanOrEqual(1200);
+    expect(result.distance).toBeLessThanOrEqual(0.1);
+  }, 60_000);
+});
+
+describe('暂停与降档统计', () => {
+  test('对照：整体视角下持续 50 毫秒慢帧 7 秒会降档', async () => {
+    const result = await runBrowser<{ ready: boolean; tiers: string[] }>(`
+      ${pauseScript(50)}
+      await js('window.__tiers = []; window.handle.onQualityChange((tier) => window.__tiers.push(tier))');
+      await waitFake(7000);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, tiers: await js('window.__tiers') }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.tiers).toEqual(['low']);
+  }, 90_000);
+
+  test('在 story 停留 10 秒（慢帧时钟）再退出，退出后继续跑帧也不降档', async () => {
+    const result = await runBrowser<{ ready: boolean; tiers: string[]; views: string[] }>(`
+      ${pauseScript(50)}
+      await js('window.__tiers = []; window.handle.onQualityChange((tier) => window.__tiers.push(tier))');
+      await enterAndSettle();
+      await waitFake(10000);
+      await js('window.handle.exitToDiorama()');
+      await waitDiorama();
+      await waitFake(1500);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, tiers: await js('window.__tiers'), views: await js('window.views') }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.views).toContain('diorama');
+    expect(result.tiers).toEqual([]);
+  }, 120_000);
+});
+
+describe('暂停边界', () => {
+  test('story 到达的同一帧立刻退出，之后每次刷新只执行 1 个渲染循环回调', async () => {
+    const result = await runBrowser<{ ready: boolean; views: string[]; maxPerTick: number }>(`
+      ${pauseScript(1000 / 60)}
+      await js('window.handle.onViewChange((view) => { if (view === "story") window.handle.exitToDiorama(); })');
+      await js('window.handle.enterStory()');
+      await waitDiorama();
+      await js('window.drv.resetMaxPerTick()');
+      await waitFake(500);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, views: await js('window.views'), maxPerTick: await js('window.drv.maxPerTick()') }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.views).toContain('diorama');
+    expect(result.maxPerTick).toBe(1);
+  }, 60_000);
+
+  test('暂停期间切换语言：画到屏幕的 draw 恰为 1 次，动画时间不变，之后 0.6 秒不再画', async () => {
+    const result = await runBrowser<{ ready: boolean; screenDraws: number; screenDrawsLater: number; timeBefore: number; timeAfter: number }>(`
+      ${pauseScript(1000 / 60)}
+      await enterAndSettle();
+      const f0 = await js('window.drv.screenDraws()');
+      const timeBefore = await js('window.drv.animTime()');
+      await js("window.handle.setLanguage('en')");
+      await wait(0.3);
+      const screenDraws = (await js('window.drv.screenDraws()')) - f0;
+      await wait(0.6);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({
+        ready, screenDraws, timeBefore,
+        screenDrawsLater: (await js('window.drv.screenDraws()')) - f0,
+        timeAfter: await js('window.drv.animTime()'),
+      }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.screenDraws).toBe(1);
+    expect(result.screenDrawsLater).toBe(1);
+    expect(result.timeAfter).toBe(result.timeBefore);
+  }, 60_000);
+
+  test('短暂停不降档：正常帧 1 秒、story 停留 2.5 秒、退出后再跑 5 秒正常帧，不触发降档', async () => {
+    const result = await runBrowser<{ ready: boolean; tiers: string[]; views: string[] }>(`
+      ${pauseScript(1000 / 60)}
+      await js('window.__tiers = []; window.handle.onQualityChange((tier) => window.__tiers.push(tier))');
+      await waitFake(1000);
+      await enterAndSettle();
+      await waitFake(2500);
+      await js('window.handle.exitToDiorama()');
+      await waitDiorama();
+      await waitFake(5000);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ready, tiers: await js('window.__tiers'), views: await js('window.views') }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.views).toContain('diorama');
+    expect(result.tiers).toEqual([]);
+  }, 90_000);
+
+  test('暂停中 dispose：之后推进 20 轮刷新，没有渲染循环回调执行，也没有 draw', async () => {
+    const result = await runBrowser<{ ready: boolean; drawsDelta: number; callbacksDelta: number; fakeElapsed: number }>(`
+      ${pauseScript(1000 / 60)}
+      await enterAndSettle();
+      await js('window.handle.dispose()');
+      const d0 = await js('window.drv.draws()');
+      const c0 = await js('window.drv.callbacks()');
+      const n0 = await js('window.drv.now()');
+      await waitFake(20 * ${1000 / 60});
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({
+        ready,
+        drawsDelta: (await js('window.drv.draws()')) - d0,
+        callbacksDelta: (await js('window.drv.callbacks()')) - c0,
+        fakeElapsed: (await js('window.drv.now()')) - n0,
+      }));
+    `);
+    expect(result.ready).toBe(true);
+    expect(result.fakeElapsed).toBeGreaterThanOrEqual(20 * (1000 / 60));
+    expect(result.callbacksDelta).toBe(0);
+    expect(result.drawsDelta).toBe(0);
   }, 60_000);
 });

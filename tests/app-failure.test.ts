@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { preview, type PreviewServer } from 'vite';
 import { runBrowser } from './browser';
-import { plaquePoint, roadPoint } from './scene-helpers';
+import { plaquePoint } from './scene-helpers';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const PORT = 4203;
@@ -29,17 +29,27 @@ afterAll(async () => {
 });
 
 const HELPERS = `
-  async function holdScene() {
-    await cdp('Fetch.enable', { patterns: [{ urlPattern: '*/assets/world-*.js' }] });
-  }
-  async function releaseScene() {
-    for (const event of drainEvents()) {
-      if (event.method === 'Fetch.requestPaused') await cdp('Fetch.continueRequest', { requestId: event.params.requestId });
-    }
-    await cdp('Fetch.disable');
-  }
   async function settle() {
     await js('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+  }
+  const BACK = "Array.from(document.querySelectorAll('button')).find((b) => ['返回全景', 'Back to overview'].includes(b.textContent.trim()))";
+  const VISIBLE = "(el) => { if (!el) return false; const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && !el.closest('[hidden]'); }";
+  const SCROLLER = "(() => { for (let el = document.querySelector('.receipt') && document.querySelector('.receipt').parentElement; el && el !== document.body; el = el.parentElement) { if (/auto|scroll/.test(getComputedStyle(el).overflowY)) return el; } return null; })()";
+  async function isVisible(expr) {
+    return js('(' + VISIBLE + ')(' + expr + ')');
+  }
+  async function bodyText() {
+    return js('document.body.innerText');
+  }
+  async function waitStory() {
+    const deadline = Date.now() + 15000;
+    while (Date.now() < deadline) {
+      if (await js("document.documentElement.dataset.view === 'story'")) return;
+      await wait(0.1);
+    }
+  }
+  async function visibleCanvasCount() {
+    return js('Array.from(document.querySelectorAll("canvas")).filter(' + VISIBLE + ').length');
   }
   async function pressKey(key, code, vk, text) {
     await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: vk, ...(text ? { text } : {}) });
@@ -55,10 +65,25 @@ const GETCONTEXT_NULL_SCRIPT = `
   };
 `;
 
+const FAILED_EN = "The 3D scene couldn't load";
+const FAILED_ZH = '3D 场景无法加载';
+
+const SNAPSHOT = `
+  const snapshot = await js(\`(() => {
+    const visible = \${VISIBLE};
+    return {
+      view: document.documentElement.dataset.view ?? null,
+      shellGone: !document.querySelector('.loading-shell'),
+      receiptVisible: visible(document.querySelector('.receipt')),
+      backVisible: visible(\${BACK}),
+    };
+  })()\`);
+`;
+
 describe('三维场景加载失败', () => {
-  test('三维代码动态分块加载失败时显示失败提示，无可见 canvas，链接可点', async () => {
+  test('三维代码动态分块加载失败时显示小票与失败提示，无可见 canvas，链接可点', async () => {
     expect(worldChunkFile).not.toBeNull();
-    const result = await runBrowser<{ view: string | null; shellGone: boolean; alertText: string | null; canvasCount: number; linksClickable: boolean }>(`
+    const result = await runBrowser<{ view: string | null; shellGone: boolean; receiptVisible: boolean; backVisible: boolean; text: string; canvasCount: number; linksClickable: boolean }>(`
       ${HELPERS}
       await cdp('Fetch.enable', { patterns: [{ urlPattern: '*${worldChunkFile}' }] });
       let __stop = false;
@@ -75,18 +100,12 @@ describe('三维场景加载失败', () => {
       await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
       await cdp('Emulation.setUserAgentOverride', { userAgent: await js('navigator.userAgent'), acceptLanguage: 'en-US' });
       await navigate(${JSON.stringify(BASE_URL)});
-      const deadline = Date.now() + 15000;
-      while (Date.now() < deadline) {
-        if (await js("document.documentElement.dataset.view === 'story'")) break;
-        await wait(0.1);
-      }
+      await waitStory();
       __stop = true;
-      const view = await js('document.documentElement.dataset.view ?? null');
-      const shellGone = await js("!document.querySelector('.loading-shell')");
-      const alertText = await js("(() => { const el = document.querySelector('[role=\\"alert\\"]'); return el ? el.textContent : null; })()");
-      const canvasCount = await js("document.querySelectorAll('#scene canvas').length");
+      await wait(1);
+      ${SNAPSHOT}
       const linksClickable = await js(\`(() => {
-        const links = Array.from(document.querySelectorAll('.story-sections a'));
+        const links = Array.from(document.querySelectorAll('.receipt a'));
         if (links.length !== 4) return false;
         return links.every((a) => {
           a.scrollIntoView({ block: 'center' });
@@ -96,80 +115,92 @@ describe('三维场景加载失败', () => {
           return hit === a || a.contains(hit);
         });
       })()\`);
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ view, shellGone, alertText, canvasCount, linksClickable }));
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ...snapshot, text: await bodyText(), canvasCount: await visibleCanvasCount(), linksClickable }));
     `);
     expect(result.view).toBe('story');
     expect(result.shellGone).toBe(true);
-    expect(result.alertText).toContain("The 3D scene couldn't load");
+    expect(result.receiptVisible).toBe(true);
+    expect(result.backVisible).toBe(false);
+    expect(result.text).toContain(FAILED_EN);
     expect(result.canvasCount).toBe(0);
     expect(result.linksClickable).toBe(true);
   }, 90_000);
 
-  test('WebGL 创建失败时显示失败提示，无可见返回按钮，按 Esc 后仍停留在 story', async () => {
-    const result = await runBrowser<{ view: string | null; shellGone: boolean; alertText: string | null; canvasCount: number; backButtonVisible: boolean; viewAfterEscape: string | null }>(`
+  test('WebGL 创建失败时显示小票与失败提示，无可见返回按钮，按 Esc 后仍停留在 story', async () => {
+    const result = await runBrowser<{ view: string | null; shellGone: boolean; receiptVisible: boolean; backVisible: boolean; text: string; canvasCount: number; viewAfterEscape: string | null }>(`
       ${HELPERS}
       await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
       await cdp('Page.addScriptToEvaluateOnNewDocument', { source: ${JSON.stringify(GETCONTEXT_NULL_SCRIPT)} });
       await cdp('Emulation.setUserAgentOverride', { userAgent: await js('navigator.userAgent'), acceptLanguage: 'en-US' });
       await navigate(${JSON.stringify(BASE_URL)});
-      const deadline = Date.now() + 15000;
-      while (Date.now() < deadline) {
-        if (await js("document.documentElement.dataset.view === 'story'")) break;
-        await wait(0.1);
-      }
-      const view = await js('document.documentElement.dataset.view ?? null');
-      const shellGone = await js("!document.querySelector('.loading-shell')");
-      const alertText = await js("(() => { const el = document.querySelector('[role=\\"alert\\"]'); return el ? el.textContent : null; })()");
-      const canvasCount = await js("document.querySelectorAll('#scene canvas').length");
-      const backButtonVisible = await js(\`(() => {
-        const btn = document.querySelector('.story-back-button');
-        if (!btn) return false;
-        const r = btn.getBoundingClientRect();
-        return r.width > 0 && r.height > 0;
-      })()\`);
+      await waitStory();
+      await wait(1);
+      ${SNAPSHOT}
+      const text = await bodyText();
+      const canvasCount = await visibleCanvasCount();
       await pressKey('Escape', 'Escape', 27);
       await settle();
-      const viewAfterEscape = await js('document.documentElement.dataset.view ?? null');
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ view, shellGone, alertText, canvasCount, backButtonVisible, viewAfterEscape }));
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ...snapshot, text, canvasCount, viewAfterEscape: await js('document.documentElement.dataset.view ?? null') }));
     `);
     expect(result.view).toBe('story');
     expect(result.shellGone).toBe(true);
-    expect(result.alertText).toContain("The 3D scene couldn't load");
+    expect(result.receiptVisible).toBe(true);
+    expect(result.backVisible).toBe(false);
+    expect(result.text).toContain(FAILED_EN);
     expect(result.canvasCount).toBe(0);
-    expect(result.backButtonVisible).toBe(false);
     expect(result.viewAfterEscape).toBe('story');
   }, 90_000);
 
-  test('三维失败后滚动照常翻到下一段', async () => {
-    const road = roadPoint(1440, 900);
-    const result = await runBrowser<{ view: string | null; alertText: string | null; scrollBefore: number; scrollAfter: number }>(`
+  test('中文环境下失败提示为「3D 场景无法加载」', async () => {
+    const result = await runBrowser<{ text: string }>(`
       ${HELPERS}
       await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
       await cdp('Page.addScriptToEvaluateOnNewDocument', { source: ${JSON.stringify(GETCONTEXT_NULL_SCRIPT)} });
-      await cdp('Emulation.setUserAgentOverride', { userAgent: await js('navigator.userAgent'), acceptLanguage: 'en-US' });
+      await cdp('Emulation.setUserAgentOverride', { userAgent: await js('navigator.userAgent'), acceptLanguage: 'zh-CN' });
       await navigate(${JSON.stringify(BASE_URL)});
-      const deadline = Date.now() + 15000;
-      while (Date.now() < deadline) {
-        if (await js("document.documentElement.dataset.view === 'story'")) break;
-        await wait(0.1);
-      }
-      const alertText = await js("(() => { const el = document.querySelector('[role=\\"alert\\"]'); return el ? el.textContent : null; })()");
-      const scrollBefore = await js('window.scrollY');
-      await wait(0.6);
-      await cdp('Input.dispatchMouseEvent', { type: 'mouseWheel', x: ${road.x}, y: ${road.y}, deltaX: 0, deltaY: 120 });
-      await wait(1.3);
-      const scrollAfter = await js('window.scrollY');
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ view: await js('document.documentElement.dataset.view ?? null'), alertText, scrollBefore, scrollAfter }));
+      await waitStory();
+      await wait(1);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ text: await bodyText() }));
     `);
-    expect(result.view).toBe('story');
-    expect(result.alertText).toContain("The 3D scene couldn't load");
-    expect(result.scrollBefore).toBe(0);
-    expect(result.scrollAfter).toBe(900);
+    expect(result.text).toContain(FAILED_ZH);
   }, 90_000);
 
-  test('运行中 WebGL 上下文丢失后显示失败提示', async () => {
-    const p = plaquePoint(1440, 900);
-    const result = await runBrowser<{ contextLossTriggered: boolean; alertText: string | null; view: string | null }>(`
+  test('三维失败后小票、相片、语言开关照常可用', async () => {
+    const result = await runBrowser<{ view: string | null; htmlLang: string; receiptText: string; photoOpen: boolean; photoOpenAfterEsc: boolean; viewAfterEsc: string | null }>(`
+      ${HELPERS}
+      await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+      await cdp('Page.addScriptToEvaluateOnNewDocument', { source: ${JSON.stringify(GETCONTEXT_NULL_SCRIPT)} });
+      await cdp('Emulation.setUserAgentOverride', { userAgent: await js('navigator.userAgent'), acceptLanguage: 'zh-CN' });
+      await navigate(${JSON.stringify(BASE_URL)});
+      await waitStory();
+      await wait(1);
+      await click('.language-toggle button');
+      await settle();
+      const htmlLang = await js('document.documentElement.lang');
+      const receiptText = await js("document.querySelector('.receipt').textContent");
+      await click('.receipt-avatar-btn');
+      await wait(0.3);
+      const photoOpen = await js("!!document.querySelector('.photo-print-overlay')");
+      await pressKey('Escape', 'Escape', 27);
+      await wait(0.3);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({
+        view: await js('document.documentElement.dataset.view ?? null'),
+        htmlLang,
+        receiptText,
+        photoOpen,
+        photoOpenAfterEsc: await js("!!document.querySelector('.photo-print-overlay')"),
+        viewAfterEsc: await js('document.documentElement.dataset.view ?? null'),
+      }));
+    `);
+    expect(result.htmlLang).toBe('en');
+    expect(result.receiptText).toContain('Still open on a rainy night');
+    expect(result.photoOpen).toBe(true);
+    expect(result.photoOpenAfterEsc).toBe(false);
+    expect(result.viewAfterEsc).toBe('story');
+  }, 90_000);
+
+  test('运行中 WebGL 上下文丢失后显示小票与失败提示', async () => {
+    const result = await runBrowser<{ contextLossTriggered: boolean; text: string; view: string | null; receiptVisible: boolean; backVisible: boolean; canvasCount: number }>(`
       ${HELPERS}
       await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
       await cdp('Emulation.setUserAgentOverride', { userAgent: await js('navigator.userAgent'), acceptLanguage: 'en-US' });
@@ -189,36 +220,38 @@ describe('三维场景加载失败', () => {
         ext.loseContext();
         return true;
       })()\`);
-      const alertDeadline = Date.now() + 5000;
-      let alertText = null;
-      while (Date.now() < alertDeadline) {
-        alertText = await js("(() => { const el = document.querySelector('[role=\\"alert\\"]'); return el ? el.textContent : null; })()");
-        if (alertText) break;
-        await wait(0.1);
-      }
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ contextLossTriggered, alertText, view: await js('document.documentElement.dataset.view ?? null') }));
+      await waitStory();
+      await wait(1);
+      ${SNAPSHOT}
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ ...snapshot, contextLossTriggered, text: await bodyText(), canvasCount: await visibleCanvasCount() }));
     `);
     expect(result.contextLossTriggered).toBe(true);
-    expect(result.alertText).toContain("The 3D scene couldn't load");
     expect(result.view).toBe('story');
+    expect(result.text).toContain(FAILED_EN);
+    expect(result.receiptVisible).toBe(true);
+    expect(result.backVisible).toBe(false);
+    expect(result.canvasCount).toBe(0);
   }, 90_000);
 
-  test('先点「先看资料」再触发上下文丢失，失败提示出现且 scrollY 不变', async () => {
-    const result = await runBrowser<{ scrollBefore: number; scrollAfter: number; alertText: string | null }>(`
+  test('资料视角下触发上下文丢失，失败提示出现且小票层滚动位置不变', async () => {
+    const p = plaquePoint(1440, 500);
+    const result = await runBrowser<{ scrollBefore: number; scrollAfter: number; text: string; h1TopBefore: number; h1TopAfter: number }>(`
       ${HELPERS}
-      await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+      await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 500, deviceScaleFactor: 1, mobile: false });
       await cdp('Emulation.setUserAgentOverride', { userAgent: await js('navigator.userAgent'), acceptLanguage: 'en-US' });
-      await holdScene();
       await navigate(${JSON.stringify(BASE_URL)});
-      while (!(await js("!!document.querySelector('.enter-story-button')"))) await wait(0.05);
-      await click('.loading-shell-button');
-      await releaseScene();
       const deadline = Date.now() + 20000;
       while (Date.now() < deadline) {
-        if (await js("document.querySelector('#scene')?.getAttribute('aria-busy') === 'false'")) break;
+        if (await js("document.documentElement.dataset.view === 'diorama' && document.querySelector('#scene')?.getAttribute('aria-busy') === 'false'")) break;
         await wait(0.2);
       }
-      const scrollBefore = await js('window.scrollY');
+      await click([${p.x}, ${p.y}]);
+      await waitStory();
+      await wait(1);
+      await js('(' + SCROLLER + ').scrollTop = 150');
+      await settle();
+      const scrollBefore = await js('(' + SCROLLER + ').scrollTop');
+      const h1TopBefore = await js("document.querySelector('.receipt h1').getBoundingClientRect().top");
       await js(\`(() => {
         const canvas = document.querySelector('#scene canvas');
         const gl = canvas && (canvas.getContext('webgl2') || canvas.getContext('webgl'));
@@ -226,16 +259,18 @@ describe('三维场景加载失败', () => {
         if (ext) ext.loseContext();
       })()\`);
       const alertDeadline = Date.now() + 5000;
-      let alertText = null;
+      let text = '';
       while (Date.now() < alertDeadline) {
-        alertText = await js("(() => { const el = document.querySelector('[role=\\"alert\\"]'); return el ? el.textContent : null; })()");
-        if (alertText) break;
+        text = await bodyText();
+        if (text.includes(${JSON.stringify(FAILED_EN)})) break;
         await wait(0.1);
       }
-      const scrollAfter = await js('window.scrollY');
-      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ scrollBefore, scrollAfter, alertText }));
+      await wait(0.3);
+      cliLog('PLAYABLE_TOWN_RESULT:' + JSON.stringify({ scrollBefore, scrollAfter: await js('(' + SCROLLER + ').scrollTop'), text, h1TopBefore, h1TopAfter: await js("document.querySelector('.receipt h1').getBoundingClientRect().top") }));
     `);
-    expect(result.alertText).toContain("The 3D scene couldn't load");
+    expect(result.text).toContain(FAILED_EN);
+    expect(result.scrollBefore).toBeGreaterThan(0);
     expect(result.scrollAfter).toBe(result.scrollBefore);
+    expect(Math.abs(result.h1TopAfter - result.h1TopBefore)).toBeLessThanOrEqual(1);
   }, 90_000);
 });
