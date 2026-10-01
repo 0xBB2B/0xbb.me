@@ -283,7 +283,7 @@ export function buildCar(): CarBuild {
     }
   }
   for (const sz of [-1, 1]) {
-    const tailLight = new THREE.PointLight('#ff2a3d', 1, 2.4, 2);
+    const tailLight = new THREE.PointLight('#ff2a3d', 8, 2.4, 2);
     tailLight.position.set(-2.42, 0.6, sz * 0.4);
     car.add(tailLight);
   }
