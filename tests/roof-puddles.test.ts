@@ -310,7 +310,7 @@ describe('irregular puddle outline: shader', () => {
     const main = text.slice(text.indexOf('void main')).replace(/\s+/g, '');
     const shrinkVar = main.match(/(?:float)?([A-Za-z_]\w*)=[^;]*vnoise\(/)?.[1];
     expect(shrinkVar).toBeDefined();
-    const smoothstepCalls = main.match(/smoothstep\(.*/g) ?? [];
+    const smoothstepCalls: string[] = main.match(/smoothstep\(.*/g) ?? [];
     expect(smoothstepCalls.some((call) => call.includes(`(${shrinkVar}-length(`))).toBe(true);
     expect(main).not.toContain('(1.-length(');
   });
