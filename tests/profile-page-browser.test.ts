@@ -499,3 +499,26 @@ describe('脚本晚于页面到达时的接管', () => {
     expect(result.broken).toBe(0);
   }, TIMEOUT);
 });
+
+describe('小票字体与宽屏倾斜', () => {
+  test('1440×900：名字与简介标题用 Noto Serif SC Variable，小票逆时针歪约 0.6°', async () => {
+    const result = await session<{ h1: string; h2: string; angle: number }>(`
+      await open('en-US', { width: 1440, height: 900 });
+      await wait(1.6);
+      done(await js('(() => { const family = (s) => getComputedStyle(document.querySelector(s)).fontFamily; const angle = (() => { const m = getComputedStyle(document.querySelector(".receipt")).transform; const v = m === "none" ? [1, 0] : m.slice(7, -1).split(",").map(Number); return Math.atan2(v[1], v[0]) * 180 / Math.PI; })(); return { h1: family(".receipt h1"), h2: family(".receipt h2"), angle }; })()'));
+    `);
+    expect(result.h1.startsWith('"Noto Serif SC Variable"')).toBe(true);
+    expect(result.h2.startsWith('"Noto Serif SC Variable"')).toBe(true);
+    expect(result.angle).toBeGreaterThan(-0.7);
+    expect(result.angle).toBeLessThan(-0.5);
+  }, TIMEOUT);
+
+  test('390×844：小票不歪', async () => {
+    const result = await session<{ angle: number }>(`
+      await open('en-US', { width: 390, height: 844 });
+      await wait(1.6);
+      done(await js('(() => { const m = getComputedStyle(document.querySelector(".receipt")).transform; const v = m === "none" ? [1, 0] : m.slice(7, -1).split(",").map(Number); return Math.atan2(v[1], v[0]) * 180 / Math.PI; })()').then((angle) => ({ angle })));
+    `);
+    expect(Math.abs(result.angle)).toBeLessThan(0.01);
+  }, TIMEOUT);
+});
