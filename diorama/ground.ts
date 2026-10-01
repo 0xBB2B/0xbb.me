@@ -100,5 +100,5 @@ export function buildRoadMarkings(scene: THREE.Scene, textures: Textures): void 
 
   for (const x of [-5.7, -3.2, -0.7]) flat(scene, 0.1, 4.8, lineMat, x, 0.161, 1.05);
   flat(scene, 5.1, 0.1, lineMat, -3.2, 0.161, 3.45);
-  for (const x of [-4.45, -1.95]) box(scene, 1.5, 0.12, 0.16, toon('#a9aeb6'), x, 0.15, -1.05);
+  for (const x of [-4.45, -1.95]) box(scene, 1.5, 0.12, 0.16, toon('#a9aeb6'), x, 0.15, -0.9);
 }

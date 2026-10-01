@@ -118,6 +118,11 @@ describe('the porsche sits centred in the bay next to the door', () => {
     expect(carBody.max.x).toBeLessThanOrEqual(dividers[2].min.x);
   });
 
+  test('the wheel stop of its bay hides under the tail and does not cover the tail glow', () => {
+    expect(wheelStops.length).toBe(2);
+    expect(wheelStops[1].min.z).toBeGreaterThanOrEqual(carBody.min.z - 0.01);
+  });
+
   test('its centre is the bay centre in x', () => {
     expect(dividers.length).toBe(3);
     const mid = (centerX(dividers[1]) + centerX(dividers[2])) / 2;
