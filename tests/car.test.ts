@@ -323,7 +323,7 @@ function raycastFirst(origin: THREE.Vector3, direction: THREE.Vector3, targets: 
 }
 
 function bodyPaintMeshes(car: Car): THREE.Mesh[] {
-  return meshesWhere(car, (_, m) => m instanceof THREE.MeshToonMaterial && m.color.r > 0.5 && m.color.g < 0.25 && m.color.b < 0.25);
+  return meshesWhere(car, (_, m) => m instanceof THREE.MeshToonMaterial && m.customProgramCacheKey?.() === 'car-paint-rim');
 }
 
 function allCarMeshes(car: Car): THREE.Mesh[] {
@@ -472,17 +472,20 @@ describe('every car light sits on the body surface, neither floating nor buried'
     const all = allCarMeshes(car);
     const lights = allLightMeshes(car);
     const throughTailBar = tailLightBar(car);
-    const wordmark = oneNamed(car, 'rear-wordmark');
     expect(lights.length).toBeGreaterThan(0);
     for (const light of lights) {
       const c = worldBox(light).getCenter(new THREE.Vector3());
-      const d = outwardHorizontalDirection(c, centerWorld);
-      const visible = [0, Math.PI / 6, Math.PI / 3].some((tilt) => {
-        const dir = d.clone().multiplyScalar(Math.cos(tilt)).add(new THREE.Vector3(0, Math.sin(tilt), 0)).normalize();
-        const hit = raycastFirst(c.clone().addScaledVector(dir, 1), dir.clone().negate(), all);
-        return hit?.object === light || (light === throughTailBar && hit?.object === wordmark);
-      });
-      expect(visible).toBe(true);
+      const spans = light === throughTailBar ? [-0.4, 0.4] : [0];
+      for (const dx of spans) {
+        const point = c.clone().add(new THREE.Vector3(dx, 0, 0));
+        const d = light === throughTailBar ? new THREE.Vector3(0, 0, -1) : outwardHorizontalDirection(c, centerWorld);
+        const visible = [0, Math.PI / 6, Math.PI / 3].some((tilt) => {
+          const dir = d.clone().multiplyScalar(Math.cos(tilt)).add(new THREE.Vector3(0, Math.sin(tilt), 0)).normalize();
+          const hit = raycastFirst(point.clone().addScaledVector(dir, 1), dir.clone().negate(), all);
+          return hit?.object === light;
+        });
+        expect(visible).toBe(true);
+      }
     }
   });
 
@@ -537,6 +540,23 @@ function isVisibleFromSide(car: Car, mesh: THREE.Mesh, side: number): boolean {
   const origin = new THREE.Vector3(bodySurfaceX(car, side) + side, c.y, c.z);
   const hit = raycastFirst(origin, new THREE.Vector3(-side, 0, 0), allCarMeshes(car));
   return hit !== undefined && hit.object === mesh;
+}
+
+function isVisibleAlongLength(car: Car, mesh: THREE.Mesh, side: number): boolean {
+  const box = worldBox(mesh);
+  const c = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const axis = size.y > size.z ? 'y' : 'z';
+  const from = box.min[axis] + 0.02;
+  const to = box.max[axis] - 0.02;
+  for (let i = 0; i <= 4; i++) {
+    const point = c.clone();
+    point[axis] = from + ((to - from) * i) / 4;
+    const origin = new THREE.Vector3(bodySurfaceX(car, side) + side, point.y, point.z);
+    const hit = raycastFirst(origin, new THREE.Vector3(-side, 0, 0), allCarMeshes(car));
+    if (hit?.object !== mesh) return false;
+  }
+  return true;
 }
 
 function isDeepRed(c: THREE.Color): boolean {
@@ -638,7 +658,7 @@ describe('the porsche side carries door seams, door handles, side skirts and win
     const lines = namedMeshes(car, 'door-line');
     expect(lines.length).toBe(6);
     for (const line of lines) {
-      expect(isVisibleFromSide(car, line, sideOfMesh(car, line))).toBe(true);
+      expect(isVisibleAlongLength(car, line, sideOfMesh(car, line))).toBe(true);
     }
   });
 
@@ -662,12 +682,19 @@ describe('the porsche side carries door seams, door handles, side skirts and win
     }
   });
 
+  test('door handles are deep red like the door seams', () => {
+    const { car } = buildScene();
+    const handles = namedMeshes(car, 'door-handle');
+    expect(handles.length).toBe(2);
+    for (const handle of handles) expect(isDeepRed(colorOf(handle))).toBe(true);
+  });
+
   test('door handles are visible from straight outside the side', () => {
     const { car } = buildScene();
     const handles = namedMeshes(car, 'door-handle');
     expect(handles.length).toBe(2);
     for (const handle of handles) {
-      expect(isVisibleFromSide(car, handle, sideOfMesh(car, handle))).toBe(true);
+      expect(isVisibleAlongLength(car, handle, sideOfMesh(car, handle))).toBe(true);
     }
   });
 
@@ -688,16 +715,34 @@ describe('the porsche side carries door seams, door handles, side skirts and win
     }
   });
 
+  test('each side skirt bottom is at most 1cm below the lower edge of the body paint side between the tires', () => {
+    const { car } = buildScene();
+    const paint = bodyPaintMeshes(car);
+    for (const side of SIDES) {
+      const skirts = meshesOnSide(car, 'side-skirt', side);
+      expect(skirts.length).toBe(1);
+      const z = centerOf(skirts[0]).z;
+      let paintBottom: number | undefined;
+      for (let y = 0; y <= 1 && paintBottom === undefined; y += 0.005) {
+        const origin = new THREE.Vector3(bodySurfaceX(car, side) + side, y, z);
+        const hit = raycastFirst(origin, new THREE.Vector3(-side, 0, 0), paint);
+        if (hit && Math.abs(hit.point.x - bodySurfaceX(car, side)) <= 0.003) paintBottom = y;
+      }
+      expect(paintBottom).toBeDefined();
+      expect(worldBox(skirts[0]).min.y).toBeGreaterThanOrEqual(paintBottom! - 0.01);
+    }
+  });
+
   test('side skirts are visible from straight outside the side', () => {
     const { car } = buildScene();
     const skirts = namedMeshes(car, 'side-skirt');
     expect(skirts.length).toBe(2);
     for (const skirt of skirts) {
-      expect(isVisibleFromSide(car, skirt, sideOfMesh(car, skirt))).toBe(true);
+      expect(isVisibleAlongLength(car, skirt, sideOfMesh(car, skirt))).toBe(true);
     }
   });
 
-  test('each window pillar is black, inside the side window front-back and height range, within 1cm of the window surface', () => {
+  test('each window pillar is black and within 1cm of the side window surface', () => {
     const { car } = buildScene();
     for (const side of SIDES) {
       const pillars = meshesOnSide(car, 'window-pillar', side);
@@ -705,12 +750,33 @@ describe('the porsche side carries door seams, door handles, side skirts and win
       const box = worldBox(pillars[0]);
       const window = sideWindowBox(car, side);
       expect(isBlack(colorOf(pillars[0]))).toBe(true);
-      expect(box.min.z).toBeGreaterThanOrEqual(window.min.z);
-      expect(box.max.z).toBeLessThanOrEqual(window.max.z);
-      expect(box.min.y).toBeGreaterThanOrEqual(window.min.y);
-      expect(box.max.y).toBeLessThanOrEqual(window.max.y);
       const gapX = Math.max(0, box.min.x - window.max.x, window.min.x - box.max.x);
       expect(gapX).toBeLessThanOrEqual(0.01);
+    }
+  });
+
+  test('looking from outside at the 4 outer-face corners of each window pillar (1cm inset), the first thing hit behind the pillar is side glass, not paint', () => {
+    const { car } = buildScene();
+    const glass = glassMeshes(car);
+    for (const side of SIDES) {
+      const pillars = meshesOnSide(car, 'window-pillar', side);
+      expect(pillars.length).toBe(1);
+      const pillar = pillars[0];
+      const vertices = worldVertices(pillar);
+      const outer = Math.max(...vertices.map((v) => v.x * side));
+      const corners: THREE.Vector3[] = [];
+      for (const v of vertices.filter((v) => v.x * side >= outer - 1e-4)) {
+        if (!corners.some((k) => k.distanceTo(v) < 1e-4)) corners.push(v);
+      }
+      expect(corners.length).toBe(4);
+      const c = centerOf(pillar);
+      const targets = allCarMeshes(car).filter((mesh) => mesh !== pillar);
+      for (const corner of corners) {
+        const point = corner.clone().add(new THREE.Vector3(0, c.y - corner.y, c.z - corner.z).setLength(0.01));
+        const origin = new THREE.Vector3(bodySurfaceX(car, side) + side, point.y, point.z);
+        const hit = raycastFirst(origin, new THREE.Vector3(-side, 0, 0), targets);
+        expect(hit !== undefined && glass.includes(hit.object as THREE.Mesh)).toBe(true);
+      }
     }
   });
 
@@ -835,6 +901,38 @@ describe('each wheel has a tire, a rim, 5 spokes, a hub cap and a caliper', () =
         }
       }
       expect(seen).toBe(true);
+    }
+  });
+
+  test('wheel layers are separated by at least 0.8mm along the car width: rim, caliper, spokes, hub cap from inside to outside', () => {
+    const { car } = buildScene();
+    expect(wheelGroups(car).length).toBe(4);
+    const unionBox = (meshes: THREE.Mesh[]) => meshes.map(worldBox).reduce((all, box) => all.union(box));
+    for (const wheel of wheelGroups(car)) {
+      const side = wheelSide(car, wheel);
+      const inner = (box: THREE.Box3) => (side > 0 ? box.min.x : box.max.x);
+      const outer = (box: THREE.Box3) => outwardX(box, side);
+      const rim = unionBox([rimMesh(wheel)]);
+      const caliper = unionBox(wheelPartsNamed(wheel, 'wheel-caliper'));
+      const spokes = unionBox(wheelPartsNamed(wheel, 'wheel-spoke'));
+      const hub = unionBox(wheelPartsNamed(wheel, 'wheel-hub'));
+      expect((inner(caliper) - outer(rim)) * side).toBeGreaterThanOrEqual(0.0008);
+      expect((inner(spokes) - outer(caliper)) * side).toBeGreaterThanOrEqual(0.0008);
+      expect((inner(hub) - outer(spokes)) * side).toBeGreaterThanOrEqual(0.0008);
+    }
+  });
+
+  test('each hub cap is centered on the wheel center within 5mm and is the first thing hit looking straight at the wheel from outside', () => {
+    const { car } = buildScene();
+    expect(wheelGroups(car).length).toBe(4);
+    for (const wheel of wheelGroups(car)) {
+      const hubs = wheelPartsNamed(wheel, 'wheel-hub');
+      expect(hubs.length).toBe(1);
+      const c = centerOf(hubs[0]);
+      const center = wheelCenterOf(wheel);
+      expect(Math.abs(c.y - center.y)).toBeLessThanOrEqual(0.005);
+      expect(Math.abs(c.z - center.z)).toBeLessThanOrEqual(0.005);
+      expect(isVisibleFromSide(car, hubs[0], wheelSide(car, wheel))).toBe(true);
     }
   });
 
@@ -1246,14 +1344,40 @@ describe('the porsche tail carries a wordmark, a plate recess, a diffuser, exhau
     expect(Math.abs(centerOf(mesh).x - bodyCenterX(car))).toBeLessThanOrEqual(0.02);
   });
 
-  test('the wordmark lies inside the height range of the full-width tail light bar and within 1cm of its surface', () => {
+  test('the wordmark lies inside the height range of the full-width tail light bar', () => {
     const { car } = buildScene();
     const word = worldBox(oneNamed(car, 'rear-wordmark'));
     const bar = worldBox(tailLightBar(car));
     expect(word.min.y).toBeGreaterThanOrEqual(bar.min.y);
     expect(word.max.y).toBeLessThanOrEqual(bar.max.y);
-    const gap = Math.max(0, word.min.z - bar.max.z, bar.min.z - word.max.z);
-    expect(gap).toBeLessThanOrEqual(0.01);
+  });
+
+  test('from the wordmark center and its four corners 1cm inset, a ray along the wordmark back reaches the tail light bar within 1cm', () => {
+    const { car } = buildScene();
+    const word = oneNamed(car, 'rear-wordmark');
+    const bar = tailLightBar(car);
+    const normal = new THREE.Vector3(0, 0, 1).transformDirection(word.matrixWorld);
+    if (normal.z > 0) normal.negate();
+    const back = normal.clone().negate();
+    const scale = new THREE.Vector3();
+    word.matrixWorld.decompose(new THREE.Vector3(), new THREE.Quaternion(), scale);
+    word.geometry.computeBoundingBox();
+    const local = word.geometry.boundingBox!;
+    const insetX = 0.01 / scale.x;
+    const insetY = 0.01 / scale.y;
+    const localPoints = [
+      local.getCenter(new THREE.Vector3()),
+      new THREE.Vector3(local.min.x + insetX, local.min.y + insetY, 0),
+      new THREE.Vector3(local.max.x - insetX, local.min.y + insetY, 0),
+      new THREE.Vector3(local.min.x + insetX, local.max.y - insetY, 0),
+      new THREE.Vector3(local.max.x - insetX, local.max.y - insetY, 0),
+    ];
+    for (const localPoint of localPoints) {
+      const point = localPoint.clone().applyMatrix4(word.matrixWorld);
+      const hit = raycastBothSides(point, back, [bar]);
+      expect(hit).toBeDefined();
+      expect(hit!.distance).toBeLessThanOrEqual(0.01);
+    }
   });
 
   test('the wordmark characters are on a texture map', () => {
@@ -1362,6 +1486,25 @@ describe('the porsche tail carries a wordmark, a plate recess, a diffuser, exhau
       expect(luminanceOf(plateMaterial(inner).color)).toBeLessThan(luminanceOf(plateMaterial(tip).color));
     }
     expect(new Set(namedMeshes(car, 'exhaust-inner').map((mesh) => Math.sign(centerOf(mesh).x - bodyCenterX(car)))).size).toBe(2);
+  });
+
+  test('behind the rear plate center, looking into the car along world +z, the first thing hit is the plate recess', () => {
+    const { car } = buildScene();
+    const rearPlate = plate(car, 'rear');
+    const targets = allCarMeshes(car).filter((mesh) => mesh !== rearPlate);
+    const hit = raycastFirst(centerOf(rearPlate), new THREE.Vector3(0, 0, 1), targets);
+    expect(hit?.object).toBe(oneNamed(car, 'plate-recess'));
+  });
+
+  test('looking from 1m behind the car at each exhaust inner ring center, the ring is the first thing hit', () => {
+    const { car } = buildScene();
+    const inners = namedMeshes(car, 'exhaust-inner');
+    expect(inners.length).toBe(2);
+    for (const inner of inners) {
+      const c = centerOf(inner);
+      const hit = raycastFirst(new THREE.Vector3(c.x, c.y, c.z - 1), new THREE.Vector3(0, 0, 1), allCarMeshes(car));
+      expect(hit?.object).toBe(inner);
+    }
   });
 
   test('the reflectors are mirror images, between the diffuser top and the plate bottom, outside the recess', () => {

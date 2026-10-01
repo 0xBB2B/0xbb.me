@@ -31,7 +31,7 @@ description: 保时捷车尾：PORSCHE 字样、车牌凹槽底板、扩散器�
 // SIGNAGE_TEXT 新增一项 'PORSCHE'
 
 // —— diorama/car.ts（缩放前坐标；车尾朝 -x）——
-// 字样 name 'rear-wordmark'：PlaneGeometry(0.5, 0.04)，toon('#8f9bb3', { map: ctex(512, 64, drawRearWordmark) })
+// 字样 name 'rear-wordmark'：PlaneGeometry(0.5, 0.04)，toon('#8f9bb3', { map: ctex(800, 64, drawRearWordmark) })
 //   position (-2.278, 0.698, 0)；rotation.order = 'ZYX'；rotation.set(0, -Math.PI / 2, -25 * Math.PI / 180)
 // CarBuild 新增字段 wordmarkTexture: THREE.CanvasTexture，buildCar 返回
 

@@ -205,9 +205,9 @@ export function buildCar(): CarBuild {
     box(car, 0.012, 0.022, 0.1, reflectorMat, -2.288, 0.39, sz * 0.72).name = 'rear-reflector';
   }
   for (let i = 0; i < 9; i++) {
-    const slat = box(car, 0.09, 0.01, 0.03, black, -1.72, 0.948, -0.32 + i * 0.08);
-    slat.name = 'engine-grille-slat';
-    slat.rotation.z = 0.38;
+    const grille = box(car, 0.09, 0.01, 0.03, black, -1.72, 0.948, -0.32 + i * 0.08);
+    grille.name = 'engine-grille-slat';
+    grille.rotation.z = 0.38;
   }
 
   for (const sz of [-1, 1]) {
@@ -216,15 +216,15 @@ export function buildCar(): CarBuild {
   }
 
   const line = toon('#7d1217');
-  const pillarGeo = new THREE.BoxGeometry(0.05, 0.32, 0.006);
+  const pillarGeo = new THREE.BoxGeometry(0.05, 0.30, 0.006);
   const pillarMat = toon('#0c0d12');
   for (const sz of [-1, 1]) {
     box(car, 0.012, 0.42, 0.008, line, 0.64, 0.33, sz * 0.922).name = 'door-line';
     box(car, 0.012, 0.44, 0.008, line, -0.55, 0.33, sz * 0.922).name = 'door-line';
     box(car, 1.2, 0.012, 0.008, line, 0.045, 0.33, sz * 0.922).name = 'door-line';
     box(car, 0.14, 0.02, 0.012, line, -0.36, 0.7, sz * 0.924).name = 'door-handle';
-    box(car, 1.67, 0.045, 0.02, black, -0.025, 0.26, sz * 0.925).name = 'side-skirt';
-    const pillar = add(car, pillarGeo, pillarMat, -0.53, 1.0, sz * 0.68);
+    box(car, 1.67, 0.045, 0.02, black, -0.025, 0.26, sz * 0.92).name = 'side-skirt';
+    const pillar = add(car, pillarGeo, pillarMat, -0.53, 1.01, sz * 0.68);
     pillar.name = 'window-pillar';
     pillar.rotation.z = 0.36;
   }
@@ -232,26 +232,25 @@ export function buildCar(): CarBuild {
   const tireGeo = new THREE.CylinderGeometry(0.34, 0.34, 0.27, 28);
   const rimGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.02, 28);
   const silver = toon('#aab2c0');
-  const rimMat = toon('#3d434f');
-  const caliperGeo = new THREE.BoxGeometry(0.16, 0.055, 0.003);
+  const caliperGeo = new THREE.BoxGeometry(0.16, 0.055, 0.002);
   const caliperMat = toon('#d8232f');
-  const spokeGeo = new THREE.BoxGeometry(0.035, 0.23, 0.003);
-  const hubGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.003, 14);
+  const spokeGeo = new THREE.BoxGeometry(0.035, 0.23, 0.002);
+  const hubGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.002, 14);
   const wheelPositions: [number, number][] = [[wf, 1], [wf, -1], [wr, 1], [wr, -1]];
   for (const [wx, sz] of wheelPositions) {
     const wg = new THREE.Group(); wg.position.set(wx, 0.34, sz * 0.8); car.add(wg);
     add(wg, tireGeo, black).rotation.x = Math.PI / 2;
-    const rim = add(wg, rimGeo, rimMat, 0, 0, sz * 0.14); rim.rotation.x = Math.PI / 2;
-    const caliper = add(wg, caliperGeo, caliperMat, -0.113, 0.113, sz * 0.1515);
+    const rim = add(wg, rimGeo, toon('#3d434f'), 0, 0, sz * 0.137); rim.rotation.x = Math.PI / 2;
+    const caliper = add(wg, caliperGeo, caliperMat, -0.113, 0.113, sz * 0.1492);
     caliper.name = 'wheel-caliper';
     caliper.rotation.z = Math.PI / 4;
     for (let i = 0; i < 5; i++) {
       const a = i * 2 * Math.PI / 5;
-      const spoke = add(wg, spokeGeo, silver, -Math.sin(a) * 0.115, Math.cos(a) * 0.115, sz * 0.1545);
+      const spoke = add(wg, spokeGeo, silver, -Math.sin(a) * 0.115, Math.cos(a) * 0.115, sz * 0.1527);
       spoke.name = 'wheel-spoke';
       spoke.rotation.z = a;
     }
-    const hub = add(wg, hubGeo, silver, 0, 0, sz * 0.1555);
+    const hub = add(wg, hubGeo, silver, 0, 0, sz * 0.1557);
     hub.name = 'wheel-hub';
     hub.rotation.x = Math.PI / 2;
   }
@@ -267,7 +266,7 @@ export function buildCar(): CarBuild {
   plateRear.name = 'license-plate-rear';
   plateRear.rotation.y = -Math.PI / 2;
 
-  const wordmarkTexture = ctex(512, 64, drawRearWordmark);
+  const wordmarkTexture = ctex(800, 64, drawRearWordmark);
   const wordmark = add(car, new THREE.PlaneGeometry(0.5, 0.04), toon('#8f9bb3', { map: wordmarkTexture }), -2.278, 0.698, 0);
   wordmark.name = 'rear-wordmark';
   wordmark.rotation.order = 'ZYX';

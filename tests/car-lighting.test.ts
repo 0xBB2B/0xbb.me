@@ -72,8 +72,7 @@ function carMaterials(car: Car): THREE.Material[] {
 }
 
 function isPaint(m: THREE.Material): boolean {
-  const c = (m as THREE.MeshToonMaterial).color;
-  return m instanceof THREE.MeshToonMaterial && c.r > 0.5 && c.g < 0.25 && c.b < 0.25;
+  return m instanceof THREE.MeshToonMaterial && m.customProgramCacheKey?.() === 'car-paint-rim';
 }
 
 function compile(m: THREE.Material) {

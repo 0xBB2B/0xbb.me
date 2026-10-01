@@ -32,17 +32,18 @@ box(car, 1.2, 0.012, 0.008, line, 0.045, 0.33, sz * 0.922)     // 底横线
 // 门把手 name 'door-handle'
 box(car, 0.14, 0.02, 0.012, line, -0.36, 0.7, sz * 0.924)
 // 侧裙 name 'side-skirt'
-box(car, 1.67, 0.045, 0.02, black, -0.025, 0.26, sz * 0.925)
+box(car, 1.67, 0.045, 0.02, black, -0.025, 0.26, sz * 0.92)
 // 侧窗分隔柱 name 'window-pillar'
-add(car, new THREE.BoxGeometry(0.05, 0.32, 0.006), toon('#0c0d12'), -0.53, 1.0, sz * 0.68).rotation.z = 0.36
+add(car, new THREE.BoxGeometry(0.05, 0.3, 0.006), toon('#0c0d12'), -0.53, 1.01, sz * 0.68).rotation.z = 0.36
 
 // 车轮：在每个车轮组 wg 里追加（wg 局部坐标，轮心在原点；sz 是该轮所在侧）
 const silver = toon('#aab2c0');
-// 'wheel-caliper'：BoxGeometry(0.16, 0.055, 0.003)，toon('#d8232f')，位置 (-0.113, 0.113, sz * 0.1515)，rotation.z = Math.PI / 4
-// 'wheel-spoke' ×5：BoxGeometry(0.035, 0.23, 0.003)，silver；第 i 根 a = i * 2π / 5：
-//     位置 (-Math.sin(a) * 0.115, Math.cos(a) * 0.115, sz * 0.1545)，rotation.z = a
-// 'wheel-hub'：CylinderGeometry(0.045, 0.045, 0.003, 14)，silver，位置 (0, 0, sz * 0.1555)，rotation.x = Math.PI / 2
-// 轮胎和轮圈不变
+// 轮圈位置由 sz * 0.14 收到 sz * 0.137，给外面三层腾出空隙；相邻两层之间至少留 1 毫米
+// 'wheel-caliper'：BoxGeometry(0.16, 0.055, 0.002)，toon('#d8232f')，位置 (-0.113, 0.113, sz * 0.1492)，rotation.z = Math.PI / 4
+// 'wheel-spoke' ×5：BoxGeometry(0.035, 0.23, 0.002)，silver；第 i 根 a = i * 2π / 5：
+//     位置 (-Math.sin(a) * 0.115, Math.cos(a) * 0.115, sz * 0.1527)，rotation.z = a
+// 'wheel-hub'：CylinderGeometry(0.045, 0.045, 0.002, 14)，silver，位置 (0, 0, sz * 0.1557)，rotation.x = Math.PI / 2
+// 轮胎不变
 ```
 
 ## 函数清单

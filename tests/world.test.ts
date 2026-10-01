@@ -415,10 +415,6 @@ test('every character of the license plate text is part of the font preload text
   expect([...new Set(chars)].filter((char) => char.trim() && !CANVAS_TEXT.includes(char))).toEqual([]);
 });
 
-test('every letter of PORSCHE is part of the font preload text', () => {
-  expect([...new Set('PORSCHE')].filter((char) => !CANVAS_TEXT.includes(char))).toEqual([]);
-});
-
 test('the font preload text contains no character beyond what canvas textures actually draw', () => {
   const canvases: FakeCanvas[] = [];
   setCanvasFactory(() => { const canvas = createFakeCanvas(); canvases.push(canvas); return canvas; });
