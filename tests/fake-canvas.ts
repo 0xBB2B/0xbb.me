@@ -3,17 +3,19 @@ import type { CanvasLike } from '../diorama/materials';
 export interface FakeCanvas extends CanvasLike {
   fillTextCalls: string[];
   fillStyleCalls: unknown[];
+  strokeCalls: string[];
 }
 
 function fakeGradient(): { addColorStop: (offset: number, color: string) => void } {
   return { addColorStop: () => {} };
 }
 
-function fakeContext(fillTextCalls: string[], fillStyleCalls: unknown[]): CanvasRenderingContext2D {
+function fakeContext(fillTextCalls: string[], fillStyleCalls: unknown[], strokeCalls: string[]): CanvasRenderingContext2D {
   const state: Record<string, unknown> = {};
   return new Proxy(state, {
     get(target, prop: string) {
       if (prop === 'fillText') return (text: string) => { fillTextCalls.push(text); };
+      if (prop === 'stroke' || prop === 'strokeRect' || prop === 'strokeText') return () => { strokeCalls.push(prop); };
       if (prop === 'measureText') return () => ({ width: 0 });
       if (prop === 'createLinearGradient' || prop === 'createRadialGradient') return fakeGradient;
       if (prop in target) return target[prop];
@@ -30,13 +32,15 @@ function fakeContext(fillTextCalls: string[], fillStyleCalls: unknown[]): Canvas
 export function createFakeCanvas(): FakeCanvas {
   const fillTextCalls: string[] = [];
   const fillStyleCalls: unknown[] = [];
-  const ctx = fakeContext(fillTextCalls, fillStyleCalls);
+  const strokeCalls: string[] = [];
+  const ctx = fakeContext(fillTextCalls, fillStyleCalls, strokeCalls);
   return {
     width: 0,
     height: 0,
     getContext: () => ctx,
     fillTextCalls,
     fillStyleCalls,
+    strokeCalls,
   };
 }
 

@@ -16,6 +16,10 @@
 ## scene
 
 - [ambient-motion](scene/ambient-motion.md) — 微缩模型里一直循环播放的环境动效及其节奏参数
+- [car-front-details](scene/car-front-details.md) — 保时捷车头的进气口、格栅条、前转向灯条、大灯鼓包、前备箱盖、盾徽和下唇
+- [car-license-plate](scene/car-license-plate.md) — 保时捷前后各一块日本车牌的文字、样式、尺寸和安装位置
+- [car-rear-details](scene/car-rear-details.md) — 保时捷车尾的 PORSCHE 字样、车牌凹槽底板、扩散器、反光条、排气管内圈和发动机盖格栅
+- [car-side-details](scene/car-side-details.md) — 保时捷侧面的门缝线、门把手、侧裙、侧窗分隔柱，以及车轮的轮辐、轮毂盖和红色卡钳
 - [diorama-layout](scene/diorama-layout.md) — 雨夜便利店微缩模型包含的物件、摆放关系、画风，以及整体视角的镜头操作
 - [neighbor-building](scene/neighbor-building.md) — 便利店左侧两层旧楼的外观：外墙材质、一楼已打烊的喫茶店、二楼住家、屋顶物件与物件数量上限
 - [quality-tier](scene/quality-tier.md) — 画质分高低两档，按设备与实测帧率自动选择与降档，并规定帧率标准与帧率上限

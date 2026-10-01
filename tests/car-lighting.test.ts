@@ -6,6 +6,7 @@ import { createFakeCanvasFactory } from './fake-canvas';
 setCanvasFactory(createFakeCanvasFactory());
 
 import { buildCar } from '../diorama/car';
+import { createAmbient } from '../diorama/ambient';
 
 type Car = ReturnType<typeof buildCar>;
 
@@ -72,8 +73,7 @@ function carMaterials(car: Car): THREE.Material[] {
 }
 
 function isPaint(m: THREE.Material): boolean {
-  const c = (m as THREE.MeshToonMaterial).color;
-  return m instanceof THREE.MeshToonMaterial && c.r > 0.5 && c.g < 0.25 && c.b < 0.25;
+  return m instanceof THREE.MeshToonMaterial && m.customProgramCacheKey?.() === 'car-paint-rim';
 }
 
 function compile(m: THREE.Material) {
@@ -127,8 +127,8 @@ describe('contact shadow under the car', () => {
 
   test('every ground effect faces up in world space', () => {
     const car = buildScene();
-    const meshes = ['car-contact-shadow', 'car-tire-shadow', 'car-tail-glow'].flatMap((n) => groundMeshes(car, n));
-    expect(meshes.length).toBe(6);
+    const meshes = ['car-contact-shadow', 'car-tire-shadow'].flatMap((n) => groundMeshes(car, n));
+    expect(meshes.length).toBe(5);
     for (const mesh of meshes) {
       const normal = new THREE.Vector3(0, 0, 1).transformDirection(mesh.matrixWorld);
       expect(normal.y).toBeGreaterThan(0.99);
@@ -230,64 +230,60 @@ describe('paint rim light', () => {
   });
 });
 
-describe('tail light glow on the ground', () => {
-  test('it hugs the tail: front edge within 0.15m of the body rear, back edge within 1m behind it', () => {
+describe('the ground decals hold no tail glow', () => {
+  test('there is no car-tail-glow mesh', () => {
     const car = buildScene();
-    const body = carBox(car);
-    const glow = box(only(car, 'car-tail-glow'));
-    expect(glow.max.z).toBeLessThanOrEqual(body.min.z + 0.15);
-    expect(glow.min.z).toBeGreaterThanOrEqual(body.min.z - 1.0);
+    expect(groundMeshes(car, 'car-tail-glow').length).toBe(0);
   });
 
-  test('it is no wider than the body and does not reach the store door at z=-3.2', () => {
+  test('only the contact shadow and the tire shadows remain, none of them a red emissive decal', () => {
     const car = buildScene();
-    const body = carBox(car);
-    const glow = box(only(car, 'car-tail-glow'));
-    expect(glow.max.x - glow.min.x).toBeLessThanOrEqual(body.max.x - body.min.x);
-    expect(glow.min.z).toBeGreaterThan(-3.2);
-  });
-
-  test('it lies flat on the ground between y=0.15 and y=0.2', () => {
-    const car = buildScene();
-    const y = worldY(only(car, 'car-tail-glow'));
-    expect(y).toBeGreaterThanOrEqual(0.15);
-    expect(y).toBeLessThanOrEqual(0.2);
-  });
-
-  test('it is a red, additive, outline-free transparent decal with a fading texture', () => {
-    const car = buildScene();
-    const m = mat(only(car, 'car-tail-glow'));
-    expect(m.color.r).toBeGreaterThan(0.3);
-    expect(m.color.r).toBeGreaterThan(m.color.g);
-    expect(m.color.r).toBeGreaterThan(m.color.b);
-    expect(m.transparent).toBe(true);
-    expect(m.depthWrite).toBe(false);
-    expect(m.userData.outlineParameters?.visible).toBe(false);
-    expect(m.map ?? m.alphaMap).toBeTruthy();
-    expect(m.blending).toBe(THREE.AdditiveBlending);
-  });
-
-  test('its brightest pixel stays under the bloom threshold', () => {
-    const car = buildScene();
-    const m = mat(only(car, 'car-tail-glow'));
-    expect(luminance(m.color) * m.opacity).toBeLessThan(0.97);
-  });
-
-  test('it renders after the wet ground reflection layer', () => {
-    const car = buildScene();
-    expect(only(car, 'car-tail-glow').renderOrder).toBeGreaterThan(2);
+    const meshes: THREE.Mesh[] = [];
+    car.ground.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) meshes.push(obj as THREE.Mesh);
+    });
+    expect(meshes.length).toBe(5);
+    for (const mesh of meshes) {
+      expect(['car-contact-shadow', 'car-tire-shadow']).toContain(mesh.name);
+      const c = mat(mesh).color as THREE.Color;
+      expect(c.r > 0.3 && c.r > c.g && c.r > c.b).toBe(false);
+    }
   });
 });
 
-describe('lighting effects add no scene lights', () => {
-  test('the car and its ground group hold exactly the 4 hazard point lights', () => {
+function ambientStubs() {
+  const lamp = () => ({ m: { color: new THREE.Color() }, base: new THREE.Color('#ffffff') });
+  const store: any = {
+    doorLeft: new THREE.Object3D(),
+    doorRight: new THREE.Object3D(),
+    fasciaMaterial: { color: new THREE.Color() },
+    noboris: [],
+  };
+  const street: any = {
+    vehicleSignals: [[lamp(), lamp(), lamp()]],
+    signalLight: { color: new THREE.Color() },
+    pedestrianSignals: [[lamp(), lamp()], [lamp(), lamp()]],
+    tvMaterial: { color: new THREE.Color() },
+  };
+  return { store, street };
+}
+
+describe('the tail area light does not follow the hazard blink', () => {
+  test('its intensity is the same and above zero with the hazards on and off', () => {
     const car = buildScene();
-    let lights = 0;
-    for (const root of [car.group, car.ground]) {
-      root.traverse((obj) => {
-        if ((obj as THREE.Light).isLight) lights++;
-      });
-    }
-    expect(lights).toBe(4);
+    const tails: THREE.RectAreaLight[] = [];
+    car.group.traverse((obj) => {
+      if ((obj as THREE.RectAreaLight).isRectAreaLight) tails.push(obj as THREE.RectAreaLight);
+    });
+    expect(tails.length).toBe(1);
+    const { store, street } = ambientStubs();
+    const ambient = createAmbient({ store, street, hazard: { material: car.hazardMaterial, lights: car.hazardLights } });
+    ambient.tick(0.1, 0.016);
+    for (const light of car.hazardLights) expect(light.intensity).toBeGreaterThan(0);
+    const lit = tails[0].intensity;
+    ambient.tick(0.6, 0.016);
+    for (const light of car.hazardLights) expect(light.intensity).toBe(0);
+    expect(tails[0].intensity).toBe(lit);
+    expect(lit).toBeGreaterThan(0);
   });
 });

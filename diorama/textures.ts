@@ -9,6 +9,7 @@ export const FONT_R = '"M PLUS Rounded 1c", "Noto Sans SC Variable", sans-serif'
 
 const SIGNAGE_TEXT = [
   'BB',
+  'PORSCHE',
   '0xBB MART',
   'ヨルノミセ',
   '24H',
@@ -41,6 +42,10 @@ const SIGNAGE_TEXT = [
   '喫茶フブキ',
   '準備中',
   'STAFF ONLY',
+  '秋葉原',
+  '310',
+  'み',
+  '・9 92',
 ].join('');
 
 export const CANVAS_TEXT = SIGNAGE_TEXT + 'FUBUKI_BB' + rolesLine('zh') + rolesLine('en') + locationLine();
@@ -650,4 +655,31 @@ export function drawPlaque(ctx: CanvasRenderingContext2D, language: Language): v
   ctx.fillText(rolesLine(language), width / 2, lines[1].y, maxWidth);
   ctx.font = `500 ${lines[2].fontPx}px ${FONT_R}`;
   ctx.fillText(locationLine(), width / 2, lines[2].y, maxWidth);
+}
+
+export function drawRearWordmark(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  ctx.fillStyle = '#101116';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#e6ebf2';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  ctx.letterSpacing = `${h * 0.2}px`;
+  ctx.font = `${h * 0.6}px ${FONT_D}`;
+  ctx.fillText('PORSCHE', w / 2, h / 2);
+}
+
+export function drawLicensePlate(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  ctx.fillStyle = '#f2f3ee';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#1f5d3a';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'right';
+  ctx.font = `${h * 0.22}px ${FONT_D}`;
+  ctx.fillText('秋葉原', w * 0.5, h * 0.24);
+  ctx.textAlign = 'left';
+  ctx.fillText('310', w * 0.53, h * 0.24);
+  ctx.textAlign = 'center';
+  ctx.fillText('み', w * 0.12, h * 0.72);
+  ctx.font = `${h * 0.45}px ${FONT_D}`;
+  ctx.fillText('・9 92', w * 0.58, h * 0.7);
 }

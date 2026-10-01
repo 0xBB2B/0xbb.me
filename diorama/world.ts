@@ -16,7 +16,7 @@ import { createWetGround } from './wet-ground';
 import { buildCar } from './car';
 import { createAmbient } from './ambient';
 import { plaqueGlow } from './rhythm';
-import { sharedTime } from './materials';
+import { redrawCtex, sharedTime } from './materials';
 import { DEFAULT_CAMERA, ORBIT_LIMITS, viewFov } from './layout';
 import { enterSequence, storyPose, framingOffset, type Pose } from './story-camera';
 import { createInteraction } from './interaction';
@@ -106,6 +106,8 @@ export async function mountDiorama(container: HTMLElement, options: { language: 
     fontsLoaded.then((loaded) => {
       if (!loaded || disposed) return;
       textures.redraw();
+      redrawCtex(car.plateTexture);
+      redrawCtex(car.wordmarkTexture);
       setPlaqueLanguage(plaque, currentLanguage);
       if (paused) render();
     });

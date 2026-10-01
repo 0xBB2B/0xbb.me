@@ -118,7 +118,7 @@ describe('the porsche sits centred in the bay next to the door', () => {
     expect(carBody.max.x).toBeLessThanOrEqual(dividers[2].min.x);
   });
 
-  test('the wheel stop of its bay hides under the tail and does not cover the tail glow', () => {
+  test('the wheel stop of its bay hides under the tail', () => {
     expect(wheelStops.length).toBe(2);
     expect(wheelStops[1].min.z).toBeGreaterThanOrEqual(carBody.min.z - 0.01);
   });
@@ -133,8 +133,7 @@ describe('the porsche sits centred in the bay next to the door', () => {
     const lensZ: number[] = [];
     car.group.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
-      const m = mesh.material as THREE.MeshToonMaterial;
-      if (mesh.isMesh && m instanceof THREE.MeshToonMaterial && m.color.r > 0.6 && m.color.g > 0.6 && m.color.b > 0.6) {
+      if (mesh.isMesh && mesh.name === 'headlight-lens') {
         lensZ.push(new THREE.Box3().setFromObject(mesh, true).getCenter(new THREE.Vector3()).z);
       }
     });
