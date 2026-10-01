@@ -15,7 +15,7 @@ describe('layout constants', () => {
   });
 
   test('CAR_CENTER is the fixed car position', () => {
-    expect(CAR_CENTER).toEqual([-0.85, 0.15, 1.15]);
+    expect(CAR_CENTER).toEqual([-1.95, 0.15, 1.15]);
   });
 });
 
