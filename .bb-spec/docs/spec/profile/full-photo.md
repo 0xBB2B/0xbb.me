@@ -19,6 +19,7 @@ description: 点小票头像弹出一张贴着胶带的全身照相片，含加�
   - 相片上的文字（底边文字、日期戳）用与小票相同的等宽网页字体 JetBrains Mono；
   - 右上角有 ✕ 关闭按钮，底部一行小字：中文「点空白处或按 Esc 关闭」，英文 `Tap outside or press Esc to close`。
 - 弹层是对话框：`role="dialog"`、`aria-modal="true"`，弹出后键盘焦点移到 ✕ 按钮。
+- 相片打开期间，键盘焦点锁在相片里：按 Tab 或 Shift+Tab，焦点只在相片里的按钮（✕、失败时的「再打印一次」）之间循环，到不了后面的小票、「返回全景」按钮和语言开关；只有一个按钮时焦点一直停在它上面。这样键盘用户不会在相片还开着时退出资料视角。
 - 关闭方式：点 ✕、点遮罩空白处、按 Esc。关闭后焦点回到头像按钮。
 - 相片打开时按 Esc 只关闭相片，不影响资料视角等外层状态。
 - 图片：
@@ -32,6 +33,7 @@ description: 点小票头像弹出一张贴着胶带的全身照相片，含加�
 - 点头像前，网络请求中没有 `profile-full-print.jpg`；点头像后发起一次请求。
 - `profile-full-print.jpg` 宽 900 像素，文件不超过 200KB。
 - 弹层 `role="dialog"`、`aria-modal="true"`；弹出后 `document.activeElement` 是 ✕ 按钮。
+- 相片打开时连按 Tab 或 Shift+Tab，`document.activeElement` 始终在弹层内部。
 - 点 ✕、点遮罩、按 Esc 三种方式都能关闭；关闭后 `document.activeElement` 是头像按钮。
 - 相片打开时按 Esc：相片关闭，`<html data-view>` 不变。
 - 日期戳文字等于访客设备当天日期按 `'YY M D` 格式化的结果。
@@ -44,6 +46,7 @@ description: 点小票头像弹出一张贴着胶带的全身照相片，含加�
 - [ ] 页面加载完、未点头像时，没有 `profile-full-print.jpg` 请求；点头像后有一次。
 - [ ] `profile-full-print.jpg` 宽 900 像素，≤ 200KB。
 - [ ] 弹层属性与弹出后焦点正确。
+- [ ] 相片打开后连按 Tab、Shift+Tab 各 6 次，焦点每次都在弹层内部（资料视角与独立资料页各验一次）。
 - [ ] ✕、遮罩、Esc 各自能关闭，关闭后焦点回到头像按钮。
 - [ ] 相片打开时按 Esc，`data-view` 不变，小票仍在。
 - [ ] 把系统日期设为 2026-09-30，日期戳为 `'26 9 30`。
