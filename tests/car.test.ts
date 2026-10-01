@@ -75,7 +75,7 @@ describe('the porsche group is findable and positioned in its parking space', ()
     expect(Math.abs(size.z - 4.19)).toBeLessThanOrEqual(0.05);
   });
 
-  test('the ground shadow and tail glow are scaled down with the body (at most 2.45m wide, 5.25m long)', () => {
+  test('the ground shadow is scaled down with the body (at most 2.45m wide, 5.25m long)', () => {
     const { scene, car } = buildScene();
     scene.add(car.ground);
     scene.updateMatrixWorld(true);

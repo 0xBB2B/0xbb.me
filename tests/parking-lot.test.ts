@@ -118,7 +118,7 @@ describe('the porsche sits centred in the bay next to the door', () => {
     expect(carBody.max.x).toBeLessThanOrEqual(dividers[2].min.x);
   });
 
-  test('the wheel stop of its bay hides under the tail and does not cover the tail glow', () => {
+  test('the wheel stop of its bay hides under the tail', () => {
     expect(wheelStops.length).toBe(2);
     expect(wheelStops[1].min.z).toBeGreaterThanOrEqual(carBody.min.z - 0.01);
   });
