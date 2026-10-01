@@ -129,17 +129,49 @@ export function buildCar(): CarBuild {
   add(car, glassBand(0.02, 0.95, 0.5, 0.006), darkGlass);
   add(car, glassBand(-1.66, -0.75, 0.5, 0.006), darkGlass);
 
+  const bezelGeo = new THREE.SphereGeometry(1, 20, 14);
+  const bezelMat = toon('#1b2048');
+  const lensGeo = new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2);
+  const lensMat = toon('#dfe8f5');
+  const dotGeo = new THREE.SphereGeometry(0.012, 8, 6);
+  const dotMat = toon('#9aa0aa');
   for (const sz of [-1, 1]) {
-    const hl = add(car, new THREE.SphereGeometry(1, 20, 14), toon('#dfe8f5'), 2.085, 0.66, sz * 0.6);
-    hl.scale.set(0.12, 0.02, 0.13);
-    hl.rotation.z = -0.375;
+    const hl = new THREE.Group();
+    hl.position.set(2.085, 0.65, sz * 0.6);
+    hl.rotation.z = -0.4;
+    car.add(hl);
+    const bezel = add(hl, bezelGeo, bezelMat);
+    bezel.name = 'headlight-bezel';
+    bezel.scale.set(0.14, 0.012, 0.15);
+    const lens = add(hl, lensGeo, lensMat);
+    lens.name = 'headlight-lens';
+    lens.scale.set(0.12, 0.068, 0.13);
+    for (const dx of [-0.04, 0.04]) {
+      for (const dz of [-0.045, 0.045]) {
+        const dot = add(hl, dotGeo, dotMat, dx, 0.052, dz);
+        dot.name = 'headlight-dot';
+        dot.scale.y = 0.5;
+      }
+    }
     add(car, new THREE.SphereGeometry(0.018, 8, 6), hazardMaterial, 1.9, 0.71, sz * 0.8);
     add(car, new THREE.BoxGeometry(0.06, 0.035, 0.02), hazardMaterial, 1.5, 0.64, sz * 0.915);
   }
 
-  box(car, 0.08, 0.12, 0.5, black, 2.22, 0.3, -0.55);
-  box(car, 0.08, 0.12, 0.5, black, 2.22, 0.3, 0.55);
-  box(car, 0.08, 0.1, 0.5, black, 2.25, 0.3, 0);
+  const slat = toon('#3d434f');
+  const drl = toon('#c4cad4');
+  box(car, 0.08, 0.1, 0.5, black, 2.25, 0.3, 0).name = 'intake-center';
+  for (const y of [0.325, 0.365]) box(car, 0.01, 0.012, 0.44, slat, 2.293, y, 0).name = 'intake-slat';
+  for (const sz of [-1, 1]) {
+    box(car, 0.08, 0.16, 0.56, black, 2.25, 0.26, sz * 0.55).name = 'intake-side';
+    for (const y of [0.29, 0.33, 0.37]) box(car, 0.01, 0.012, 0.5, slat, 2.293, y, sz * 0.55).name = 'intake-slat';
+    box(car, 0.012, 0.016, 0.42, drl, 2.294, 0.4, sz * 0.55).name = 'drl-strip';
+  }
+
+  const badge = add(car, new THREE.SphereGeometry(1, 12, 8), toon('#d8b25a'), 2.152, 0.627, 0);
+  badge.name = 'hood-badge';
+  badge.scale.set(0.022, 0.006, 0.018);
+  badge.rotation.z = -0.63;
+  box(car, 0.14, 0.03, 1.6, black, 2.14, 0.15, 0).name = 'front-lip';
 
   const TAIL_TILT = -25 * (Math.PI / 180);
   box(car, 0.03, 0.06, 1.42, glow('#ff1f35', 1.6), -2.26, 0.66, 0).rotation.z = TAIL_TILT;

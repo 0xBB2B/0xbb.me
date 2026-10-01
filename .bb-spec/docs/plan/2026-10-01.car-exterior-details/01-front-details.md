@@ -30,18 +30,18 @@ description: 保时捷车头：进气口加大前移、格栅条、日行灯条�
 box(car, 0.08, 0.16, 0.56, black, 2.25, 0.26, sz * 0.55)            // name 'intake-side'
 // 中间盒子 box(car, 0.08, 0.1, 0.5, black, 2.25, 0.3, 0) 不变，加 name 'intake-center'
 
-const slat = toon('#3d434f'); const silver = toon('#8f9bb3');
+const slat = toon('#3d434f');
 // 格栅条 name 'intake-slat'：两侧各 3 根、中间 2 根
 box(car, 0.01, 0.012, 0.5, slat, 2.293, y, sz * 0.55)                // y ∈ [0.29, 0.33, 0.37]
 box(car, 0.01, 0.012, 0.44, slat, 2.293, y, 0)                       // y ∈ [0.325, 0.365]
 // 日行灯条 name 'drl-strip'
-box(car, 0.012, 0.016, 0.42, silver, 2.294, 0.4, sz * 0.55)
+box(car, 0.012, 0.016, 0.42, toon('#c4cad4'), 2.294, 0.4, sz * 0.55)
 
 // 大灯：原来的扁球 hl（scale 0.12/0.02/0.13）换成一个组，每侧一个
-// group.position = (2.085, 0.66, sz * 0.6); group.rotation.z = -0.375
-//   'headlight-bezel'：SphereGeometry(1, 20, 14)，scale (0.14, 0.012, 0.15)，toon('#1b2030')
-//   'headlight-lens' ：SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2)，scale (0.12, 0.06, 0.13)，toon('#dfe8f5')
-//   'headlight-dot' ×4：SphereGeometry(0.012, 8, 6)，scale.y = 0.5，silver，组内位置 (±0.04, 0.052, ±0.045)
+// group.position = (2.085, 0.65, sz * 0.6); group.rotation.z = -0.4
+//   'headlight-bezel'：SphereGeometry(1, 20, 14)，scale (0.14, 0.012, 0.15)，toon('#1b2048')
+//   'headlight-lens' ：SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2)，scale (0.12, 0.068, 0.13)，toon('#dfe8f5')
+//   'headlight-dot' ×4：SphereGeometry(0.012, 8, 6)，scale.y = 0.5，toon('#9aa0aa')，组内位置 (±0.04, 0.052, ±0.045)
 
 // 盾徽 name 'hood-badge'
 // SphereGeometry(1, 12, 8)，scale (0.022, 0.006, 0.018)，toon('#d8b25a')，位置 (2.152, 0.627, 0)，rotation.z = -0.63

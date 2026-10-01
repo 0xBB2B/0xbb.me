@@ -1,10 +1,10 @@
 # 执行进度
 | 序号 | Plan | 状态 | 完成时间 |
 |---|---|---|---|
-| 01 | front-details | pending | — |
+| 01 | front-details | done | 2026-10-01 |
 | 02 | rear-details | pending | — |
 | 03 | side-details | pending | — |
 ## 当前
-准备执行 `01-front-details.md`。
+01 完成：大灯组为同时满足底沿贴合和鼓出高度，位置下沉 1 厘米、倾角改 -0.4、鼓包高度 0.068；灯圈颜色改 #1b2048 以免被按颜色筛玻璃和进气口的测试误认。准备执行 `02-rear-details.md`。
 ## 阻塞
 （无）
