@@ -3,11 +3,12 @@ import * as THREE from 'three';
 import { setCanvasFactory } from '../diorama/materials';
 import { createFakeCanvas, createFakeCanvasFactory } from './fake-canvas';
 import { CAR_CENTER } from '../diorama/layout';
-import { drawLicensePlate, drawRearWordmark } from '../diorama/textures';
+import { createTextures, drawLicensePlate, drawRearWordmark } from '../diorama/textures';
 
 setCanvasFactory(createFakeCanvasFactory());
 
 import { buildCar } from '../diorama/car';
+import { buildStore } from '../diorama/store';
 
 type Car = ReturnType<typeof buildCar>;
 
@@ -227,6 +228,18 @@ describe('hazard lights: four directional spot lights at the turn signals, clear
       const position = worldPosition(light);
       if (position.z > centerZ) expect(CURB_INNER_Z - position.z).toBeGreaterThan(light.distance);
     }
+  });
+
+  test('the rear hazard lights reach less far than their distance to the store front, so they do not light the shop interior', () => {
+    const { scene, car } = buildScene();
+    const centerZ = carBox(scene).getCenter(new THREE.Vector3()).z;
+    const storeScene = new THREE.Scene();
+    const store = buildStore(storeScene, createTextures());
+    storeScene.updateMatrixWorld(true);
+    const frontZ = new THREE.Box3().setFromObject(store.doorLeft, true).union(new THREE.Box3().setFromObject(store.doorRight, true)).max.z;
+    const rear = spotLights(car).filter((light) => worldPosition(light).z < centerZ);
+    expect(rear.length).toBe(2);
+    for (const light of rear) expect(worldPosition(light).z - frontZ).toBeGreaterThan(light.distance);
   });
 
   test('every headlight lens vertex is outside every hazard light beam cone or beyond its distance', () => {

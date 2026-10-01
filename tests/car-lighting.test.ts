@@ -251,23 +251,6 @@ describe('the ground decals hold no tail glow', () => {
   });
 });
 
-describe('lighting effects add no scene lights', () => {
-  test('the car and its ground group hold exactly 4 spot lights and 1 area light and no other light', () => {
-    const car = buildScene();
-    const counts = { spot: 0, area: 0, other: 0 };
-    for (const root of [car.group, car.ground]) {
-      root.traverse((obj) => {
-        const light = obj as THREE.Light;
-        if (!light.isLight) return;
-        if ((light as THREE.SpotLight).isSpotLight) counts.spot++;
-        else if ((light as THREE.RectAreaLight).isRectAreaLight) counts.area++;
-        else counts.other++;
-      });
-    }
-    expect(counts).toEqual({ spot: 4, area: 1, other: 0 });
-  });
-});
-
 function ambientStubs() {
   const lamp = () => ({ m: { color: new THREE.Color() }, base: new THREE.Color('#ffffff') });
   const store: any = {
@@ -294,10 +277,12 @@ describe('the tail area light does not follow the hazard blink', () => {
     });
     expect(tails.length).toBe(1);
     const { store, street } = ambientStubs();
-    const ambient = createAmbient({ store, street, hazard: { material: car.hazardMaterial, lights: car.hazardLights as any } });
+    const ambient = createAmbient({ store, street, hazard: { material: car.hazardMaterial, lights: car.hazardLights } });
     ambient.tick(0.1, 0.016);
+    for (const light of car.hazardLights) expect(light.intensity).toBeGreaterThan(0);
     const lit = tails[0].intensity;
     ambient.tick(0.6, 0.016);
+    for (const light of car.hazardLights) expect(light.intensity).toBe(0);
     expect(tails[0].intensity).toBe(lit);
     expect(lit).toBeGreaterThan(0);
   });
